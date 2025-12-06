@@ -1,0 +1,43 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.ts",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc && npm run post-build && npm run build:copy-assets",
+    "build:copy-assets": "copyfiles -u 1 \"src/**/*.html\" \"src/**/*.png\" \"src/**/*.jpg\" \"src/**/*.svg\" dist/",
+    "post-build": "tsx src/scripts/tools/post-build.ts",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit",
+    "util:generate-structure": "node src/scripts/tools/generate-structure.js",
+    "util:env-gen": "tsx src/scripts/env/env-gen.ts",
+    "util:env-find": "tsx src/scripts/env/env-gen.ts",
+    "util:import-find": "node src/scripts/dependency/import-find.js",
+    "util:schema-info": "node src/scripts/db/get-table-info.js",
+    "util:deploy-commands": "tsx src/discord/deployers/command-deployer.ts",
+    "test": "vitest run"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^24.10.1",
+    "@types/pg": "^8.15.6",
+    "copyfiles": "^2.4.1",
+    "tsc-alias": "^1.8.16",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.14"
+  },
+  "dependencies": {
+    "discord.js": "^14.25.1",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "pg": "^8.16.3",
+    "winston": "^3.18.3",
+    "zod": "^4.1.13"
+  }
+}
