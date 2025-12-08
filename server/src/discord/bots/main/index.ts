@@ -1,8 +1,8 @@
+import config from "@/config";
 import { Client, GatewayIntentBits, Partials } from "discord.js";
 import { loadCommandHandlers } from "./loaders/command-loader";
 import { registerInteractionHandler } from "./handlers/interaction-handler";
-import config from "@/config";
-import { registerWelcomeHandler } from "./events/guild-member-add/welcome";
+import { loadEventHandlers } from "./loaders/event-loader";
 
 const BOT_TOKEN = config.discord.bots.main.token;
 
@@ -10,8 +10,8 @@ const BOT_TOKEN = config.discord.bots.main.token;
  * Main Discord bot client instance
  *
  * Configured with neccessary intents and partials:
- * - Guilds: Acces to guild/server information
- * - GuildMembers: Acces to member join/leave events and member data
+ * - Guilds: Access to guild/server information
+ * - GuildMembers: Access to member join/leave events and member data
  * - GuildMessages: Access to message events in guild channels
  * - MessageContent: Access to actual message content (privileged intent)
  * - DirectMessages: Access to direct messages event
@@ -29,10 +29,10 @@ const mainBot = new Client({
 });
 
 /**
- * Ready event handler - fires once when bot successfully connects
+ * Ready event handler - fires once bot successfully connects
  *
  * Logs the bot's username and discriminator to confirm successful login
- * Exits early is user object is not properly initialized
+ * Exits early if user object is not properly initialized
  */
 mainBot.once("clientReady", async () => {
   if (!mainBot.user) {
@@ -44,19 +44,20 @@ mainBot.once("clientReady", async () => {
 });
 
 /**
- * Bot initializaton IIFE
+ * Bot initialization IIFE
  *
- * Performs the following statup sequence:
+ * Perofrms the following startup sequence:
  * 1. Loads all command handlers from the commands directory
- * 2. Registers the interaction handler to route commands
- * 3. Authenticates and connects to Discord gateway
+ * 2. Registers the interaction handlers to route commands
+ * 3. Loads all event handlers from the events directory
+ * 4. Authenticates and conencts to Discord gateway
  *
  * If any step fails, logs the error and exits the process
  */
 (async () => {
   const commandHandlers = await loadCommandHandlers();
   registerInteractionHandler(mainBot, commandHandlers);
-  registerWelcomeHandler(mainBot);
+  await loadEventHandlers(mainBot);
 
   await mainBot.login(BOT_TOKEN);
 })().catch((error) => {

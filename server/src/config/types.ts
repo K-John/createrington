@@ -7,6 +7,7 @@ interface UtilsConfig {
 
 interface OnGuildMemberAdd {
   readonly welcome: WelcomeSystemConfig;
+  readonly autoRole: AutoRoleSystemConfig;
 }
 
 interface EventConfig {
@@ -45,12 +46,12 @@ export interface LoggerConfig {
    * Root directory where daily log folders/files are written
    * Relative paths are resolved from the process working directory
    */
-  logDir: string;
+  readonly logDir: string;
   /**
    * Number of days to retain dated log folders before automatic cleanup
    * Older folders beyond this threshold may be deleted
    */
-  keepDays: number;
+  readonly keepDays: number;
 }
 
 export interface PoolConfig {
@@ -164,35 +165,35 @@ export interface PoolConfig {
 }
 
 export interface BotConfig {
-  main: {
+  readonly main: {
     /**
      * Discord application/bot ID used for identification
      * Required for registering slash commands and API interactions
      */
-    id: string;
+    readonly id: string;
     /**
      * Discord bot authentication token
      * Used to authenticate and login the bot to Discord's gateway
      */
-    token: string;
+    readonly token: string;
     /**
      * Discord prefix for text commands
      * Used to make a global config for text commands (e.g.: !test)
      */
-    commandPrefix?: string;
+    readonly commandPrefix?: string;
     /**
      * Bot owner ids
      */
-    owners?: string[];
+    readonly owners?: string[];
     /**
      * Discord status message shown in the members list and bot profile
      */
-    statusMessage?: string;
+    readonly statusMessage?: string;
     /**
      * Discord activity type going along-side statusMessage
      * Can be standalone
      */
-    activityType?: "PLAYING" | "WATCHING" | "LISTENING";
+    readonly activityType?: "PLAYING" | "WATCHING" | "LISTENING";
   };
 }
 
@@ -201,48 +202,53 @@ export interface GuildConfig {
    * Discord guild (server) ID where the bot operates
    * Used for guild specific command registration and operations
    */
-  id: string;
+  readonly id: string;
 }
 
 export interface ColorsConfig {
-  GREEN: ColorResolvable;
-  RED: ColorResolvable;
-  BLUE: ColorResolvable;
-  GOLD: ColorResolvable;
-  PURPLE: ColorResolvable;
-  ORANGE: ColorResolvable;
-  YELLOW: ColorResolvable;
-  CYAN: ColorResolvable;
-  PINK: ColorResolvable;
-  DARK_BLUE: ColorResolvable;
-  DARK_GREEN: ColorResolvable;
-  DARK_RED: ColorResolvable;
-  DARK_PURPLE: ColorResolvable;
-  DARK_GOLD: ColorResolvable;
-  GRAY: ColorResolvable;
-  DARK_GRAY: ColorResolvable;
-  WHITE: ColorResolvable;
-  BLACK: ColorResolvable;
+  readonly GREEN: ColorResolvable;
+  readonly RED: ColorResolvable;
+  readonly BLUE: ColorResolvable;
+  readonly GOLD: ColorResolvable;
+  readonly PURPLE: ColorResolvable;
+  readonly ORANGE: ColorResolvable;
+  readonly YELLOW: ColorResolvable;
+  readonly CYAN: ColorResolvable;
+  readonly PINK: ColorResolvable;
+  readonly DARK_BLUE: ColorResolvable;
+  readonly DARK_GREEN: ColorResolvable;
+  readonly DARK_RED: ColorResolvable;
+  readonly DARK_PURPLE: ColorResolvable;
+  readonly DARK_GOLD: ColorResolvable;
+  readonly GRAY: ColorResolvable;
+  readonly DARK_GRAY: ColorResolvable;
+  readonly WHITE: ColorResolvable;
+  readonly BLACK: ColorResolvable;
 }
-
-// Update this interface in server/src/config/types.ts
 
 export interface WelcomeSystemConfig {
   /** Channel ID where welcome images are sent */
-  channelId: string;
+  readonly channelId: string;
   /** Whether the welcome system is enabled */
-  enabled: boolean;
+  readonly enabled: boolean;
   /** Image styling configuration */
-  imageConfig: {
+  readonly imageConfig: {
     /** Background color (hex) */
-    backgroundColor: string;
+    readonly backgroundColor: string;
     /** Accent color */
-    accentColor: string;
+    readonly accentColor: string;
     /** Text color (hex) */
-    textColor: string;
+    readonly textColor: string;
     /** Secondary text color (hex) */
-    secondaryTextColor: string;
+    readonly secondaryTextColor: string;
     /** Optional background image URL */
-    backgroundImageURL?: string;
+    readonly backgroundImageURL?: string;
   };
+}
+
+export interface AutoRoleSystemConfig {
+  /** Role ID that will be assigned to the player that joined */
+  readonly roleId: string;
+  /** Whether the auto role system is enabled */
+  readonly enabled: boolean;
 }

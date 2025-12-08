@@ -76,6 +76,10 @@ const config: Config = {
               "https://market-assets.create-rington.com/welcome/welcome.png",
           },
         },
+        autoRole: {
+          roleId: "1447307459449327616",
+          enabled: true,
+        },
       },
     },
   },
