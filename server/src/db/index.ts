@@ -14,15 +14,13 @@ import { GuildMemberJoinQueries } from "./queries/discord/guild-member-join/quer
  */
 const db = new pg.Pool(config.database.pool);
 
-async () => {
-  try {
-    await db.query("SELECT 1");
-    logger.info("Connected to PostgreSQL database");
-  } catch (error) {
-    logger.error("Failed to connect to DB:", error);
-    process.exit(1);
-  }
-};
+try {
+  await db.query("SELECT 1");
+  logger.info("Connected to PostgreSQL database");
+} catch (error) {
+  logger.error("Failed to connect to DB:", error);
+  process.exit(1);
+}
 
 export const guildMemberJoins = new GuildMemberJoinQueries(db);
 
