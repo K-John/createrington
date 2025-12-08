@@ -34,7 +34,7 @@ export async function execute(
   client: Client,
   member: GuildMember
 ): Promise<void> {
-  if (welcomeConfig.enabled) {
+  if (!welcomeConfig.enabled) {
     return;
   }
 
