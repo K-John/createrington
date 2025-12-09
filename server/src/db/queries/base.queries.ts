@@ -355,6 +355,58 @@ export abstract class BaseQueries<
     }
   }
 
+  /**
+   * Gets a specific field value with an optimized query
+   * Only fetches the requested column from the database
+   *
+   * @param identifier - Unique identifier
+   * @param field - Field name to retrieve
+   * @returns Promise resolving to the field value
+   * @throws Error if entity not found
+   */
+  async pluck<K extends keyof TConfig["Entity"]>(
+    identifier: NonNullable<TConfig["Identifier"]>,
+    field: K
+  ): Promise<TConfig["Entity"][K]> {
+    const { whereClause, values } = this.getColumnMapping(identifier);
+    const columnName = this.getColumnName(field as string);
+
+    const query = `SELECT ${columnName} FROM ${this.table} WHERE ${whereClause} LIMIT 1`;
+
+    try {
+      const result = await this.db.query(query, values);
+
+      if (result.rows.length === 0) {
+        throw createNotFoundError(this.table, identifier);
+      }
+
+      const row = result.rows[0];
+      return row[columnName] as TConfig["Entity"][K];
+    } catch (error) {
+      logger.error(
+        `Failed to pluck ${String(field)} from ${this.table}:`,
+        error
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Proxy based optimized field getter
+   * Uses pluck() under the good for efficient queries
+   */
+  readonly select = new Proxy({} as any, {
+    get: (_, field: string) => {
+      return async (identifier: NonNullable<TConfig["Identifier"]>) => {
+        return this.pluck(identifier, field as keyof TConfig["Entity"]);
+      };
+    },
+  }) as {
+    [K in keyof TConfig["Entity"]]: (
+      identifier: NonNullable<TConfig["Identifier"]>
+    ) => Promise<TConfig["Entity"][K]>;
+  };
+
   // ============================================================================
   // MULTIPLE ENTITY OPERATIONS (by non-unique filters)
   // ============================================================================

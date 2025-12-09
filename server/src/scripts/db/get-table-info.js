@@ -4,7 +4,7 @@ import { writeFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const { Pool } = pg;
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -12,7 +12,7 @@ const outDir = join(__dirname, "out");
 
 async function getTableInfo(tableName) {
   const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: process.env.DB_URL,
   });
 
   let output = "";
