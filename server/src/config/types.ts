@@ -25,6 +25,23 @@ interface DiscordConfig {
   readonly events: EventConfig;
 }
 
+interface RconConfig {
+  readonly host: string;
+  readonly password: string;
+  readonly port: number;
+}
+
+interface MinecraftServerConfig {
+  readonly ip: string;
+  readonly port: number;
+  readonly rcon?: RconConfig;
+}
+
+interface MinecraftServers {
+  readonly cogs: MinecraftServerConfig;
+  readonly test: MinecraftServerConfig;
+}
+
 interface EmbedConfig {
   readonly colors: ColorsConfig;
 }
@@ -35,6 +52,7 @@ export interface Config {
   readonly utils: UtilsConfig;
   readonly database: DatabaseConfig;
   readonly discord: DiscordConfig;
+  readonly servers: MinecraftServers;
 }
 
 export interface AppConfig {

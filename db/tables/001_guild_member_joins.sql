@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS guild_member_joins (
     join_number SERIAL PRIMARY KEY,
     
     -- Discord user ID (snowflake)
-    user_id VARCHAR(19) NOT NULL UNIQUE,
+    user_id VARCHAR(32) NOT NULL UNIQUE,
     
     -- Discord username at time of join
     username VARCHAR(32) NOT NULL,

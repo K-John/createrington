@@ -83,6 +83,27 @@ const config: Config = {
       },
     },
   },
+
+  servers: {
+    cogs: {
+      ip: env.COGS_AND_STEAM_SERVER_IP,
+      port: env.COGS_AND_STEAM_SERVER_PORT,
+      rcon: {
+        host: env.COGS_AND_STEAM_SERVER_IP,
+        port: env.COGS_AND_STEAM_RCON_PORT,
+        password: env.COGS_AND_STEAM_RCON_PASSWORD,
+      },
+    },
+    test: {
+      ip: env.TEST_SERVER_IP,
+      port: env.TEST_SERVER_PORT,
+      rcon: {
+        host: env.TEST_SERVER_IP,
+        port: env.TEST_RCON_PORT,
+        password: env.TEST_RCON_PASSWORD,
+      },
+    },
+  },
 } as const;
 
 export default config;

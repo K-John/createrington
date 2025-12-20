@@ -18,6 +18,16 @@ dotenv.config({ quiet: true });
  * @property {string} DISCORD_GUILD_ID - Discord server/guild ID (must be numeric snowflake)
  * @property {string} DISCORD_MAIN_BOT_TOKEN - Discord bot authentication token
  * @property {string} DISCORD__MAIN_BOT_ID - Discord bot application/client ID (must be numeric snowflake)
+ * // Minecraft Servers
+ * @property {string} COGS_AND_STEAM_SERVER_IP_ADDRESS - Cogs and Steam server IP address
+ * @property {number} COGS_AND_STEAM_SERVER_PORT - Cogs and Steam server port
+ * @property {string} TEST_SERVER_IP_ADDRESS - Test server IP address
+ * @property {number} TEST_SERVER_PORT - Test server port
+ * // RCON (Minecraft server)
+ * @property {number} COGS_AND_STEAM_RCON_PORT - RCON server port
+ * @property {string} COGS_AND_STEAM_RCON_PASSWORD - RCON authentication password
+ * @property {number} TEST_SERVER_RCON_PORT - RCON server port
+ * @property {string} TEST_SERVER_RCON_PASSWORD - RCON authentication
  */
 const envSchema = z.object({
   // Server
@@ -58,6 +68,82 @@ const envSchema = z.object({
       /^\d{17,19}$/,
       "Bot ID must be a valid Discord snowflake (17-19 digits)"
     ),
+
+  // Minecraft Servers
+  COGS_AND_STEAM_SERVER_IP: z
+    .string()
+    .min(1, "Cogs and Steam server IP is required")
+    .refine(
+      (ip) => {
+        // IPv4 validation
+        const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
+        if (!ipv4Regex.test(ip)) return false;
+
+        // Validate each octet is 0-255
+        const octets = ip.split(".");
+        return octets.every((octet) => {
+          const num = parseInt(octet, 10);
+          return num >= 0 && num <= 255;
+        });
+      },
+      { message: "Cogs and Steam server IP must be a valid IPv4 address" }
+    ),
+  COGS_AND_STEAM_SERVER_PORT: z.coerce
+    .number()
+    .int()
+    .positive()
+    .refine((port) => port >= 1 && port <= 65535, {
+      message: "Cogs and Steam server port must be between 1 and 65535",
+    }),
+  TEST_SERVER_IP: z
+    .string()
+    .min(1, "Cogs and Steam server IP is required")
+    .refine(
+      (ip) => {
+        // IPv4 validation
+        const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
+        if (!ipv4Regex.test(ip)) return false;
+
+        // Validate each octet is 0-255
+        const octets = ip.split(".");
+        return octets.every((octet) => {
+          const num = parseInt(octet, 10);
+          return num >= 0 && num <= 255;
+        });
+      },
+      { message: "Cogs and Steam server IP must be a valid IPv4 address" }
+    ),
+  TEST_SERVER_PORT: z.coerce
+    .number()
+    .int()
+    .positive()
+    .refine((port) => port >= 1 && port <= 65535, {
+      message: "Cogs and Steam server port must be between 1 and 65535",
+    }),
+
+  // RCON (Minecraft server)
+  COGS_AND_STEAM_RCON_PORT: z.coerce
+    .number()
+    .int()
+    .positive()
+    .refine((port) => port >= 1 && port <= 65535, {
+      message: "RCON port must be between 1 and 65535",
+    }),
+  COGS_AND_STEAM_RCON_PASSWORD: z
+    .string()
+    .min(1, "RCON password is required")
+    .max(100, "RCON password is too long"),
+  TEST_RCON_PORT: z.coerce
+    .number()
+    .int()
+    .positive()
+    .refine((port) => port >= 1 && port <= 65535, {
+      message: "RCON port must be between 1 and 65535",
+    }),
+  TEST_RCON_PASSWORD: z
+    .string()
+    .min(1, "RCON password is required")
+    .max(100, "RCON password is too long"),
 });
 
 /**
