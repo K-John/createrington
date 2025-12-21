@@ -37,4 +37,5 @@ Thumbs.db
 *.zip
 *.rar
 .cache/
+assets
 

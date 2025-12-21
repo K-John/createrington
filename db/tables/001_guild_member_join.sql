@@ -1,4 +1,4 @@
--- Migration: Create guild_member_joins table
+-- Migration: Create guild_member_join table
 -- This table tracks the order in which members join the guild
 -- Each member gets a unique, persistent join number
 

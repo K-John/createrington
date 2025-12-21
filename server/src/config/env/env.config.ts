@@ -28,6 +28,12 @@ dotenv.config({ quiet: true });
  * @property {string} COGS_AND_STEAM_RCON_PASSWORD - RCON authentication password
  * @property {number} TEST_SERVER_RCON_PORT - RCON server port
  * @property {string} TEST_SERVER_RCON_PASSWORD - RCON authentication
+ * // Email
+ * @property {string} EMAIL_HOST - SMTP host server (e.g., smtp.gmail.com)
+ * @property {number} EMAIL_PORT - SMTP port (587 for TLS, 465 for SSL, 25 for non-secure)
+ * @property {boolean} EMAIL_SECURE - Whether to use TLS/SSL (true for port 465, false for 587)
+ * @property {string} EMAIL_ADDRESS - Email address to send from
+ * @property {string} EMAIL_PASS - Password/app password for the email account
  */
 const envSchema = z.object({
   // Server
@@ -144,6 +150,48 @@ const envSchema = z.object({
     .string()
     .min(1, "RCON password is required")
     .max(100, "RCON password is too long"),
+
+  // Email: TODO
+  EMAIL_HOST: z
+    .string()
+    .min(1, "Email host is required")
+    .refine(
+      (host) => {
+        if (host === "localhost" || host === "127.0.0.1") return true;
+        return /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/.test(
+          host
+        );
+      },
+      { message: "Email host must be a valid hostname or IP address" }
+    ),
+  EMAIL_PORT: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(587)
+    .refine((port) => port >= 1 && port <= 65535, {
+      message: "Email port must be between 1 and 65535",
+    })
+    .refine((port) => [25, 465, 587, 2525].includes(port), {
+      message:
+        "Email port should be typically 25, 465 (SSL), 587 (TLS), or 2525",
+    })
+    .or(
+      z.coerce
+        .number()
+        .int()
+        .positive()
+        .refine((port) => port >= 1 && port <= 65535)
+    ),
+  EMAIL_SECURE: z.coerce.boolean().default(false),
+  EMAIL_ADDRESS: z
+    .string()
+    .email("Must be valid email address")
+    .min(1, "Email address is required"),
+  EMAIL_PASS: z
+    .string()
+    .min(1, "Email password is required")
+    .min(8, "Email password should be at least 8 characters for security"),
 });
 
 /**
@@ -151,6 +199,12 @@ const envSchema = z.object({
  * Automatically inferred from the envSchema
  */
 export type Env = z.infer<typeof envSchema>;
+
+/**
+ * Flag for running only validation of env variables
+ * Exits the process on success
+ */
+const isValidateOnly = process.argv.includes("--validate-only");
 
 /**
  * Validates environment variables against the defined schema
@@ -167,6 +221,11 @@ function validateEnv(): Env {
   try {
     const validated = envSchema.parse(process.env);
     console.info("All required environment variables are set and valid");
+
+    if (isValidateOnly) {
+      console.info("Validation complete. Exiting");
+      process.exit(0);
+    }
     return validated;
   } catch (error) {
     if (error instanceof z.ZodError) {

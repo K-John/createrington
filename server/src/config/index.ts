@@ -4,6 +4,20 @@ import { env, envMode } from "./env/env.config";
 const config: Config = {
   envMode,
 
+  meta: {
+    name: "Createrington",
+    version: "1.21.1",
+    author: {
+      name: "saunhardy",
+      email: "matejhozlarzadek8ii@gmail.com",
+      discord: "matejhoz",
+    },
+    links: {
+      discordInvite: "https://discord.gg/7PAptNgqk2",
+      website: "https://create-rington.com",
+    },
+  },
+
   app: {
     port: env.PORT,
   },
@@ -102,6 +116,16 @@ const config: Config = {
         port: env.TEST_RCON_PORT,
         password: env.TEST_RCON_PASSWORD,
       },
+    },
+  },
+
+  email: {
+    host: env.EMAIL_HOST,
+    port: env.EMAIL_PORT,
+    secure: env.EMAIL_SECURE,
+    auth: {
+      user: env.EMAIL_ADDRESS,
+      pass: env.EMAIL_PASS,
     },
   },
 } as const;

@@ -1,78 +1,169 @@
 import { ColorResolvable } from "discord.js";
 import { envModeConfig } from "./env/env.config";
 
-interface UtilsConfig {
-  readonly logger: LoggerConfig;
+export interface Config {
+  envMode: envModeConfig;
+
+  meta: MetaConfig;
+
+  app: {
+    port: number;
+  };
+
+  utils: {
+    logger: {
+      logDir: string;
+      keepDays: number;
+    };
+  };
+
+  database: {
+    pool: PoolConfig;
+  };
+
+  discord: {
+    bots: {
+      main: BotConfig;
+    };
+
+    guild: {
+      id: string;
+    };
+
+    embeds: {
+      colors: ColorsConfig;
+    };
+
+    events: {
+      onGuildMemberAdd: onGuildMemberAddConfig;
+    };
+  };
+
+  servers: {
+    cogs: MinecraftServerConfig;
+    test: MinecraftServerConfig;
+  };
+
+  email: EmailConfig;
 }
 
-interface OnGuildMemberAdd {
-  readonly welcome: WelcomeSystemConfig;
-  readonly autoRole: AutoRoleSystemConfig;
+interface MetaConfig {
+  name: string;
+  description?: string;
+  version: string;
+  author: {
+    name: string;
+    email: string;
+    discord: string;
+  };
+  links: {
+    discordInvite: string;
+    website: string;
+  };
 }
 
-interface EventConfig {
-  readonly onGuildMemberAdd: OnGuildMemberAdd;
-}
-
-interface DatabaseConfig {
-  readonly pool: PoolConfig;
-}
-
-interface DiscordConfig {
-  readonly bots: BotConfig;
-  readonly guild: GuildConfig;
-  readonly embeds: EmbedConfig;
-  readonly events: EventConfig;
-}
-
-interface RconConfig {
+interface EmailConfig {
   readonly host: string;
-  readonly password: string;
   readonly port: number;
+  readonly secure: boolean;
+  readonly auth: {
+    user: string;
+    pass: string;
+  };
+}
+
+interface onGuildMemberAddConfig {
+  welcome: {
+    /** Channel ID where welcome images are sent */
+    readonly channelId: string;
+    /** Whether the welcome system is enabled */
+    readonly enabled: boolean;
+    /** Image styling configuration */
+    readonly imageConfig: {
+      /** Background color */
+      readonly backgroundColor: string;
+      /** Accent color */
+      readonly accentColor: string;
+      /** Text color */
+      readonly textColor: string;
+      /** Secondary color */
+      readonly secondaryTextColor: string;
+      /** Optional background image URL */
+      readonly backgroundImageURL: string;
+    };
+  };
+
+  autoRole: {
+    /** Role ID that will be assigned to the player that joined */
+    readonly roleId: string;
+    /** Whether the auto role system is enabled */
+    readonly enabled: boolean;
+  };
 }
 
 interface MinecraftServerConfig {
   readonly ip: string;
   readonly port: number;
-  readonly rcon?: RconConfig;
+  readonly rcon?: {
+    readonly host: string;
+    readonly password: string;
+    readonly port: number;
+  };
 }
 
-interface MinecraftServers {
-  readonly cogs: MinecraftServerConfig;
-  readonly test: MinecraftServerConfig;
+interface ColorsConfig {
+  readonly GREEN: ColorResolvable;
+  readonly RED: ColorResolvable;
+  readonly BLUE: ColorResolvable;
+  readonly GOLD: ColorResolvable;
+  readonly PURPLE: ColorResolvable;
+  readonly ORANGE: ColorResolvable;
+  readonly YELLOW: ColorResolvable;
+  readonly CYAN: ColorResolvable;
+  readonly PINK: ColorResolvable;
+  readonly DARK_BLUE: ColorResolvable;
+  readonly DARK_GREEN: ColorResolvable;
+  readonly DARK_RED: ColorResolvable;
+  readonly DARK_PURPLE: ColorResolvable;
+  readonly DARK_GOLD: ColorResolvable;
+  readonly GRAY: ColorResolvable;
+  readonly DARK_GRAY: ColorResolvable;
+  readonly WHITE: ColorResolvable;
+  readonly BLACK: ColorResolvable;
 }
 
-interface EmbedConfig {
-  readonly colors: ColorsConfig;
-}
-
-export interface Config {
-  readonly envMode: envModeConfig;
-  readonly app: AppConfig;
-  readonly utils: UtilsConfig;
-  readonly database: DatabaseConfig;
-  readonly discord: DiscordConfig;
-  readonly servers: MinecraftServers;
-}
-
-export interface AppConfig {
-  readonly port: number;
-}
-
-export interface LoggerConfig {
+interface BotConfig {
   /**
-   * Root directory where daily log folders/files are written
-   * Relative paths are resolved from the process working directory
+   * Discord application/bot ID user for identification
+   * Required for registering slash commands and API interactions
    */
-  readonly logDir: string;
+  readonly id: string;
   /**
-   * Number of days to retain dated log folders before automatic cleanup
-   * Older folders beyond this threshold may be deleted
+   * Discord bot authentication token
+   * Used to authenticate and login the bot to Discord's gateway
    */
-  readonly keepDays: number;
+  readonly token: string;
+  /**
+   * Discord prefix for text commands
+   * Used to make global config for text commands
+   */
+  readonly commandPrefix?: string;
+  /**
+   * Bot owner IDs
+   */
+  readonly owners?: string[];
+  /**
+   * Discord status message shown in the members list and bot profile
+   */
+  readonly statusMessage?: string;
+  /**
+   * Discord activity type going along-side statusMessage
+   * Can be standalone
+   */
+  readonly activityType?: "PLAYING" | "WATCHING" | "LISTENING";
 }
 
-export interface PoolConfig {
+interface PoolConfig {
   /** The PostgreSQL username */
   readonly user: string;
   /** The PostgreSQL host */
@@ -180,93 +271,4 @@ export interface PoolConfig {
    * Useful for handling transient connection failures
    */
   readonly connectionRetryAttemps?: number;
-}
-
-export interface BotConfig {
-  readonly main: {
-    /**
-     * Discord application/bot ID used for identification
-     * Required for registering slash commands and API interactions
-     */
-    readonly id: string;
-    /**
-     * Discord bot authentication token
-     * Used to authenticate and login the bot to Discord's gateway
-     */
-    readonly token: string;
-    /**
-     * Discord prefix for text commands
-     * Used to make a global config for text commands (e.g.: !test)
-     */
-    readonly commandPrefix?: string;
-    /**
-     * Bot owner ids
-     */
-    readonly owners?: string[];
-    /**
-     * Discord status message shown in the members list and bot profile
-     */
-    readonly statusMessage?: string;
-    /**
-     * Discord activity type going along-side statusMessage
-     * Can be standalone
-     */
-    readonly activityType?: "PLAYING" | "WATCHING" | "LISTENING";
-  };
-}
-
-export interface GuildConfig {
-  /**
-   * Discord guild (server) ID where the bot operates
-   * Used for guild specific command registration and operations
-   */
-  readonly id: string;
-}
-
-export interface ColorsConfig {
-  readonly GREEN: ColorResolvable;
-  readonly RED: ColorResolvable;
-  readonly BLUE: ColorResolvable;
-  readonly GOLD: ColorResolvable;
-  readonly PURPLE: ColorResolvable;
-  readonly ORANGE: ColorResolvable;
-  readonly YELLOW: ColorResolvable;
-  readonly CYAN: ColorResolvable;
-  readonly PINK: ColorResolvable;
-  readonly DARK_BLUE: ColorResolvable;
-  readonly DARK_GREEN: ColorResolvable;
-  readonly DARK_RED: ColorResolvable;
-  readonly DARK_PURPLE: ColorResolvable;
-  readonly DARK_GOLD: ColorResolvable;
-  readonly GRAY: ColorResolvable;
-  readonly DARK_GRAY: ColorResolvable;
-  readonly WHITE: ColorResolvable;
-  readonly BLACK: ColorResolvable;
-}
-
-export interface WelcomeSystemConfig {
-  /** Channel ID where welcome images are sent */
-  readonly channelId: string;
-  /** Whether the welcome system is enabled */
-  readonly enabled: boolean;
-  /** Image styling configuration */
-  readonly imageConfig: {
-    /** Background color (hex) */
-    readonly backgroundColor: string;
-    /** Accent color */
-    readonly accentColor: string;
-    /** Text color (hex) */
-    readonly textColor: string;
-    /** Secondary text color (hex) */
-    readonly secondaryTextColor: string;
-    /** Optional background image URL */
-    readonly backgroundImageURL?: string;
-  };
-}
-
-export interface AutoRoleSystemConfig {
-  /** Role ID that will be assigned to the player that joined */
-  readonly roleId: string;
-  /** Whether the auto role system is enabled */
-  readonly enabled: boolean;
 }
