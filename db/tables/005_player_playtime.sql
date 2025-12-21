@@ -1,0 +1,12 @@
+CREATE TABLE player_playtime (
+    player_uuid UUID NOT NULL REFERENCES player(uuid) ON DELETE CASCADE,
+    server_id INTEGER NOT NULL REFERENCES server(id) ON DELETE CASCADE,
+    total_seconds BIGINT DEFAULT 0 NOT NULL,
+    session_start TIMESTAMP WITH TIME ZONE,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+
+    PRIMARY KEY (player_uuid, server_id),
+    CONSTRAINT chk_playtime_non_negative CHECK (total_seconds >= 0)
+);
+
+CREATE INDEX idx_player_playtime_server ON player_playtime(server_id);
