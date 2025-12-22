@@ -15,6 +15,9 @@ const config: Config = {
     links: {
       discordInvite: "https://discord.gg/7PAptNgqk2",
       website: "https://create-rington.com",
+      adminPanel: "https://create-rington.com/login-admin/",
+      modpack: "https://www.curseforge.com/minecraft/modpacks/create-rington",
+      map: "https://create-rington.com/blue-map",
     },
   },
 

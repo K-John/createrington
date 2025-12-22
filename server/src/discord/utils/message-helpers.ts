@@ -1,4 +1,10 @@
-import { EmbedBuilder, Message, TextChannel } from "discord.js";
+import {
+  ActionRowBuilder,
+  EmbedBuilder,
+  Message,
+  MessageActionRowComponentBuilder,
+  TextChannel,
+} from "discord.js";
 import { EmbedPresets } from "../embeds";
 
 /**
@@ -99,5 +105,43 @@ export async function withLoadingEmbed<T>(
       await editEmbed(loadingMsg, options.onError(error as Error));
     }
     throw error;
+  }
+}
+
+/**
+ * Sends an embed with action row components (buttons, select menus)
+ */
+export async function sendEmbedWithComponents(
+  channel: TextChannel,
+  embed: EmbedBuilder,
+  components: ActionRowBuilder<MessageActionRowComponentBuilder>[]
+): Promise<Message | null> {
+  try {
+    return await channel.send({
+      embeds: [embed],
+      components,
+    });
+  } catch (error) {
+    logger.error("Failed to send embed with components:", error);
+    return null;
+  }
+}
+
+/**
+ * Edits a message's embed and components
+ */
+export async function editEmbedWithComponents(
+  message: Message,
+  embed: EmbedBuilder,
+  components: ActionRowBuilder<MessageActionRowComponentBuilder>[]
+): Promise<Message | null> {
+  try {
+    return await message.edit({
+      embeds: [embed],
+      components,
+    });
+  } catch (error) {
+    logger.error("Failed to edit embed with components:", error);
+    return null;
   }
 }

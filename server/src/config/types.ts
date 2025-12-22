@@ -60,6 +60,9 @@ interface MetaConfig {
   readonly links: {
     readonly discordInvite: string;
     readonly website: string;
+    readonly adminPanel: string;
+    readonly modpack: string;
+    readonly map: string;
   };
 }
 
