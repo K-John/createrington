@@ -1,7 +1,7 @@
 import pg from "pg";
 import config from "@/config";
 import { GuildMemberJoinQueries } from "./queries/discord/guild-member-join/queries";
-import { UserQueries } from "./queries/users/queries";
+import { PlayerQueries } from "./queries/player/queries";
 
 /**
  * PostgreSQL database pool instance using environment variables
@@ -24,6 +24,6 @@ try {
 }
 
 export const guildMemberJoins = new GuildMemberJoinQueries(db);
-export const users = new UserQueries(db);
+export const players = new PlayerQueries(db);
 
 export default db;
