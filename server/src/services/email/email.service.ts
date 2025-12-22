@@ -233,4 +233,4 @@ export class EmailService {
  *
  * Pre-initialized instance ready for use throughout the application
  */
-export const emailService = EmailService.getInstance();
+export const email = EmailService.getInstance();

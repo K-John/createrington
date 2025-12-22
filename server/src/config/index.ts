@@ -51,6 +51,12 @@ const config: Config = {
 
     guild: {
       id: env.DISCORD_GUILD_ID,
+      roles: {
+        staff: {
+          owner: "1447340667767361670",
+          admin: "1447343808147750952",
+        },
+      },
     },
 
     embeds: {

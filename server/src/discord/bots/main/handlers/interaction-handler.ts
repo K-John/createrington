@@ -1,4 +1,5 @@
 import {
+  ButtonInteraction,
   ChatInputCommandInteraction,
   Client,
   Collection,
@@ -6,8 +7,9 @@ import {
   MessageFlags,
 } from "discord.js";
 import { CommandModule } from "../loaders/command-loader";
-import { cooldownManager } from "@/discord/utils/cooldown/cooldown-manager";
+import { cooldownManager } from "@/discord/utils/cooldown";
 import { EmbedPresets } from "@/discord/embeds";
+import { ButtonModule, findButtonHandler } from "../loaders/button-loader";
 
 /**
  * Formats a cooldown duration in seconds into a human-readable string
@@ -38,7 +40,7 @@ function formatCooldown(seconds: number): string {
 }
 
 /**
- * Checks if a user can bypass the cooldown for a command
+ * Checks if a usr can bypass the cooldown for a command
  *
  * Users can bypass cooldowns if:
  * - The command has no cooldown configured
@@ -85,7 +87,7 @@ function canBypassCooldown(
  *
  * @param interaction - The chat input command interaction
  * @param commandHandlers - Collection of registered command handlers
- * @returns Promise that resolves when command handling is complete
+ * @returns Promise resolving when the command handling is completed
  */
 async function handleChatCommands(
   interaction: ChatInputCommandInteraction,
@@ -102,7 +104,6 @@ async function handleChatCommands(
     `${interaction.user.tag} (${interaction.user.id}) ran /${interaction.commandName}`
   );
 
-  // Check cooldown
   if (command.cooldown && !canBypassCooldown(interaction, command)) {
     const cooldownRemaining = cooldownManager.check(
       interaction.commandName,
@@ -125,7 +126,7 @@ async function handleChatCommands(
         "Command on Cooldown",
         cooldownMessage
       )
-        .field("Time Remaining", formatCooldown(cooldownRemaining), true)
+        .field("Time remaining", formatCooldown(cooldownRemaining), true)
         .build();
 
       await interaction.reply({
@@ -145,7 +146,6 @@ async function handleChatCommands(
   try {
     await command.execute(interaction);
 
-    // Set cooldown after successful execution
     if (command.cooldown && !canBypassCooldown(interaction, command)) {
       cooldownManager.set(interaction.commandName, command.cooldown, {
         userId: interaction.user.id,
@@ -169,21 +169,113 @@ async function handleChatCommands(
 }
 
 /**
+ * Handles button interactions
+ *
+ * Process:
+ * 1. Finds matching button handler based on customId pattern
+ * 2. Checks permissions if handler has permission check
+ * 3. Executes the button handler
+ * 4. Handles errors with ephemeral error messages
+ *
+ * @param interaction - The button interaction
+ * @param buttonHandlers - Collection of registered button handlers
+ * @returns Promise resolving when the button handling is completed
+ */
+async function handleButtonInteractions(
+  interaction: ButtonInteraction,
+  buttonHandlers: Collection<string, ButtonModule>
+): Promise<void> {
+  const handler = findButtonHandler(interaction.customId, buttonHandlers);
+
+  if (!handler) {
+    logger.debug(`No handler found for button: ${interaction.customId}`);
+    return;
+  }
+
+  logger.info(
+    `${interaction.user.tag} (${interaction.user.id}) clicked button: ${interaction.customId}`
+  );
+
+  if (handler.checkPermission) {
+    try {
+      const hasPermission = await handler.checkPermission(interaction);
+
+      if (!hasPermission) {
+        const message =
+          handler.permissionDeniedMessage ||
+          "You don't have permission to use this button.";
+
+        await interaction.reply({
+          content: message,
+          flags: MessageFlags.Ephemeral,
+        });
+
+        logger.debug(
+          `${interaction.user.tag} denied access to button: ${interaction.customId}`
+        );
+        return;
+      }
+    } catch (error) {
+      logger.error(
+        `Error checking permissions for button ${interaction.customId}:`,
+        error
+      );
+
+      await interaction.reply({
+        content: "❌ Error checking permissions",
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+  }
+
+  try {
+    await handler.execute(interaction);
+  } catch (error) {
+    logger.error(
+      `Error executing button handler ${interaction.customId}:`,
+      error
+    );
+
+    try {
+      const replyMethod =
+        interaction.replied || interaction.deferred
+          ? interaction.followUp
+          : interaction.reply;
+
+      await replyMethod.call(interaction, {
+        content: "❌ Something went wrong",
+        flags: MessageFlags.Ephemeral,
+      });
+    } catch (replyError) {
+      logger.error("Failed to send error response:", error);
+    }
+  }
+}
+
+/**
  * Registers the interaction event handler for the Discord client
  *
  * Sets up a listener for the 'interactionCreate' event that routes
- * chat input commands to the appropriate handler
+ * chat input commands and button interactions to appropriate handlers
  *
- * @param discordClient - The Discord.js client instance
+ * @param discordClient - The Discord client instance
  * @param commandHandlers - Collection of slash command handlers keyed by command name
+ * @param buttonHandlers - Collection of button handlers with pattern matching
  */
 export function registerInteractionHandler(
   discordClient: Client,
-  commandHandlers: Collection<string, CommandModule>
+  commandHandlers: Collection<string, CommandModule>,
+  buttonHandlers: Collection<string, ButtonModule>
 ): void {
   discordClient.on("interactionCreate", async (interaction: Interaction) => {
     if (interaction.isChatInputCommand()) {
       await handleChatCommands(interaction, commandHandlers);
+      return;
+    }
+
+    if (interaction.isButton()) {
+      await handleButtonInteractions(interaction, buttonHandlers);
       return;
     }
   });

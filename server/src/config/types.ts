@@ -28,6 +28,7 @@ export interface Config {
 
     guild: {
       id: string;
+      roles: MemberRolesConfig;
     };
 
     embeds: {
@@ -48,17 +49,17 @@ export interface Config {
 }
 
 interface MetaConfig {
-  name: string;
-  description?: string;
-  version: string;
-  author: {
-    name: string;
-    email: string;
-    discord: string;
+  readonly name: string;
+  readonly description?: string;
+  readonly version: string;
+  readonly author: {
+    readonly name: string;
+    readonly email: string;
+    readonly discord: string;
   };
-  links: {
-    discordInvite: string;
-    website: string;
+  readonly links: {
+    readonly discordInvite: string;
+    readonly website: string;
   };
 }
 
@@ -67,13 +68,13 @@ interface EmailConfig {
   readonly port: number;
   readonly secure: boolean;
   readonly auth: {
-    user: string;
-    pass: string;
+    readonly user: string;
+    readonly pass: string;
   };
 }
 
 interface onGuildMemberAddConfig {
-  welcome: {
+  readonly welcome: {
     /** Channel ID where welcome images are sent */
     readonly channelId: string;
     /** Whether the welcome system is enabled */
@@ -93,7 +94,7 @@ interface onGuildMemberAddConfig {
     };
   };
 
-  autoRole: {
+  readonly autoRole: {
     /** Role ID that will be assigned to the player that joined */
     readonly roleId: string;
     /** Whether the auto role system is enabled */
@@ -271,4 +272,11 @@ interface PoolConfig {
    * Useful for handling transient connection failures
    */
   readonly connectionRetryAttemps?: number;
+}
+
+interface MemberRolesConfig {
+  readonly staff: {
+    readonly admin: string;
+    readonly owner: string;
+  };
 }
