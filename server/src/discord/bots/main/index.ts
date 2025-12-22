@@ -3,6 +3,7 @@ import { Client, GatewayIntentBits, Partials } from "discord.js";
 import { loadCommandHandlers } from "./loaders/command-loader";
 import { registerInteractionHandler } from "./handlers/interaction-handler";
 import { loadEventHandlers } from "./loaders/event-loader";
+import { loadButtonHandlers } from "./loaders/button-loader";
 
 const BOT_TOKEN = config.discord.bots.main.token;
 
@@ -56,7 +57,8 @@ mainBot.once("clientReady", async () => {
  */
 (async () => {
   const commandHandlers = await loadCommandHandlers();
-  registerInteractionHandler(mainBot, commandHandlers);
+  const buttonHandlers = await loadButtonHandlers();
+  registerInteractionHandler(mainBot, commandHandlers, buttonHandlers);
   await loadEventHandlers(mainBot);
 
   await mainBot.login(BOT_TOKEN);
