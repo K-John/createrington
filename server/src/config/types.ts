@@ -29,6 +29,7 @@ export interface Config {
     guild: {
       id: string;
       roles: MemberRolesConfig;
+      channels: ChannelConfig;
     };
 
     embeds: {
@@ -282,4 +283,11 @@ interface MemberRolesConfig {
     readonly admin: string;
     readonly owner: string;
   };
+  readonly auth: {
+    readonly unverified: string;
+  };
+}
+
+interface ChannelConfig {
+  readonly welcome: string;
 }
