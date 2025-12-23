@@ -1,16 +1,4 @@
-/**
- * Represents a guild member join record in the database
- */
-export interface GuildMemberJoin {
-  /** Unique sequential join number (shown in welcome image) */
-  joinNumber: number;
-  /** Discord user ID (snowflake) */
-  userId: string;
-  /** Username at time of join */
-  username: string;
-  /** Timestamp when user joined */
-  joinedAt: Date;
-}
+import { CamelCaseKeys } from "@/types";
 
 /**
  * Database representation (snake_case columns)
@@ -21,6 +9,8 @@ export interface GuildMemberJoinRow {
   username: string;
   joined_at: Date;
 }
+
+export type GuildMemberJoin = CamelCaseKeys<GuildMemberJoinRow>;
 
 /**
  * Data required to create a new join record

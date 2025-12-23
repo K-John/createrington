@@ -1,18 +1,4 @@
-/**
- * Represents a player record in the database
- */
-export interface Player {
-  /** Identifier/Unique */
-  uuid: string;
-  /** Identifier/Unique */
-  name: string;
-  /** Identifier/Unique */
-  discordId: string;
-  online: boolean;
-  lastSeen: Date;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { CamelCaseKeys } from "@/types";
 
 /**
  * Database representation of player record
@@ -27,18 +13,7 @@ export interface PlayerRow {
   updated_at: Date;
 }
 
-export interface PlayerIdentifier {
-  uuid: string;
-  name: string;
-  discordId: string;
-}
-
-export interface PlayerFilter {
-  online: boolean;
-  lastSeen: Date;
-  createdAt: Date;
-  updatedAt: Date;
-}
+export type Player = CamelCaseKeys<PlayerRow>;
 
 export interface PlayerCreate {
   uuid: string;

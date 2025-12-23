@@ -5,8 +5,6 @@ import { GuildMemberJoinCreate, GuildMemberJoinRow } from "./types";
 
 type Identifier = { joinNumber: number } | { userId: string };
 
-type Filters = {};
-
 /**
  * Database queries for guild_member_joins table
  *
