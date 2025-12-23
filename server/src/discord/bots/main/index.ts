@@ -4,6 +4,8 @@ import { loadCommandHandlers } from "./loaders/command-loader";
 import { registerInteractionHandler } from "./handlers/interaction-handler";
 import { loadEventHandlers } from "./loaders/event-loader";
 import { loadButtonHandlers } from "./loaders/button-loader";
+import { createDiscordMessageService } from "@/services/discord/messages/message.service";
+import { Discord } from "@/discord/constants";
 
 const BOT_TOKEN = config.discord.bots.main.token;
 
@@ -56,6 +58,7 @@ mainBot.once("clientReady", async () => {
  * If any step fails, logs the error and exits the process
  */
 (async () => {
+  Discord._setMessageService(createDiscordMessageService(mainBot));
   const commandHandlers = await loadCommandHandlers();
   const buttonHandlers = await loadButtonHandlers();
   registerInteractionHandler(mainBot, commandHandlers, buttonHandlers);

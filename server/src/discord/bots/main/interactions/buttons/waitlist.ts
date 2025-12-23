@@ -1,4 +1,3 @@
-import config from "@/config";
 import { Discord } from "@/discord/constants";
 import {
   ActionRowBuilder,

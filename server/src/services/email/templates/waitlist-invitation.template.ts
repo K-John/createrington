@@ -4,7 +4,7 @@ import { BaseEmailTemplate } from "./base.template";
 import { EmailAttachment, WaitlistInvitationData } from "../types";
 import config from "@/config";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const links = config.meta.links;
 
 export class WaitlistInvitationTemplate extends BaseEmailTemplate<WaitlistInvitationData> {
   protected getSubject(data: WaitlistInvitationData): string {
@@ -84,7 +84,7 @@ export class WaitlistInvitationTemplate extends BaseEmailTemplate<WaitlistInvita
           <h3>🔗 Next Steps:</h3>
           <p>To join, follow the instructions in the invite link below. If we don't hear back within 48 hours, the spot may be offered to the next person in the queue.</p>
         
-          <p><a href="${config.meta.links.discordInvite}">Join our Discord</a></p>
+          <p><a href="${links.discordInvite}">Join our Discord</a></p>
           
           <div class="token">
             <em>Your verification token:</em> <strong>${data.token}</strong>
@@ -99,7 +99,7 @@ export class WaitlistInvitationTemplate extends BaseEmailTemplate<WaitlistInvita
             <p>Best regards,<br />
             <strong>saunhardy</strong><br />
             Server Admin – Createrington<br />
-            <a href="${config.meta.links.website}">${config.meta.links.website}</a></p>
+            <a href="${links.website}">${links.website}</a></p>
           
             <img src="cid:createrington-logo" alt="Createrington Logo" class="logo" />
           </div>
@@ -132,7 +132,7 @@ export class WaitlistInvitationTemplate extends BaseEmailTemplate<WaitlistInvita
 
         To join, follow the instructions in the invite link below. If we don't hear back within 48 hours, the spot may be offered to the next person in the queue.
 
-        Join our Discord: ${config.meta.links.discordInvite}
+        Join our Discord: ${links.discordInvite}
 
         Your verification token: ${data.token}
 
@@ -144,7 +144,7 @@ export class WaitlistInvitationTemplate extends BaseEmailTemplate<WaitlistInvita
         Best regards,
         saunhardy
         Server Admin – Createrington
-        ${config.meta.links.website}
+        ${links.website}
     `.trim();
   }
 

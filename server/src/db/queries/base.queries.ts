@@ -423,7 +423,7 @@ export abstract class BaseQueries<
     options?: {
       limit?: number;
       offset?: number;
-      orderBy?: string;
+      orderBy?: keyof TConfig["Entity"];
       orderDirection?: "ASC" | "DESC";
     }
   ): Promise<TConfig["Entity"][]> {
@@ -434,7 +434,7 @@ export abstract class BaseQueries<
     let query = `SELECT * FROM ${this.table} WHERE ${whereClause}`;
 
     if (options?.orderBy) {
-      const orderColumn = this.getColumnName(options.orderBy);
+      const orderColumn = this.getColumnName(options.orderBy as string);
       query += ` ORDER BY ${orderColumn} ${options.orderDirection || "ASC"}`;
     }
 
@@ -467,7 +467,7 @@ export abstract class BaseQueries<
   async getAll(options?: {
     limit?: number;
     offset?: number;
-    orderBy?: string;
+    orderBy?: keyof TConfig["Entity"];
     orderDirection?: "ASC" | "DESC";
   }): Promise<TConfig["Entity"][]> {
     return this.findAll(undefined, options);

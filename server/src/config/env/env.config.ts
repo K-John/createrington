@@ -15,9 +15,13 @@ dotenv.config({ quiet: true });
  * @property {string} DB_PASSWORD - The database user's password
  * @property {string} DB_PORT - The port PostgreSQL is running on
  * // Discord
- * @property {string} DISCORD_GUILD_ID - Discord server/guild ID (must be numeric snowflake)
+ * @property {string} DISCORD_GUILD_ID - Discord server/guild ID
  * @property {string} DISCORD_MAIN_BOT_TOKEN - Discord bot authentication token
- * @property {string} DISCORD__MAIN_BOT_ID - Discord bot application/client ID (must be numeric snowflake)
+ * @property {string} DISCORD__MAIN_BOT_ID - Discord bot application/client ID
+ * @property {string} DISCORD_OAUTH_CLIENT_ID - Discord auth app ID
+ * @property {string} DISCORD_OAUTH_CLIENT_SECRET - Application secret used for OAuth
+ * @property {string} DISCORD_OAUTH_REDIRECT_URI_DEV - Development mode redirect uri
+ * @property {string} DISCORD_OAUTH_REDIRECT_URI_PROD - Production mode redirect uri
  * // Minecraft Servers
  * @property {string} COGS_AND_STEAM_SERVER_IP_ADDRESS - Cogs and Steam server IP address
  * @property {number} COGS_AND_STEAM_SERVER_PORT - Cogs and Steam server port
@@ -28,6 +32,9 @@ dotenv.config({ quiet: true });
  * @property {string} COGS_AND_STEAM_RCON_PASSWORD - RCON authentication password
  * @property {number} TEST_SERVER_RCON_PORT - RCON server port
  * @property {string} TEST_SERVER_RCON_PASSWORD - RCON authentication
+ * // Auth
+ * @property {string} JWT_SECRET - Secret for cookies
+ * @property {string} JWT_EXPIRES_IN - Expiry for json tokens
  * // Email
  * @property {string} EMAIL_HOST - SMTP host server (e.g., smtp.gmail.com)
  * @property {number} EMAIL_PORT - SMTP port (587 for TLS, 465 for SSL, 25 for non-secure)
@@ -59,10 +66,7 @@ const envSchema = z.object({
   DISCORD_GUILD_ID: z
     .string()
     .min(1, "Guild ID is required")
-    .regex(
-      /^\d{17,19}$/,
-      "Guild ID must be a valid Discord snowflake (17-19 digits)"
-    ),
+    .regex(/^\d+$/, "Guild ID must be numeric"),
   DISCORD_MAIN_BOT_TOKEN: z
     .string()
     .min(1, "Bot token is required")
@@ -70,10 +74,33 @@ const envSchema = z.object({
   DISCORD_MAIN_BOT_ID: z
     .string()
     .min(1, "Bot ID is required")
+    .regex(/^\d+$/, "Bot ID must be numeric"),
+  DISCORD_OAUTH_CLIENT_ID: z
+    .string()
+    .min(1, "OAuth client ID is required")
+    .regex(/^\d+$/, "OAuth client ID must be numeric"),
+  DISCORD_OAUTH_CLIENT_SECRET: z
+    .string()
+    .min(1, "OAuth client secret is required")
+    .min(32, "OAuth client secret must be at least 32 characters"),
+  DISCORD_OAUTH_REDIRECT_URI_DEV: z
+    .string()
+    .url("Development redirect URI must be a valid URL")
+    .min(1, "Development redirect URI is required"),
+  DISCORD_OAUTH_REDIRECT_URI_PROD: z
+    .string()
+    .url("Production redirect URI must be a valid URL")
+    .min(1, "Production redirect URI is required"),
+
+  // Auth
+  JWT_SECRET: z.string().min(1, "JWT secret is required"),
+  JWT_EXPIRES_IN: z
+    .string()
     .regex(
-      /^\d{17,19}$/,
-      "Bot ID must be a valid Discord snowflake (17-19 digits)"
-    ),
+      /^\d+[smhd]$/,
+      "JWT_EXPIRES_IN must be in format: number + unit (s/m/h/d). Examples: 60s, 15m, 24h, 7d"
+    )
+    .default("7d"),
 
   // Minecraft Servers
   COGS_AND_STEAM_SERVER_IP: z

@@ -23,6 +23,12 @@ const config: Config = {
 
   app: {
     port: env.PORT,
+    auth: {
+      jwt: {
+        secret: env.JWT_SECRET,
+        expiresIn: env.JWT_EXPIRES_IN,
+      },
+    },
   },
 
   utils: {
@@ -61,6 +67,11 @@ const config: Config = {
       },
       channels: {
         welcome: "1446998934428848238",
+      },
+      categories: {
+        welcome: "1446996633731731628",
+        administration: "1452981460494585957",
+        dev: "1447344417177604096",
       },
     },
 
@@ -106,6 +117,15 @@ const config: Config = {
           enabled: true,
         },
       },
+    },
+
+    oauth: {
+      clientId: env.DISCORD_OAUTH_CLIENT_ID,
+      clientSecret: env.DISCORD_OAUTH_CLIENT_SECRET,
+      redirectUri:
+        env.NODE_ENV === "production"
+          ? env.DISCORD_OAUTH_REDIRECT_URI_PROD
+          : env.DISCORD_OAUTH_REDIRECT_URI_DEV,
     },
   },
 

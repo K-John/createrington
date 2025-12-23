@@ -8,6 +8,9 @@ export interface Config {
 
   app: {
     port: number;
+    auth: {
+      jwt: JWTConfig;
+    };
   };
 
   utils: {
@@ -30,6 +33,7 @@ export interface Config {
       id: string;
       roles: MemberRolesConfig;
       channels: ChannelConfig;
+      categories: CategoriesConfig;
     };
 
     embeds: {
@@ -39,6 +43,8 @@ export interface Config {
     events: {
       onGuildMemberAdd: onGuildMemberAddConfig;
     };
+
+    oauth: OAuthConfig;
   };
 
   servers: {
@@ -286,4 +292,21 @@ interface MemberRolesConfig {
 
 interface ChannelConfig {
   readonly welcome: string;
+}
+
+interface CategoriesConfig {
+  readonly administration: string;
+  readonly dev: string;
+  readonly welcome: string;
+}
+
+interface OAuthConfig {
+  readonly clientId: string;
+  readonly clientSecret: string;
+  readonly redirectUri: string;
+}
+
+interface JWTConfig {
+  readonly secret: string;
+  readonly expiresIn: string;
 }

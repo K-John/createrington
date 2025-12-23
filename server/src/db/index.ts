@@ -25,7 +25,8 @@ try {
 export const player = new queries.PlayerQueries(db);
 export const discord = new queries.DiscordQueries(db);
 export const waitlist = new queries.WaitlistQueries(db);
+export const admin = new queries.AdminQueries(db);
 
-export const Q = { player, discord, waitlist };
+export const Q = { player, discord, waitlist, admin };
 
 export default db;
