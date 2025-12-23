@@ -25,7 +25,6 @@ export enum MinecraftTime {
   DAY = "day",
   NIGHT = "night",
   NOON = "noon",
-  HARD = "hard",
 }
 
 /**
@@ -44,7 +43,7 @@ export enum MinecraftDifficulty {
   PEACEFUL = "peaceful",
   EASY = "easy",
   NORMAL = "normal",
-  HARD = "HARD",
+  HARD = "hard",
 }
 
 /**
