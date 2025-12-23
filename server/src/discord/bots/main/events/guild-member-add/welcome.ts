@@ -1,5 +1,5 @@
 import config from "@/config";
-import { guildMemberJoins } from "@/db";
+import { discord } from "@/db";
 import { isSendableChannel } from "@/discord/utils/channel-guard";
 import {
   generateCustomWelcomeCard,
@@ -57,7 +57,7 @@ export async function execute(
 
     const textChannel = channel as TextChannel;
 
-    const joinNumber = await guildMemberJoins.recordJoin(
+    const joinNumber = await discord.guildMemberJoin.recordJoin(
       member.user.id,
       member.user.username
     );
