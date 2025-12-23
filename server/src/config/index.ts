@@ -55,13 +55,9 @@ const config: Config = {
     guild: {
       id: env.DISCORD_GUILD_ID,
       roles: {
-        staff: {
-          owner: "1447340667767361670",
-          admin: "1447343808147750952",
-        },
-        auth: {
-          unverified: "1447307459449327616",
-        },
+        owner: "1447340667767361670",
+        admin: "1447343808147750952",
+        unverified: "1447307459449327616",
       },
       channels: {
         welcome: "1446998934428848238",

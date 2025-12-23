@@ -279,13 +279,9 @@ interface PoolConfig {
 }
 
 interface MemberRolesConfig {
-  readonly staff: {
-    readonly admin: string;
-    readonly owner: string;
-  };
-  readonly auth: {
-    readonly unverified: string;
-  };
+  readonly admin: string;
+  readonly owner: string;
+  readonly unverified: string;
 }
 
 interface ChannelConfig {
