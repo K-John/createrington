@@ -1,4 +1,5 @@
 import config from "@/config";
+import { Discord } from "@/discord/constants";
 import {
   ActionRowBuilder,
   ButtonBuilder,
@@ -11,7 +12,7 @@ import {
  * Checks if user is an admin (has admin role or is in admin database)
  */
 async function isAdmin(interaction: ButtonInteraction): Promise<boolean> {
-  const ADMIN_ROLE_ID = config.discord.guild.roles.staff.admin;
+  const ADMIN_ROLE_ID = Discord.Roles.ADMIN;
 
   if (!interaction.guild || !interaction.member) {
     return false;
