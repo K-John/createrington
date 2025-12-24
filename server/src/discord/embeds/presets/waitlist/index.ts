@@ -60,6 +60,9 @@ export const WaitlistEmbedPresets = {
     return { embed, components: [linkRow], content };
   },
 
+  /**
+   * Creates a progress embed for admins to see
+   */
   createProgressEmbed(
     entry: WaitlistEntry,
     discordUser?: User | null,

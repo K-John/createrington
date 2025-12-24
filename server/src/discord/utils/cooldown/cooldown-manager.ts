@@ -103,6 +103,38 @@ export class CooldownManager {
   }
 
   /**
+   * Gets the exact expiration time of a cooldown, if it is still active
+   *
+   * This is useful for displaying a live countdown to users using
+   * Discord relative timestamps (<t:UNIX:R>), without modifying
+   * or extending the cooldown itself
+   *
+   * @param commandName - Name of the command to check
+   * @param type - Cooldown scope type (user, global, channel, guild)
+   * @param interaction - Interaction context (user, channel, guild)
+   * @returns
+   *    - A UNIX timestamp in milliseconds representing when the cooldown expires
+   *    - null if the cooldown does not exist or has already expired
+   */
+  public getExpiry(
+    commandName: string,
+    type: CooldownType,
+    interaction: CooldownContext
+  ): number | null {
+    const key = this.getKey(commandName, type, interaction);
+    const timestamps = this.cooldowns.get(commandName);
+    if (!timestamps) return null;
+
+    const entry = timestamps.get(key);
+    if (!entry) return null;
+
+    const now = Date.now();
+    if (now >= entry.expiresAt) return null;
+
+    return entry.expiresAt;
+  }
+
+  /**
    * Checks if a command is currently on cooldown
    *
    * @param commandName - Name of the command to check
@@ -137,7 +169,7 @@ export class CooldownManager {
       const entry = timestamps.get(key)!;
 
       if (now < entry.expiresAt) {
-        const remaining = (entry.expiresAt - now) / 1000;
+        const remaining = Math.ceil((entry.expiresAt - now) / 1000);
         return remaining;
       }
 

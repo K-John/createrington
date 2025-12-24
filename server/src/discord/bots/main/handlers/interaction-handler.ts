@@ -116,17 +116,33 @@ async function handleChatCommands(
     );
 
     if (cooldownRemaining !== null) {
+      const expiresAt = cooldownManager.getExpiry(
+        interaction.commandName,
+        command.cooldown.type,
+        {
+          userId: interaction.user.id,
+          channelId: interaction.channelId,
+          guildId: interaction.guildId,
+        }
+      );
+
+      const unixExpiresAt = expiresAt ? Math.floor(expiresAt / 1000) : null;
+
       const cooldownMessage =
         command.cooldown.message ||
-        `This command is on cooldown. Please wait ${formatCooldown(
-          cooldownRemaining
-        )} before using it again.`;
+        "This command is on cooldown. Please wait before trying to use it again!";
 
       const cooldownEmbed = EmbedPresets.error(
         "Command on Cooldown",
         cooldownMessage
       )
-        .field("Time remaining", formatCooldown(cooldownRemaining), true)
+        .field(
+          "Time remaining",
+          unixExpiresAt
+            ? `<t:${unixExpiresAt}:R>`
+            : formatCooldown(cooldownRemaining),
+          true
+        )
         .build();
 
       await interaction.reply({
@@ -137,7 +153,7 @@ async function handleChatCommands(
       logger.debug(
         `${interaction.user.tag} tried to use /${
           interaction.commandName
-        } but it's on cooldown (${cooldownRemaining.toFixed(1)}s remaining)`
+        } but it's on cooldown (${cooldownRemaining.toFixed(1)}s remaning)`
       );
       return;
     }

@@ -44,6 +44,18 @@ export const prodOnly = false;
 /**
  * Executes the verify command to verify a user invitation token
  *
+ * Process:
+ * 1. Read the verification token from the command options
+ * 2. Fetch the invoking Discord guild member
+ * 3. Validate the member object and ensure roles can be accessed
+ * 4. Check that the user is currently unverified and eligible to verify
+ * 5. Look up the waitlist entry associated with the provided token
+ * 6. Validate that the token exists and has not been used by other user
+ * 7. Update the waitlist entry with the user's Discord ID and verification state
+ * 8. Update the wailist progress embed to reflect verification
+ * 9. Reply with a success message to the user
+ * 10. Handle and report any errors that occur during the process
+ *
  * @param interaction - The chat input command interaction
  * @returns Promise resolving when the command execution is completed
  */
@@ -84,7 +96,6 @@ export async function execute(
         content: `❌ Invalid or expired token.\n${Discord.Roles.mention(
           Discord.Roles.ADMIN
         )}`,
-        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -94,7 +105,6 @@ export async function execute(
         content: `❌ This token has already been used by another Discord account.\n${Discord.Roles.mention(
           Discord.Roles.ADMIN
         )}`,
-        flags: MessageFlags.Ephemeral,
       });
       return;
     }
