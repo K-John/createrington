@@ -120,14 +120,20 @@ export class WaitlistRepository {
 
     const token = crypto.randomBytes(32).toString("hex");
 
-    await Q.waitlist.update({ id: entryId }, { token });
+    await Q.waitlist.update(
+      { id: entryId },
+      {
+        token,
+        status: WaitlistStatus.ACCEPTED,
+        acceptedAt: new Date(),
+        acceptedBy: config.discord.bots.main.id,
+      }
+    );
 
     await email.sendTemplate(entry.email, EmailTemplate.WAITLIST_INVITATION, {
       discordName: entry.discordName,
       token,
     });
-
-    await this.notifyAdmins(entry, true);
 
     return token;
   }
