@@ -19,7 +19,7 @@ export class GuildMemberJoinQueries extends BaseQueries<{
   Update: never;
   Create: GuildMemberJoinCreate;
 }> {
-  protected readonly table = "guild_member_joins";
+  protected readonly table = "guild_member_join";
 
   constructor(db: Pool) {
     super(db);

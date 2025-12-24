@@ -14,7 +14,7 @@ interface RconConfig {
  * Server identifiers
  */
 export enum ServerId {
-  COGS_AND_STEAM = "cogs-and-steam",
+  COGS_AND_STEAM = "cogs",
   TEST = "test",
 }
 

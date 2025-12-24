@@ -74,6 +74,7 @@ const config: Config = {
         welcome: "1446996633731731628",
         administration: "1452981460494585957",
         dev: "1447344417177604096",
+        verification: "1453343658983297180",
       },
     },
 

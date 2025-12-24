@@ -1,5 +1,6 @@
 import { Q, waitlistRepo } from "@/db";
 import { Discord } from "@/discord/constants";
+import { EmbedPresets } from "@/discord/embeds";
 import { CooldownType } from "@/discord/utils/cooldown";
 import { RoleManager } from "@/discord/utils/roles/role-manager";
 import {
@@ -71,9 +72,13 @@ export async function execute(
     typeof member.roles === "string" ||
     Array.isArray(member.roles)
   ) {
+    const embed = EmbedPresets.errorWithAdmin(
+      "Verification Failed",
+      "Could not verify your roles. Please try again."
+    );
+
     await interaction.reply({
-      content: "❌ Could not verify your roles. Please try again.",
-      flags: MessageFlags.Ephemeral,
+      embeds: [embed.build()],
     });
     return;
   }
@@ -92,19 +97,25 @@ export async function execute(
     const entry = await Q.waitlist.find({ token });
 
     if (!entry) {
+      const embed = EmbedPresets.errorWithAdmin(
+        "Invalid Token",
+        "The token provided is invalid or has expired."
+      );
+
       await interaction.reply({
-        content: `❌ Invalid or expired token.\n${Discord.Roles.mention(
-          Discord.Roles.ADMIN
-        )}`,
+        embeds: [embed.build()],
       });
       return;
     }
 
     if (entry.discordId && entry.discordId !== discordId) {
+      const embed = EmbedPresets.errorWithAdmin(
+        "Invalid Already Used",
+        "This token has already been used by another Discord account."
+      );
+
       await interaction.reply({
-        content: `❌ This token has already been used by another Discord account.\n${Discord.Roles.mention(
-          Discord.Roles.ADMIN
-        )}`,
+        embeds: [embed.build()],
       });
       return;
     }
@@ -127,13 +138,16 @@ export async function execute(
     await interaction.reply({
       content:
         "✅ Token verified! You may now use `/register <mc_name>` to join the server.",
-      flags: MessageFlags.Ephemeral,
     });
   } catch (error) {
     logger.error("/verify failed:", error);
+    const embed = EmbedPresets.errorWithAdmin(
+      "Verification Error",
+      "Something went wrong while verifying your token. Please try again."
+    );
+
     await interaction.reply({
-      content: "⚠️ Something went wrong. Please try again later.",
-      flags: MessageFlags.Ephemeral,
+      embeds: [embed.build()],
     });
   }
 }

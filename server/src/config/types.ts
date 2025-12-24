@@ -301,6 +301,7 @@ interface CategoriesConfig {
   readonly administration: string;
   readonly dev: string;
   readonly welcome: string;
+  readonly verification: string;
 }
 
 interface OAuthConfig {
