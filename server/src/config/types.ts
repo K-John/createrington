@@ -289,6 +289,7 @@ interface MemberRolesConfig {
   readonly admin: string;
   readonly owner: string;
   readonly unverified: string;
+  readonly player: string;
 }
 
 interface ChannelConfig {

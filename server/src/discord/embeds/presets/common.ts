@@ -55,4 +55,13 @@ export const CommonEmbedPresets = {
       .description(message)
       .color(EmbedColors.Info);
   },
+
+  channelDeletion() {
+    const embed = createEmbed()
+      .title("🗑️ Channel Deletion")
+      .description("This channel will be deleted in few seconds...")
+      .color(EmbedColors.Error);
+
+    return embed;
+  },
 };

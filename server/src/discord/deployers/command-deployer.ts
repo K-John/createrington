@@ -59,6 +59,16 @@ const commandBuilders: CommandBuilderLike[] = [
         .setDescription("Your unique verification token")
         .setRequired(true)
     ),
+
+  new SlashCommandBuilder()
+    .setName("register")
+    .setDescription("Register to Createrington")
+    .addStringOption((option) =>
+      option
+        .setName("mc_name")
+        .setDescription("Your exact Minecraft username (case doesn't matter)")
+        .setRequired(true)
+    ),
 ];
 
 /**
