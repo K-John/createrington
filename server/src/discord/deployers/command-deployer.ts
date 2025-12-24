@@ -1,101 +1,84 @@
+import "@/logger.global";
 import config from "@/config";
 import {
-  RESTPostAPIApplicationCommandsJSONBody,
-  SlashCommandBuilder,
   REST,
+  RESTPostAPIApplicationCommandsJSONBody,
   Routes,
-  PermissionFlagsBits,
 } from "discord.js";
-import logger from "@/logger";
+import path from "node:path";
+import fs from "node:fs";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { CommandModule } from "../bots/main/loaders/command-loader";
 
 const BOT_TOKEN = config.discord.bots.main.token;
 const BOT_ID = config.discord.bots.main.id;
 const GUILD_ID = config.discord.guild.id;
-
-/**
- * Array of SlashCommandBuilder instances defining bot commands
- */
-type CommandBuilderLike = { toJSON(): RESTPostAPIApplicationCommandsJSONBody };
-
-const commandBuilders: CommandBuilderLike[] = [
-  new SlashCommandBuilder().setName("ping").setDescription("Check bot latency"),
-
-  new SlashCommandBuilder()
-    .setName("cooldown")
-    .setDescription("Manage command cooldowns")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-    .addSubcommand((sub) =>
-      sub
-        .setName("reset")
-        .setDescription("Reset cooldown for a user")
-        .addUserOption((opt) =>
-          opt
-            .setName("user")
-            .setDescription("User to reset cooldowns for")
-            .setRequired(true)
-        )
-    )
-    .addSubcommand((sub) =>
-      sub
-        .setName("reset-command")
-        .setDescription("Reset all cooldowns for a specific command")
-        .addStringOption((opt) =>
-          opt
-            .setName("command")
-            .setDescription("Command name to reset")
-            .setRequired(true)
-        )
-    )
-    .addSubcommand((sub) =>
-      sub.setName("stats").setDescription("View cooldown statistics")
-    ),
-
-  new SlashCommandBuilder()
-    .setName("verify")
-    .setDescription("Verify your token from the email invitation")
-    .addStringOption((option) =>
-      option
-        .setName("token")
-        .setDescription("Your unique verification token")
-        .setRequired(true)
-    ),
-
-  new SlashCommandBuilder()
-    .setName("register")
-    .setDescription("Register to Createrington")
-    .addStringOption((option) =>
-      option
-        .setName("mc_name")
-        .setDescription("Your exact Minecraft username (case doesn't matter)")
-        .setRequired(true)
-    ),
-
-  new SlashCommandBuilder()
-    .setName("delete")
-    .setDescription("Delete up to 100 recent messages")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-    .addIntegerOption((option) =>
-      option
-        .setName("count")
-        .setDescription("Number of messages to delete (1-100)")
-        .setRequired(true)
-        .setMinValue(1)
-        .setMaxValue(100)
-    ),
-];
-
-/**
- * JSON representation of slash commands ready for API submission
- * Converted to SlashCommandBuilder instances
- */
-const commands: RESTPostAPIApplicationCommandsJSONBody[] = commandBuilders.map(
-  (cmd) => cmd.toJSON()
-);
+const isDev = config.envMode.isDev;
 
 /**
  * Discord REST API client configured with bot token
  */
 const rest = new REST({ version: "10" }).setToken(BOT_TOKEN);
+
+/**
+ * Dynamically loads command data from slash command files
+ *
+ * Scans the slash-commands directory and extracts the `data` export
+ * from each command module for deployment
+ *
+ * @returns Promise resolving to an array of command JSON data
+ */
+async function loadCommandData(): Promise<
+  RESTPostAPIApplicationCommandsJSONBody[]
+> {
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+  const commandsPath = path.join(
+    __dirname,
+    "..",
+    "bots",
+    "main",
+    "interactions",
+    "slash-commands"
+  );
+
+  if (!fs.existsSync(commandsPath)) {
+    logger.warn("Commands directory not found");
+    return [];
+  }
+
+  const commandFiles = fs
+    .readdirSync(commandsPath)
+    .filter((file) => (isDev ? file.endsWith(".ts") : file.endsWith(".js")));
+
+  const commands: RESTPostAPIApplicationCommandsJSONBody[] = [];
+
+  for (const file of commandFiles) {
+    const filePath = path.join(commandsPath, file);
+    try {
+      const commandModule = (await import(
+        pathToFileURL(filePath).href
+      )) as CommandModule;
+
+      if (!commandModule.data) {
+        logger.warn(`Skipped ${file}: missing 'data' export`);
+        continue;
+      }
+
+      if (typeof commandModule.data.toJSON !== "function") {
+        logger.warn(`Skipped ${file}: 'data' does not have toJSON method`);
+        continue;
+      }
+
+      commands.push(commandModule.data.toJSON());
+      logger.debug(`Loaded command data from ${file}`);
+    } catch (error) {
+      logger.error(`Failed to load command data from ${file}:`, error);
+    }
+  }
+
+  return commands;
+}
 
 /**
  * Registers all defined slash commands to the configured guild
@@ -107,17 +90,26 @@ const rest = new REST({ version: "10" }).setToken(BOT_TOKEN);
  */
 async function registerCommands(): Promise<void> {
   try {
-    console.log("Registering slash commands in GUILD:", GUILD_ID);
+    logger.info("Loading command definitions...");
+    const commands = await loadCommandData();
+
+    logger.info(
+      `Registering ${commands.length} slash command(s) in GUILD: ${GUILD_ID}`
+    );
 
     const data = (await rest.put(
       Routes.applicationGuildCommands(BOT_ID, GUILD_ID),
-      { body: commands }
+      {
+        body: commands,
+      }
     )) as Array<{ name: string }>;
 
-    console.log("Commands registered:");
-    data.forEach((cmd) => console.log(` - /${cmd.name}`));
+    logger.info("Commands registered successfully:");
+    data.forEach((cmd) => logger.info(` - /${cmd.name}`));
+    process.exit(0);
   } catch (error) {
     logger.error("Failed to register commands:", error);
+    process.exit(1);
   }
 }
 
