@@ -69,6 +69,19 @@ const commandBuilders: CommandBuilderLike[] = [
         .setDescription("Your exact Minecraft username (case doesn't matter)")
         .setRequired(true)
     ),
+
+  new SlashCommandBuilder()
+    .setName("delete")
+    .setDescription("Delete up to 100 recent messages")
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+    .addIntegerOption((option) =>
+      option
+        .setName("count")
+        .setDescription("Number of messages to delete (1-100)")
+        .setRequired(true)
+        .setMinValue(1)
+        .setMaxValue(100)
+    ),
 ];
 
 /**
