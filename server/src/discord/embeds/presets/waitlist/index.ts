@@ -1,7 +1,9 @@
 import { createEmbed } from "../../embed-builder";
 import { EmbedColors } from "../../colors";
-import { ActionRowBuilder, ButtonBuilder } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, User } from "discord.js";
 import { ButtonPresets } from "../buttons";
+import { WaitlistEntry } from "@/db/queries/waitlist-entry/types";
+import { Player } from "@/db/queries/player/types";
 
 export const WaitlistEmbedPresets = {
   /**
@@ -56,5 +58,80 @@ export const WaitlistEmbedPresets = {
       : "Auto-invite attempted — please review.";
 
     return { embed, components: [linkRow], content };
+  },
+
+  createProgressEmbed(
+    entry: WaitlistEntry,
+    discordUser?: User | null,
+    player?: Player | null
+  ) {
+    const steps = [
+      {
+        name: "Accepted",
+        done: entry.status === "accepted",
+        timestamp: entry.acceptedAt,
+      },
+      { name: "Joined Discord", done: entry.joinedDiscord },
+      { name: "Verified", done: entry.verified },
+      { name: "Registered", done: entry.registered },
+      { name: "Joined Minecraft", done: entry.joinedMinecraft },
+    ];
+
+    const total = steps.length;
+    const completed = steps.filter((s) => s.done).length;
+    const percent = Math.round((completed / total) * 100);
+
+    const barLen = 12;
+    const filled = Math.round((completed / total) * barLen);
+    const bar = "▰".repeat(filled) + "▱".repeat(barLen - filled);
+
+    const stepsText = steps
+      .map((s) => `${s.done ? "✓" : "·"} ${s.name}`)
+      .join("\n");
+
+    const embed = createEmbed()
+      .title("Onboarding Progress")
+      .color(percent === 100 ? EmbedColors.Success : EmbedColors.Info)
+      .description(`${bar}  **${percent}%**  (${completed}/${total})`);
+
+    if (discordUser) {
+      embed
+        .field("Discord User", `<@${discordUser.id}>`, true)
+        .field("Discord ID", `\`${discordUser.id}\``, true)
+        .thumbnail(discordUser.displayAvatarURL({ size: 128 }));
+    } else {
+      embed.field("Discord Name", `\`${entry.discordName}\``, true);
+    }
+
+    embed.field("Entry ID", `\`${entry.id}\``, true);
+
+    embed.field("Steps", stepsText, false);
+
+    const details: string[] = [];
+
+    if (player) {
+      details.push(`Minecraft: \`${player.name || "Unknown"}\``);
+      details.push(`UUID: \`${player.uuid}\``);
+    }
+
+    if (entry.acceptedBy) {
+      details.push(`Accepted by: <@${entry.acceptedBy}>`);
+    }
+
+    if (entry.acceptedAt) {
+      details.push(
+        `Accepted: <t:${Math.floor(entry.acceptedAt.getTime() / 1000)}:R>`
+      );
+    }
+
+    if (details.length > 0) {
+      embed.field("Details", details.join("\n"), false);
+    }
+
+    if (percent === 100) {
+      embed.field("Status", "**Completed**", false);
+    }
+
+    return embed;
   },
 };

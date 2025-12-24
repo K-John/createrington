@@ -50,3 +50,9 @@ export interface AdminWaitlistNotificationData {
   email: string;
   discordName: string;
 }
+
+export type EmailTemplateDataMap = {
+  [EmailTemplate.WAITLIST_CONFIRMATION]: WaitlistConfirmationData;
+  [EmailTemplate.WAITLIST_INVITATION]: WaitlistInvitationData;
+  [EmailTemplate.ADMIN_WAITLIST_NOTIFICATION]: AdminWaitlistNotificationData;
+};

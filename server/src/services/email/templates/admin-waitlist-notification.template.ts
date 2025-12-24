@@ -1,3 +1,4 @@
+import { WaitlistRepository } from "@/db/repositories/waitlist/waitlist.repository";
 import { AdminWaitlistNotificationData } from "../types";
 import { BaseEmailTemplate } from "./base.template";
 

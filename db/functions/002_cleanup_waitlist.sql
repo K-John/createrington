@@ -4,4 +4,4 @@ BEGIN
     DELETE FROM waitlist_entry
     WHERE submitted_at < NOW() - INTERVAL '30 days';
 END;
-$$ LANGUAGE plpsql;
+$$ LANGUAGE plpgsql;

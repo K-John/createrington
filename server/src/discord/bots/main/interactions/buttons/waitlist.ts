@@ -1,3 +1,5 @@
+import { waitlist, waitlistRepo } from "@/db";
+import { WaitlistStatus } from "@/db/queries/waitlist-entry/types";
 import { Discord } from "@/discord/constants";
 import {
   ActionRowBuilder,
@@ -11,8 +13,6 @@ import {
  * Checks if user is an admin (has admin role or is in admin database)
  */
 async function isAdmin(interaction: ButtonInteraction): Promise<boolean> {
-  const ADMIN_ROLE_ID = Discord.Roles.ADMIN;
-
   if (!interaction.guild || !interaction.member) {
     return false;
   }
@@ -20,7 +20,7 @@ async function isAdmin(interaction: ButtonInteraction): Promise<boolean> {
   const member = interaction.member;
   if (member && "roles" in member) {
     if (typeof member.roles !== "string" && !Array.isArray(member.roles)) {
-      const hasAdminRole = member.roles.cache.has(ADMIN_ROLE_ID);
+      const hasAdminRole = member.roles.cache.has(Discord.Roles.ADMIN);
       if (hasAdminRole) return true;
     }
   }
@@ -98,29 +98,40 @@ export async function execute(interaction: ButtonInteraction): Promise<void> {
 
   const { action, id } = parsed;
 
+  const parsedId = parseInt(id);
+
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   try {
+    const entry = await waitlist.get({ id: parsedId });
+
     if (action === "accept") {
-      // TODO: Import and use sendInvite function
-
-      // Simulate for now
-      const result = { ok: true };
-
-      if (!result.ok) {
-        await interaction.editReply("Could not send invite: Unknown error");
+      if (entry.status === WaitlistStatus.ACCEPTED || entry.token) {
+        await interaction.editReply(`⚠️ This user has already been invited`);
         return;
       }
 
-      await interaction.message.edit({
-        components: disableNonLinkButtons(interaction),
-        content: `✅ Accepted by <@${interaction.user.id}>`,
-        embeds: interaction.message.embeds,
-      });
+      await waitlistRepo.manualInvite(parsedId, interaction.user.id);
 
-      await interaction.editReply("Invite sent successfully");
+      await interaction.editReply(
+        `✅ Invite sent successfully to ${entry.email}. Progress tracking is now active!`
+      );
+
       logger.info(`Waitlist entry ${id} accepted by ${interaction.user.tag}`);
     } else if (action === "decline") {
+      if (entry.status === WaitlistStatus.DECLINED) {
+        await interaction.editReply(`⚠️ This user has already been declined`);
+        return;
+      }
+
+      await waitlist.update(
+        { id: parsedId },
+        {
+          status: WaitlistStatus.DECLINED,
+          acceptedBy: interaction.user.id,
+          acceptedAt: new Date(),
+        }
+      );
       await interaction.message.edit({
         components: disableNonLinkButtons(interaction),
         content: `❌ Declined by <@${interaction.user.id}>`,

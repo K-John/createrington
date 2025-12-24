@@ -67,6 +67,8 @@ const config: Config = {
       },
       channels: {
         welcome: "1446998934428848238",
+        adminChat: "1452981508909305962",
+        adminNotifications: "1453171290700779530",
       },
       categories: {
         welcome: "1446996633731731628",
@@ -148,6 +150,7 @@ const config: Config = {
         password: env.TEST_RCON_PASSWORD,
       },
     },
+    playerLimit: env.PLAYER_LIMIT,
   },
 
   email: {

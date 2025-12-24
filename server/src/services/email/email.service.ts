@@ -1,7 +1,12 @@
 import nodemailer from "nodemailer";
 import type { Transporter } from "nodemailer";
 import config from "@/config";
-import { EmailOptions, EmailResult, EmailTemplate } from "./types";
+import {
+  EmailOptions,
+  EmailResult,
+  EmailTemplate,
+  EmailTemplateDataMap,
+} from "./types";
 import { EmailTemplateRegistry } from "./templates";
 
 /**
@@ -138,19 +143,20 @@ export class EmailService {
    * Renders the specified template with the provided data and sends the resulting email
    * Templates are retrieved from the EmailTemplateRepository
    *
-   * @template TData - The type of data required by the template
+   * @template T - The template type from EmailTemplate enum
    * @param to - Recipient email address
    * @param template - Template identifier from EmailTemplate enum
-   * @param data - Data to populate the template with
+   * @param data - Data to populate the template with (type-safe based on template)
    * @returns Promise resolving to EmailResult with success status and messageId or error
    */
-  async sendTemplate<TData = any>(
+  async sendTemplate<T extends EmailTemplate>(
     to: string | { email: string; name?: string },
-    template: EmailTemplate,
-    data: TData
+    template: T,
+    data: EmailTemplateDataMap[T]
   ): Promise<EmailResult> {
     try {
-      const templateInstance = EmailTemplateRegistry.get<TData>(template);
+      const templateInstance =
+        EmailTemplateRegistry.get<EmailTemplateDataMap[T]>(template);
       const rendered = templateInstance.render(data);
 
       return this.send({
@@ -168,6 +174,7 @@ export class EmailService {
       };
     }
   }
+
   /**
    * Sends a plain email to the admin/author
    *
@@ -202,9 +209,9 @@ export class EmailService {
    * @param data - Data to populate the template with
    * @returns Promise resolving to EmailResult with success status and messageId or error
    */
-  async sendTemplateToAdmin<TData = any>(
+  async sendTemplateToAdmin<T extends EmailTemplate>(
     template: EmailTemplate,
-    data: TData
+    data: EmailTemplateDataMap[T]
   ): Promise<EmailResult> {
     return this.sendTemplate(config.meta.author.email, template, data);
   }

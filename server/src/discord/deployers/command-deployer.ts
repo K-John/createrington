@@ -2,11 +2,11 @@ import config from "@/config";
 import {
   RESTPostAPIApplicationCommandsJSONBody,
   SlashCommandBuilder,
-  SlashCommandSubcommandsOnlyBuilder,
   REST,
   Routes,
   PermissionFlagsBits,
 } from "discord.js";
+import logger from "@/logger";
 
 const BOT_TOKEN = config.discord.bots.main.token;
 const BOT_ID = config.discord.bots.main.id;
@@ -15,10 +15,9 @@ const GUILD_ID = config.discord.guild.id;
 /**
  * Array of SlashCommandBuilder instances defining bot commands
  */
-const commandBuilders: (
-  | SlashCommandBuilder
-  | SlashCommandSubcommandsOnlyBuilder
-)[] = [
+type CommandBuilderLike = { toJSON(): RESTPostAPIApplicationCommandsJSONBody };
+
+const commandBuilders: CommandBuilderLike[] = [
   new SlashCommandBuilder().setName("ping").setDescription("Check bot latency"),
 
   new SlashCommandBuilder()
@@ -49,6 +48,16 @@ const commandBuilders: (
     )
     .addSubcommand((sub) =>
       sub.setName("stats").setDescription("View cooldown statistics")
+    ),
+
+  new SlashCommandBuilder()
+    .setName("verify")
+    .setDescription("Verify your token from the email invitation")
+    .addStringOption((option) =>
+      option
+        .setName("token")
+        .setDescription("Your unique verification token")
+        .setRequired(true)
     ),
 ];
 

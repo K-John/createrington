@@ -8,7 +8,9 @@ import { NextFunction, Request, RequestHandler, Response } from "express";
  * @returns Express request handler that catches and forwards errors
  */
 export const asyncHandler = (
-  fn: (req: Request, res: Response, next: NextFunction) => Promise<any>
+  fn:
+    | RequestHandler
+    | ((req: Request, res: Response, next: NextFunction) => Promise<any>)
 ): RequestHandler => {
   return (req: Request, res: Response, next: NextFunction) => {
     Promise.resolve(fn(req, res, next)).catch(next);

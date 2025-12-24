@@ -5,7 +5,12 @@
  * - "channel": Per-channel cooldown (any user in same channel)
  * - "guild": Per-guild cooldown (any user in same guild, falls back to user if no guild)
  */
-export type CooldownType = "user" | "global" | "channel" | "guild";
+export enum CooldownType {
+  USER = "user",
+  GLOBAL = "global",
+  CHANNEL = "channel",
+  GUILD = "guild",
+}
 
 /**
  * Interaction context required for cooldown operations
@@ -82,13 +87,13 @@ export class CooldownManager {
     interaction: CooldownContext
   ): string {
     switch (type) {
-      case "user":
+      case CooldownType.USER:
         return `${commandName}:user:${interaction.userId}`;
-      case "global":
+      case CooldownType.GLOBAL:
         return `${commandName}:global`;
-      case "channel":
+      case CooldownType.CHANNEL:
         return `${commandName}:channel:${interaction.channelId}`;
-      case "guild":
+      case CooldownType.GUILD:
         return interaction.guildId
           ? `${commandName}:guild:${interaction.guildId}`
           : `${commandName}:user:${interaction.userId}`;

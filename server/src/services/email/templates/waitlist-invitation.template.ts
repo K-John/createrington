@@ -153,6 +153,7 @@ export class WaitlistInvitationTemplate extends BaseEmailTemplate<WaitlistInvita
       path.dirname(fileURLToPath(import.meta.url)),
       "..",
       "..",
+      "..",
       "assets",
       "logo.png"
     );

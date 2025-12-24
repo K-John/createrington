@@ -1,6 +1,6 @@
 import type { Express } from "express";
-import waitlistRoutes from "./waitlist.routes";
-import authRoutes from "./auth.routes";
+import waitlistRoutes from "./waitlist/waitlist.routes";
+import authRoutes from "./auth/auth.routes";
 
 /**
  * Register all API routes

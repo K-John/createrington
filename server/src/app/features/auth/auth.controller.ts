@@ -1,6 +1,6 @@
 import { AuthRole, discordOAuth } from "@/services/discord/oauth/oauth.service";
 import { Request, Response } from "express";
-import { BadRequestError, UnauthorizedError } from "../middleware";
+import { BadRequestError, UnauthorizedError } from "@/app/middleware";
 import { jwtService } from "@/services/auth/jwt/jwt.service";
 
 /**
@@ -35,7 +35,10 @@ export class AuthController {
    * Handles Discord OAuth callback
    * Exchanges code for user data and returns JWT token
    */
-  static async handleCallback(req: Request, res: Response): Promise<void> {
+  static async handleDiscordCallback(
+    req: Request,
+    res: Response
+  ): Promise<void> {
     const { code, state } = req.body;
 
     if (!code) {
@@ -94,7 +97,7 @@ export class AuthController {
    * Refreshes an existing JWT token
    * Returns a new token with extended expiration
    */
-  static async refresh(req: Request, res: Response): Promise<void> {
+  static async refreshToken(req: Request, res: Response): Promise<void> {
     const authHeader = req.headers.authorization;
     const token = authHeader?.startsWith("Bearer ")
       ? authHeader.substring(7)
@@ -165,7 +168,7 @@ export class AuthController {
       success: true,
       data: {
         authenticated: !!req.user,
-        user: req.user || null, // Fixed: was res.user
+        user: req.user || null,
       },
     });
   }

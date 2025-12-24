@@ -1,0 +1,160 @@
+import { NextFunction, Request, Response } from "express";
+import { ForbiddenError, UnauthorizedError } from "./error-handler";
+import { jwtService } from "@/services/auth/jwt";
+import { AuthRole } from "@/services/discord/oauth/oauth.service";
+
+/**
+ * Extracts and verifies JWT token from request
+ * Attaches user data to req.user if valid
+ *
+ * @throws UnauthorizedError if token is missing or invalid
+ */
+export const authenticate = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.startsWith("Bearer ")
+      ? authHeader.substring(7)
+      : authHeader;
+
+    if (!token) {
+      throw new UnauthorizedError("Authentication required");
+    }
+
+    const payload = jwtService.verify(token);
+    req.user = payload;
+
+    next();
+  } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      next(error);
+    } else {
+      next(new UnauthorizedError("Invalid or expired token"));
+    }
+  }
+};
+
+/**
+ * Optional authentication - doesn't fail if no token present
+ * Useful for endpoints that behave differently for authenticated users
+ */
+export const optionalAuth = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.startsWith("Bearer ")
+      ? authHeader.substring(7)
+      : authHeader;
+
+    if (token) {
+      const payload = jwtService.verify(token);
+      req.user = payload;
+    }
+
+    next();
+  } catch (error) {
+    next();
+  }
+};
+
+/**
+ * Requires user to have admin role
+ * Must be used AFTER authenticate middleware
+ *
+ * @throws ForbiddenError if user is not an admin
+ */
+export const requireAdmin = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  if (!req.user) {
+    throw new UnauthorizedError("Authentication required");
+  }
+
+  if (!req.user.isAdmin) {
+    logger.warn(
+      `User ${req.user.username} (${req.user.discordId}) attempted to access admin endpoint`
+    );
+    throw new ForbiddenError("Admin access required");
+  }
+
+  next();
+};
+
+/**
+ * Requires user to have at least USER role
+ * Must be used aftter authenticate middleware
+ *
+ * @throws ForbiddenError if user is unverified
+ */
+export const requireUser = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  if (!req.user) {
+    throw new UnauthorizedError("Authentication required");
+  }
+
+  if (req.user.role === AuthRole.UNVERIFIED) {
+    logger.warn(
+      `Unverified user ${req.user.username} (${req.user.discordId}) attempted to access user endpoint`
+    );
+    throw new ForbiddenError("Account verification required");
+  }
+
+  next();
+};
+
+/**
+ * Requires user to match specific role(s)
+ *
+ * @param allowedRoles - Array of roles that can access the endpoint
+ */
+export const requireRole = (...allowedRoles: AuthRole[]) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    if (!req.user) {
+      throw new UnauthorizedError("Authentication required");
+    }
+
+    if (!allowedRoles.includes(req.user.role)) {
+      logger.warn(
+        `User ${req.user.username} with role ${
+          req.user.role
+        } attempted to access endpoint requiring ${allowedRoles.join(" or ")}`
+      );
+      throw new ForbiddenError(`Required role: ${allowedRoles.join(" or ")}`);
+    }
+
+    next();
+  };
+};
+
+/**
+ * Requires user to be the resource owner or an admin
+ *
+ * @param getUserId - Function to extract the user ID from the request
+ */
+export const requireOwnerOrAdmin = (getUserId: (req: Request) => string) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    if (!req.user) {
+      throw new UnauthorizedError("Authentication required");
+    }
+
+    const resourceUserId = getUserId(req);
+
+    if (req.user.discordId !== resourceUserId && !req.user.isAdmin) {
+      logger.warn(
+        `User ${req.user.username} attempted to access resource owned by ${resourceUserId}`
+      );
+      throw new ForbiddenError("Access denied");
+    }
+  };
+};

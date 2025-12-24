@@ -1,4 +1,5 @@
 import { EmbedPresets } from "@/discord/embeds";
+import { CooldownType } from "@/discord/utils/cooldown";
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
 
 /**
@@ -18,7 +19,7 @@ export const data = new SlashCommandBuilder()
  */
 export const cooldown = {
   duration: 5,
-  type: "user" as const,
+  type: CooldownType.USER,
   message: "Please wait before checking ping again!",
 };
 
@@ -39,7 +40,7 @@ export const prodOnly = false;
  * 5. Updates the message with both latency measurements
  *
  * @param interaction - The chat input command interaction
- * @returns Promise that resolves when the command execution is complete
+ * @returns Promise resolving when the command execution is completed
  *
  * @example
  * // User runs: /ping

@@ -50,6 +50,7 @@ export interface Config {
   servers: {
     cogs: MinecraftServerConfig;
     test: MinecraftServerConfig;
+    playerLimit: number;
   };
 
   email: EmailConfig;
@@ -292,6 +293,8 @@ interface MemberRolesConfig {
 
 interface ChannelConfig {
   readonly welcome: string;
+  readonly adminChat: string;
+  readonly adminNotifications: string;
 }
 
 interface CategoriesConfig {

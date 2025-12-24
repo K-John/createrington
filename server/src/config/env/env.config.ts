@@ -27,6 +27,7 @@ dotenv.config({ quiet: true });
  * @property {number} COGS_AND_STEAM_SERVER_PORT - Cogs and Steam server port
  * @property {string} TEST_SERVER_IP_ADDRESS - Test server IP address
  * @property {number} TEST_SERVER_PORT - Test server port
+ * @property {number} PLAYER_LIMIT - Player limit shared on all servers
  * // RCON (Minecraft server)
  * @property {number} COGS_AND_STEAM_RCON_PORT - RCON server port
  * @property {string} COGS_AND_STEAM_RCON_PASSWORD - RCON authentication password
@@ -152,6 +153,12 @@ const envSchema = z.object({
     .positive()
     .refine((port) => port >= 1 && port <= 65535, {
       message: "Cogs and Steam server port must be between 1 and 65535",
+    }),
+  PLAYER_LIMIT: z.coerce
+    .number()
+    .int()
+    .refine((limit) => limit >= 0 && limit <= 1000, {
+      message: "Player limit must be between 0 and 1000",
     }),
 
   // RCON (Minecraft server)

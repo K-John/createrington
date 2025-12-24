@@ -1,6 +1,7 @@
 import pg from "pg";
 import config from "@/config";
 import * as queries from "./queries";
+import * as repositories from "./repositories";
 
 /**
  * PostgreSQL database pool instance using environment variables
@@ -22,11 +23,17 @@ try {
   process.exit(1);
 }
 
+// Queries
 export const player = new queries.PlayerQueries(db);
 export const discord = new queries.DiscordQueries(db);
 export const waitlist = new queries.WaitlistQueries(db);
 export const admin = new queries.AdminQueries(db);
 
 export const Q = { player, discord, waitlist, admin };
+
+// Repositories
+export const waitlistRepo = new repositories.WaitlistRepository();
+
+export const R = { waitlistRepo };
 
 export default db;
