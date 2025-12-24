@@ -29,7 +29,7 @@ export const data = new SlashCommandBuilder()
 /**
  * Cooldown configuration for the ping command
  *
- * - duration: 5 seconds
+ * - duration: 60 seconds
  * - type: "user" - Each user has their own cooldown
  * - message: Custom message shown when user is on cooldown
  */
@@ -46,7 +46,7 @@ export const cooldown = {
 export const prodOnly = false;
 
 /**
- * Random delay helper for realistic progress updated
+ * Random delay helper for realistic progress updates
  * Mainly used to minimize API blocking
  */
 function randomDelay(min = 1000, max = 3000): Promise<void> {

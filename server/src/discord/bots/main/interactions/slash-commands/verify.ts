@@ -26,7 +26,7 @@ export const data = new SlashCommandBuilder()
 /**
  * Cooldown configuration for the verify command
  *
- * - duration: 1 minute
+ * - duration: 60 seconds
  * - type: "user" - Each user has their own cooldown
  * - message: Custom message shown when user is on cooldown
  */
