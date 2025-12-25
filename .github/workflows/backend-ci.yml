@@ -14,7 +14,7 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_USER: test_user
+          POSTGRES_USER: postgres
           POSTGRES_PASSWORD: test_password
           POSTGRES_DB: test_db
         options: >-
@@ -49,7 +49,7 @@ jobs:
           DB_DATABASE: test_db
           DB_SSL: "false"
         run: |
-          PGPASSWORD=test_password psql -h localhost -U test_user -d test_db -f src/db/schema/init.sql
+          PGPASSWORD=test_password psql -h localhost -U postgres -d test_db -f src/db/schema/init.sql
 
       - name: Generate code (with DB access)
         working-directory: ./server
@@ -75,7 +75,7 @@ jobs:
         env:
           DB_HOST: localhost
           DB_PORT: 5432
-          DB_USER: test_user
+          DB_USER: postgres
           DB_PASSWORD: test_password
           DB_DATABASE: test_db
           DB_SSL: "false"
