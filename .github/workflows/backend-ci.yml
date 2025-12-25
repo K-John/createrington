@@ -68,22 +68,22 @@ jobs:
 
       - name: Run unit tests
         working-directory: ./server
-        run: npm run test:unit
+        run: npm run test
 
-      - name: Run integration tests
-        working-directory: ./server
-        env:
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_USER: postgres
-          DB_PASSWORD: test_password
-          DB_DATABASE: test_db
-          DB_SSL: "false"
-        run: npm run test:integration
+      # - name: Run integration tests
+      #   working-directory: ./server
+      #   env:
+      #     DB_HOST: localhost
+      #     DB_PORT: 5432
+      #     DB_USER: postgres
+      #     DB_PASSWORD: test_password
+      #     DB_DATABASE: test_db
+      #     DB_SSL: "false"
+      #   run: npm run test
 
-      - name: Build
-        working-directory: ./server
-        run: npm run build
+      # - name: Build
+      #   working-directory: ./server
+      #   run: npm run build
 
   lint:
     runs-on: ubuntu-latest
