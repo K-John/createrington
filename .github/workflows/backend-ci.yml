@@ -37,6 +37,10 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./server
+        run: npm ci
+
+      - name: Setup database schema
+        working-directory: ./server
         env:
           DB_HOST: localhost
           DB_PORT: 5432
@@ -45,13 +49,13 @@ jobs:
           DB_DATABASE: test_db
           DB_SSL: "false"
         run: |
-          PGPASSWORD=test_password psql -h localhost -U test_server -d test_db -f src/db/schema/init.sql
+          PGPASSWORD=test_password psql -h localhost -U test_user -d test_db -f src/db/schema/init.sql
 
       - name: Generate code (with DB access)
         working-directory: ./server
         env:
           DB_HOST: localhost
-          DB_POST: 5432
+          DB_PORT: 5432
           DB_USER: test_user
           DB_PASSWORD: test_password
           DB_DATABASE: test_db
@@ -62,8 +66,12 @@ jobs:
         working-directory: ./server
         run: npm run typecheck
 
+      - name: Run unit tests
+        working-directory: ./server
+        run: npm run test:unit
+
       - name: Run integration tests
-        working_directory: ./server
+        working-directory: ./server
         env:
           DB_HOST: localhost
           DB_PORT: 5432
@@ -71,14 +79,14 @@ jobs:
           DB_PASSWORD: test_password
           DB_DATABASE: test_db
           DB_SSL: "false"
-        run: npm run test
+        run: npm run test:integration
 
       - name: Build
-        working_directory: ./server
+        working-directory: ./server
         run: npm run build
 
   lint:
-    runs-on: ubunutu-latest
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -91,9 +99,9 @@ jobs:
           cache-dependency-path: server/package-lock.json
 
       - name: Install dependencies
-        working_directory: ./server
+        working-directory: ./server
         run: npm ci
 
       - name: Lint
-        working_directory: ./server
+        working-directory: ./server
         run: npm run lint
