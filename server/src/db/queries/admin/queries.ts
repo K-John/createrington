@@ -1,6 +1,7 @@
 import { Pool } from "pg";
 import { BaseQueries } from "../base.queries";
 import { Admin, AdminCreate, AdminRow } from "./types";
+import { AdminLogQueries } from "./log/queries";
 
 type Identifier = { discordId: string };
 
@@ -18,7 +19,16 @@ export class AdminQueries extends BaseQueries<{
 }> {
   protected readonly table = "admin";
 
+  private _log?: AdminLogQueries;
+
   constructor(db: Pool) {
     super(db);
+  }
+
+  get log(): AdminLogQueries {
+    if (!this._log) {
+      this._log = new AdminLogQueries(this.db);
+    }
+    return this._log;
   }
 }

@@ -8,8 +8,8 @@ export interface JWTPayload {
   username: string;
   role: AuthRole;
   isAdmin: boolean;
-  uuid: string;
-  name: string;
+  minecraftUuid: string;
+  minecraftUsername: string;
   iat?: number;
   exp?: number;
 }

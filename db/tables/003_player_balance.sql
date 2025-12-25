@@ -5,3 +5,8 @@ CREATE TABLE player_balance (
 
     CONSTRAINT chk_balance_non_negative CHECK (balance >= 0)
 );
+
+CREATE TRIGGER update_player_balance_updated_at
+    BEFORE UPDATE ON player_balance
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();

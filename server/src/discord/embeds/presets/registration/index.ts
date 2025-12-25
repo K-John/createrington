@@ -1,6 +1,7 @@
 import { ButtonBuilder, ButtonStyle } from "discord.js";
 import { EmbedColors } from "../../colors";
-import { createEmbed } from "../../embed-builder";
+import { createEmbed, DiscordEmbedBuilder } from "../../embed-builder";
+import { ProgressEmbedPresets } from "../progress";
 
 interface RegistrationStep {
   name: string;
@@ -14,36 +15,17 @@ export const RegistrationEmbedPresets = {
    */
   userProgress(
     username: string,
-    steps: RegistrationStep[],
+    steps: Array<{ name: string; completed: boolean; error?: string }>,
     currentStepIndex: number
-  ) {
-    const total = steps.length;
-    const completed = steps.filter((s) => s.completed).length;
-    const percent = Math.round((completed / total) * 100);
-
-    const barLen = 12;
-    const filled = Math.round((completed / total) * barLen);
-    const bar = "▰".repeat(filled) + "▱".repeat(barLen - filled);
-
-    const stepsText = steps
-      .map((s, i) => {
-        if (s.completed) {
-          return `✓ ${s.name}`;
-        } else if (i === currentStepIndex) {
-          return `⏳ ${s.name}`;
-        } else {
-          return `· ${s.name}`;
-        }
-      })
-      .join("\n");
-
-    const embed = createEmbed()
-      .title("🔄 Registering your Minecraft account...")
-      .description(`**Username:** \`${username}\`\n\n${bar}  **${percent}%**`)
-      .field("Progress", stepsText, false)
-      .color(EmbedColors.Info);
-
-    return embed;
+  ): DiscordEmbedBuilder {
+    return ProgressEmbedPresets.create({
+      title: "🔄 Registering your Minecraft account...",
+      description: `**Username** \`${username}\``,
+      steps,
+      currentStepIndex,
+      showPercentage: true,
+      showProgressBar: true,
+    });
   },
 
   /**
@@ -72,16 +54,16 @@ export const RegistrationEmbedPresets = {
   /**
    * Creates a registration error embed
    */
-  userError(username: string, error: string, step: string) {
-    const embed = createEmbed()
-      .title("❌ Registration Failed")
-      .description(
-        `An error occurred while registering **${username}**.\n\n**Step:** ${step}\n**Error:** ${error}\n\nAn admin has been notified and will assist you shortly.`
-      )
-      .color(EmbedColors.Error)
-      .footer("Please wait for admin assistance");
-
-    return embed;
+  userError(
+    username: string,
+    error: string,
+    step: string
+  ): DiscordEmbedBuilder {
+    return ProgressEmbedPresets.error(
+      "Registration Failed",
+      `An error occurred while registering **${username}**.\n\n**Error:** ${error}\n\nAn admin has been notified and will assist you shortly.`,
+      step
+    ).footer("Please wait for admin assistance");
   },
 
   adminError(

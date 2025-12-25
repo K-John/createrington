@@ -54,7 +54,7 @@ export async function execute(
   }
 
   try {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const deletedMessages = await interaction.channel.bulkDelete(count, true);
 

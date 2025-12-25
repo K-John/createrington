@@ -38,15 +38,17 @@ export class JWTService {
       username: user.username,
       role: user.role,
       isAdmin: user.isAdmin,
-      uuid: user.uuid,
-      name: user.name,
+      minecraftUuid: user.minecraftUuid,
+      minecraftUsername: user.minecraftUsername,
     };
 
     const token = jwt.sign(payload, this.secret, {
       expiresIn: "7d",
     });
 
-    logger.debug(`Generated JWT for user ${user.name} (${user.username})`);
+    logger.debug(
+      `Generated JWT for user ${user.minecraftUsername} (${user.username})`
+    );
     return token;
   }
 
@@ -123,15 +125,15 @@ export class JWTService {
         username: decoded.username,
         role: decoded.role,
         isAdmin: decoded.isAdmin,
-        uuid: decoded.uuid,
-        name: decoded.name,
+        minecraftUuid: decoded.minecraftUuid,
+        minecraftUsername: decoded.minecraftUsername,
       },
       this.secret,
       { expiresIn: "7d" }
     );
 
     logger.debug(
-      `Refreshed JWT for user ${decoded.name} (${decoded.username})`
+      `Refreshed JWT for user ${decoded.minecraftUsername} (${decoded.username})`
     );
     return newToken;
   }

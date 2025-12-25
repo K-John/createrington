@@ -14,7 +14,7 @@ interface RconConfig {
  * Server identifiers
  */
 export enum ServerId {
-  COGS_AND_STEAM = "cogs",
+  COGS = "cogs",
   TEST = "test",
 }
 
@@ -293,12 +293,12 @@ export class MinecraftRconManager {
   private loadServerConfigs(): void {
     if (
       config.servers?.cogs?.rcon &&
-      !this.serverConfigs.has(ServerId.COGS_AND_STEAM) &&
+      !this.serverConfigs.has(ServerId.COGS) &&
       config.servers?.test?.rcon &&
       !this.serverConfigs.has(ServerId.TEST)
     ) {
       this.serverConfigs
-        .set(ServerId.COGS_AND_STEAM, {
+        .set(ServerId.COGS, {
           host: config.servers.cogs.rcon.host,
           port: config.servers.cogs.rcon.port,
           password: config.servers.cogs.rcon.password,

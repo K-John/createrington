@@ -28,8 +28,9 @@ export const player = new queries.PlayerQueries(db);
 export const discord = new queries.DiscordQueries(db);
 export const waitlist = new queries.WaitlistQueries(db);
 export const admin = new queries.AdminQueries(db);
+export const server = new queries.ServerQueries(db);
 
-export const Q = { player, discord, waitlist, admin };
+export const Q = { player, discord, waitlist, admin, server };
 
 // Repositories
 export const waitlistRepo = new repositories.WaitlistRepository();

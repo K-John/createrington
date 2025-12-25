@@ -10,3 +10,8 @@ CREATE TABLE player_playtime (
 );
 
 CREATE INDEX idx_player_playtime_server ON player_playtime(server_id);
+
+CREATE TRIGGER update_player_playtime_updated_at
+    BEFORE UPDATE ON player_playtime
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();

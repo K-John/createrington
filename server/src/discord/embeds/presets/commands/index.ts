@@ -1,9 +1,9 @@
 import { CooldownStats } from "@/discord/utils/cooldown/cooldown-manager";
-import { createEmbed } from "../../embed-builder";
+import { createEmbed, DiscordEmbedBuilder } from "../../embed-builder";
 import { EmbedColors } from "../../colors";
 
 export const CommandEmbedPresets = {
-  cooldownStats(stats: CooldownStats) {
+  cooldownStats(stats: CooldownStats): DiscordEmbedBuilder {
     const embed = createEmbed()
       .title("📊 Cooldown Statistics")
       .color(EmbedColors.Info)

@@ -4,8 +4,8 @@ import { CamelCaseKeys } from "@/types";
  * Database representation of player record
  */
 export interface PlayerRow {
-  uuid: string;
-  name: string;
+  minecraft_uuid: string;
+  minecraft_username: string;
   discord_id: string;
   online: boolean;
   last_seen: Date;
@@ -16,7 +16,7 @@ export interface PlayerRow {
 export type Player = CamelCaseKeys<PlayerRow>;
 
 export interface PlayerCreate {
-  uuid: string;
-  name: string;
+  minecraftUuid: string;
+  minecraftUsername: string;
   discordId: string;
 }

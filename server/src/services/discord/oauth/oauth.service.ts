@@ -43,8 +43,8 @@ export interface AuthenticatedUser {
   avatar?: string;
   role: AuthRole;
   isAdmin: boolean;
-  uuid: string;
-  name: string;
+  minecraftUuid: string;
+  minecraftUsername: string;
 }
 
 /**
@@ -229,12 +229,12 @@ export class DiscordOAuthService {
       avatar: discordUser.avatar || undefined,
       role,
       isAdmin: role === AuthRole.ADMIN,
-      uuid: player.uuid,
-      name: player.name,
+      minecraftUuid: player.minecraftUuid,
+      minecraftUsername: player.minecraftUsername,
     };
 
     logger.info(
-      `Authenticated ${player.name} (${discordUser.username}) as ${role}`
+      `Authenticated ${player.minecraftUsername} (${discordUser.username}) as ${role}`
     );
 
     return authenticatedUser;

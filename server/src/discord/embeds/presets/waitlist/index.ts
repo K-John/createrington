@@ -1,4 +1,4 @@
-import { createEmbed } from "../../embed-builder";
+import { createEmbed, DiscordEmbedBuilder } from "../../embed-builder";
 import { EmbedColors } from "../../colors";
 import { ActionRowBuilder, ButtonBuilder, User } from "discord.js";
 import { ButtonPresets } from "../buttons";
@@ -67,7 +67,7 @@ export const WaitlistEmbedPresets = {
     entry: WaitlistEntry,
     discordUser?: User | null,
     player?: Player | null
-  ) {
+  ): DiscordEmbedBuilder {
     const steps = [
       {
         name: "Accepted",
@@ -113,8 +113,8 @@ export const WaitlistEmbedPresets = {
     const details: string[] = [];
 
     if (player) {
-      details.push(`Minecraft: \`${player.name || "Unknown"}\``);
-      details.push(`UUID: \`${player.uuid}\``);
+      details.push(`Minecraft: \`${player.minecraftUsername || "Unknown"}\``);
+      details.push(`UUID: \`${player.minecraftUuid}\``);
     }
 
     if (entry.acceptedBy) {

@@ -202,7 +202,7 @@ export async function execute(
 
     try {
       await minecraftRcon.whitelist(
-        ServerId.COGS_AND_STEAM,
+        ServerId.COGS,
         WhitelistAction.ADD,
         correctName
       );
@@ -224,8 +224,8 @@ export async function execute(
 
     await randomDelay();
     await Q.player.create({
-      uuid,
-      name: correctName,
+      minecraftUuid: uuid,
+      minecraftUsername: correctName,
       discordId,
     });
 
