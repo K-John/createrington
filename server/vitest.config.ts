@@ -1,25 +1,21 @@
 import { defineConfig } from "vitest/config";
-import { loadEnv } from "vite";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   test: {
     globals: true,
     environment: "node",
-    setupFiles: ["./src/tests/setup/vitest.setup.ts"],
-    env: loadEnv("test", process.cwd(), ""),
+    setupFiles: ["./src/tests/setup.ts"],
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],
       exclude: [
         "node_modules/",
+        "dist/",
         "tests/",
         "**/*.d.ts",
-        "**/*.config.*",
-        "**/dist/**",
+        "**/*.config.ts",
+        "**/types.ts",
       ],
     },
     testTimeout: 10000,

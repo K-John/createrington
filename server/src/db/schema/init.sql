@@ -104,11 +104,95 @@ CREATE TABLE public.admin (
 ALTER TABLE public.admin OWNER TO postgres;
 
 --
+-- Name: admin_log_action; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.admin_log_action (
+    id integer NOT NULL,
+    admin_discord_id text NOT NULL,
+    admin_discord_username text NOT NULL,
+    action_type text NOT NULL,
+    target_player_uuid uuid NOT NULL,
+    target_player_name text NOT NULL,
+    table_name text NOT NULL,
+    field_name text NOT NULL,
+    old_value text,
+    new_value text,
+    reason text,
+    server_id integer,
+    performed_at timestamp with time zone DEFAULT now() NOT NULL,
+    metadata jsonb
+);
+
+
+ALTER TABLE public.admin_log_action OWNER TO postgres;
+
+--
+-- Name: admin_log_action_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.admin_log_action_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.admin_log_action_id_seq OWNER TO postgres;
+
+--
+-- Name: admin_log_action_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.admin_log_action_id_seq OWNED BY public.admin_log_action.id;
+
+
+--
+-- Name: server; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.server (
+    id integer NOT NULL,
+    name text NOT NULL,
+    identifier text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.server OWNER TO postgres;
+
+--
+-- Name: admin_log_action_readable; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW public.admin_log_action_readable AS
+ SELECT al.id,
+    al.admin_discord_username,
+    al.action_type,
+    al.target_player_name,
+    al.table_name,
+    al.field_name,
+    al.old_value,
+    al.new_value,
+    al.reason,
+    s.name AS server_name,
+    al.performed_at,
+    al.metadata
+   FROM (public.admin_log_action al
+     LEFT JOIN public.server s ON ((al.server_id = s.id)))
+  ORDER BY al.performed_at DESC;
+
+
+ALTER TABLE public.admin_log_action_readable OWNER TO postgres;
+
+--
 -- Name: daily_playtime; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.daily_playtime (
-    player_uuid uuid NOT NULL,
+    player_minecraft_uuid uuid NOT NULL,
     server_id integer NOT NULL,
     play_date date NOT NULL,
     seconds_played bigint DEFAULT 0 NOT NULL
@@ -118,10 +202,10 @@ CREATE TABLE public.daily_playtime (
 ALTER TABLE public.daily_playtime OWNER TO postgres;
 
 --
--- Name: guild_member_join; Type: TABLE; Schema: public; Owner: postgres
+-- Name: discord_guild_member_join; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE public.guild_member_join (
+CREATE TABLE public.discord_guild_member_join (
     join_number integer NOT NULL,
     user_id character varying(32) NOT NULL,
     username character varying(32) NOT NULL,
@@ -129,48 +213,48 @@ CREATE TABLE public.guild_member_join (
 );
 
 
-ALTER TABLE public.guild_member_join OWNER TO postgres;
+ALTER TABLE public.discord_guild_member_join OWNER TO postgres;
 
 --
--- Name: TABLE guild_member_join; Type: COMMENT; Schema: public; Owner: postgres
+-- Name: TABLE discord_guild_member_join; Type: COMMENT; Schema: public; Owner: postgres
 --
 
-COMMENT ON TABLE public.guild_member_join IS 'Tracks guild member join order with persistent sequential numbers';
-
-
---
--- Name: COLUMN guild_member_join.join_number; Type: COMMENT; Schema: public; Owner: postgres
---
-
-COMMENT ON COLUMN public.guild_member_join.join_number IS 'Unique sequential number assigned to each member (shown in welcome image)';
+COMMENT ON TABLE public.discord_guild_member_join IS 'Tracks guild member join order with persistent sequential numbers';
 
 
 --
--- Name: COLUMN guild_member_join.user_id; Type: COMMENT; Schema: public; Owner: postgres
+-- Name: COLUMN discord_guild_member_join.join_number; Type: COMMENT; Schema: public; Owner: postgres
 --
 
-COMMENT ON COLUMN public.guild_member_join.user_id IS 'Discord user snowflake ID';
-
-
---
--- Name: COLUMN guild_member_join.username; Type: COMMENT; Schema: public; Owner: postgres
---
-
-COMMENT ON COLUMN public.guild_member_join.username IS 'Username at the time of joining (for historical reference)';
+COMMENT ON COLUMN public.discord_guild_member_join.join_number IS 'Unique sequential number assigned to each member (shown in welcome image)';
 
 
 --
--- Name: COLUMN guild_member_join.joined_at; Type: COMMENT; Schema: public; Owner: postgres
+-- Name: COLUMN discord_guild_member_join.user_id; Type: COMMENT; Schema: public; Owner: postgres
 --
 
-COMMENT ON COLUMN public.guild_member_join.joined_at IS 'Timestamp when the member joined the guild';
+COMMENT ON COLUMN public.discord_guild_member_join.user_id IS 'Discord user snowflake ID';
 
 
 --
--- Name: guild_member_join_join_number_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: COLUMN discord_guild_member_join.username; Type: COMMENT; Schema: public; Owner: postgres
 --
 
-CREATE SEQUENCE public.guild_member_join_join_number_seq
+COMMENT ON COLUMN public.discord_guild_member_join.username IS 'Username at the time of joining (for historical reference)';
+
+
+--
+-- Name: COLUMN discord_guild_member_join.joined_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.discord_guild_member_join.joined_at IS 'Timestamp when the member joined the guild';
+
+
+--
+-- Name: discord_guild_member_join_join_number_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.discord_guild_member_join_join_number_seq
     AS integer
     START WITH 1
     INCREMENT BY 1
@@ -179,13 +263,13 @@ CREATE SEQUENCE public.guild_member_join_join_number_seq
     CACHE 1;
 
 
-ALTER TABLE public.guild_member_join_join_number_seq OWNER TO postgres;
+ALTER TABLE public.discord_guild_member_join_join_number_seq OWNER TO postgres;
 
 --
--- Name: guild_member_join_join_number_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- Name: discord_guild_member_join_join_number_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
-ALTER SEQUENCE public.guild_member_join_join_number_seq OWNED BY public.guild_member_join.join_number;
+ALTER SEQUENCE public.discord_guild_member_join_join_number_seq OWNED BY public.discord_guild_member_join.join_number;
 
 
 --
@@ -193,8 +277,8 @@ ALTER SEQUENCE public.guild_member_join_join_number_seq OWNED BY public.guild_me
 --
 
 CREATE TABLE public.player (
-    uuid uuid NOT NULL,
-    name text NOT NULL,
+    minecraft_uuid uuid NOT NULL,
+    minecraft_username text NOT NULL,
     discord_id text NOT NULL,
     online boolean DEFAULT false NOT NULL,
     last_seen timestamp with time zone DEFAULT now() NOT NULL,
@@ -234,20 +318,6 @@ CREATE TABLE public.player_playtime (
 
 
 ALTER TABLE public.player_playtime OWNER TO postgres;
-
---
--- Name: server; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.server (
-    id integer NOT NULL,
-    name text NOT NULL,
-    identifier text NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
-);
-
-
-ALTER TABLE public.server OWNER TO postgres;
 
 --
 -- Name: server_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -375,10 +445,17 @@ ALTER SEQUENCE public.waitlist_entry_id_seq OWNED BY public.waitlist_entry.id;
 
 
 --
--- Name: guild_member_join join_number; Type: DEFAULT; Schema: public; Owner: postgres
+-- Name: admin_log_action id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.guild_member_join ALTER COLUMN join_number SET DEFAULT nextval('public.guild_member_join_join_number_seq'::regclass);
+ALTER TABLE ONLY public.admin_log_action ALTER COLUMN id SET DEFAULT nextval('public.admin_log_action_id_seq'::regclass);
+
+
+--
+-- Name: discord_guild_member_join join_number; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.discord_guild_member_join ALTER COLUMN join_number SET DEFAULT nextval('public.discord_guild_member_join_join_number_seq'::regclass);
 
 
 --
@@ -396,6 +473,14 @@ ALTER TABLE ONLY public.waitlist_entry ALTER COLUMN id SET DEFAULT nextval('publ
 
 
 --
+-- Name: admin_log_action admin_log_action_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.admin_log_action
+    ADD CONSTRAINT admin_log_action_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: admin admin_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -408,22 +493,22 @@ ALTER TABLE ONLY public.admin
 --
 
 ALTER TABLE ONLY public.daily_playtime
-    ADD CONSTRAINT daily_playtime_pkey PRIMARY KEY (player_uuid, server_id, play_date);
+    ADD CONSTRAINT daily_playtime_pkey PRIMARY KEY (player_minecraft_uuid, server_id, play_date);
 
 
 --
--- Name: guild_member_join guild_member_join_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: discord_guild_member_join discord_guild_member_join_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.guild_member_join
-    ADD CONSTRAINT guild_member_join_pkey PRIMARY KEY (join_number);
+ALTER TABLE ONLY public.discord_guild_member_join
+    ADD CONSTRAINT discord_guild_member_join_pkey PRIMARY KEY (join_number);
 
 
 --
--- Name: guild_member_join idx_user_id; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: discord_guild_member_join idx_user_id; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.guild_member_join
+ALTER TABLE ONLY public.discord_guild_member_join
     ADD CONSTRAINT idx_user_id UNIQUE (user_id);
 
 
@@ -440,7 +525,7 @@ ALTER TABLE ONLY public.player_balance
 --
 
 ALTER TABLE ONLY public.player
-    ADD CONSTRAINT player_pkey PRIMARY KEY (uuid);
+    ADD CONSTRAINT player_pkey PRIMARY KEY (minecraft_uuid);
 
 
 --
@@ -492,11 +577,19 @@ ALTER TABLE ONLY public.player
 
 
 --
--- Name: player uq_player_name; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: player uq_player_minecraft_username; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.player
-    ADD CONSTRAINT uq_player_name UNIQUE (name);
+    ADD CONSTRAINT uq_player_minecraft_username UNIQUE (minecraft_username);
+
+
+--
+-- Name: waitlist_entry uq_token; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.waitlist_entry
+    ADD CONSTRAINT uq_token UNIQUE (token);
 
 
 --
@@ -531,10 +624,45 @@ CREATE INDEX idx_daily_playtime_date ON public.daily_playtime USING btree (play_
 
 
 --
--- Name: idx_guild_member_join_joined_at; Type: INDEX; Schema: public; Owner: postgres
+-- Name: idx_discord_guild_member_join_joined_at; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_guild_member_join_joined_at ON public.guild_member_join USING btree (joined_at DESC);
+CREATE INDEX idx_discord_guild_member_join_joined_at ON public.discord_guild_member_join USING btree (joined_at DESC);
+
+
+--
+-- Name: idx_log_actions_action_type; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_log_actions_action_type ON public.admin_log_action USING btree (action_type);
+
+
+--
+-- Name: idx_log_actions_admin; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_log_actions_admin ON public.admin_log_action USING btree (admin_discord_id);
+
+
+--
+-- Name: idx_log_actions_performed_at; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_log_actions_performed_at ON public.admin_log_action USING btree (performed_at DESC);
+
+
+--
+-- Name: idx_log_actions_table_name; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_log_actions_table_name ON public.admin_log_action USING btree (table_name);
+
+
+--
+-- Name: idx_log_actions_target; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_log_actions_target ON public.admin_log_action USING btree (target_player_uuid);
 
 
 --
@@ -552,10 +680,10 @@ CREATE INDEX idx_player_last_seen ON public.player USING btree (last_seen);
 
 
 --
--- Name: idx_player_minecraft_name; Type: INDEX; Schema: public; Owner: postgres
+-- Name: idx_player_minecraft_username; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_player_minecraft_name ON public.player USING btree (name);
+CREATE INDEX idx_player_minecraft_username ON public.player USING btree (minecraft_username);
 
 
 --
@@ -637,11 +765,19 @@ ALTER TABLE ONLY public.admin
 
 
 --
--- Name: daily_playtime daily_playtime_player_uuid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: admin_log_action admin_log_action_server_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.admin_log_action
+    ADD CONSTRAINT admin_log_action_server_id_fkey FOREIGN KEY (server_id) REFERENCES public.server(id) ON DELETE CASCADE;
+
+
+--
+-- Name: daily_playtime daily_playtime_player_minecraft_uuid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.daily_playtime
-    ADD CONSTRAINT daily_playtime_player_uuid_fkey FOREIGN KEY (player_uuid) REFERENCES public.player(uuid) ON DELETE CASCADE;
+    ADD CONSTRAINT daily_playtime_player_minecraft_uuid_fkey FOREIGN KEY (player_minecraft_uuid) REFERENCES public.player(minecraft_uuid) ON DELETE CASCADE;
 
 
 --
@@ -657,7 +793,7 @@ ALTER TABLE ONLY public.daily_playtime
 --
 
 ALTER TABLE ONLY public.player_balance
-    ADD CONSTRAINT player_balance_player_uuid_fkey FOREIGN KEY (player_uuid) REFERENCES public.player(uuid) ON DELETE CASCADE;
+    ADD CONSTRAINT player_balance_player_uuid_fkey FOREIGN KEY (player_uuid) REFERENCES public.player(minecraft_uuid) ON DELETE CASCADE;
 
 
 --
@@ -665,7 +801,7 @@ ALTER TABLE ONLY public.player_balance
 --
 
 ALTER TABLE ONLY public.player_playtime
-    ADD CONSTRAINT player_playtime_player_uuid_fkey FOREIGN KEY (player_uuid) REFERENCES public.player(uuid) ON DELETE CASCADE;
+    ADD CONSTRAINT player_playtime_player_uuid_fkey FOREIGN KEY (player_uuid) REFERENCES public.player(minecraft_uuid) ON DELETE CASCADE;
 
 
 --

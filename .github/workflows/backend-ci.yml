@@ -10,6 +10,21 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
     steps:
       - uses: actions/checkout@v4
 
@@ -22,22 +37,48 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./server
-        run: npm ci
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: test_user
+          DB_PASSWORD: test_password
+          DB_DATABASE: test_db
+          DB_SSL: "false"
+        run: |
+          PGPASSWORD=test_password psql -h localhost -U test_server -d test_db -f src/db/schema/init.sql
+
+      - name: Generate code (with DB access)
+        working-directory: ./server
+        env:
+          DB_HOST: localhost
+          DB_POST: 5432
+          DB_USER: test_user
+          DB_PASSWORD: test_password
+          DB_DATABASE: test_db
+          DB_SSL: "false"
+        run: npm run generate
 
       - name: Type check
         working-directory: ./server
         run: npm run typecheck
 
-      # - name: Run tests
-      #   working-directory: ./server
-      #   run: npm test
+      - name: Run integration tests
+        working_directory: ./server
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: test_user
+          DB_PASSWORD: test_password
+          DB_DATABASE: test_db
+          DB_SSL: "false"
+        run: npm run test
 
       - name: Build
-        working-directory: ./server
+        working_directory: ./server
         run: npm run build
 
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubunutu-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -50,9 +91,9 @@ jobs:
           cache-dependency-path: server/package-lock.json
 
       - name: Install dependencies
-        working-directory: ./server
+        working_directory: ./server
         run: npm ci
 
-      # - name: Lint
-      #   working-directory: ./server
-      #   run: npm run lint
+      - name: Lint
+        working_directory: ./server
+        run: npm run lint
