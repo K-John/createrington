@@ -1,6 +1,10 @@
 import pg from "pg";
 import config from "@/config";
-import { createQueryInstances, createQueries } from "@/generated/db/queries";
+import {
+  DatabaseQueries,
+  createQueryInstances,
+  createQueries,
+} from "@/generated/db";
 import * as repositories from "./repositories";
 
 /**
@@ -13,10 +17,10 @@ import * as repositories from "./repositories";
  * @env DB_PASSWORD - The database user's password
  * @env DB_PORT - The port PostgreSQL is running on
  */
-const db = new pg.Pool(config.database.pool);
+const pool = new pg.Pool(config.database.pool);
 
 try {
-  await db.query("SELECT 1");
+  await pool.query("SELECT 1");
   logger.info("Connected to PostgreSQL database");
 } catch (error) {
   logger.error("Failed to connect to DB:", error);
@@ -24,10 +28,31 @@ try {
 }
 
 // ============================================================================
+// UNIFIED DATABASE QUERIES
+// ============================================================================
+
+/**
+ * Primary database interface with transaction support
+ *
+ * @example
+ * // Normal usage
+ * await db.player.create({...});
+ * await db.player.balance.findAll();
+ *
+ * @example
+ * // Transactions
+ * await db.inTransaction(async (tx) => {
+ *  await tx.player.create({...});
+ *  await tx.player.balance.create({...});
+ * });
+ */
+export const db = new DatabaseQueries(pool);
+
+// ============================================================================
 // QUERY SINGLETONS (for normal usage)
 // ============================================================================
 
-export const Q = createQueryInstances(db);
+export const Q = createQueryInstances(pool);
 
 // Individual exports for convenience
 export const { player, discord, waitlist, admin, server } = Q;
@@ -50,5 +75,5 @@ export const R = { waitlistRepo };
 // EXPORTS
 // ============================================================================
 
-export default db;
+export default pool;
 export { transaction, Transaction } from "./utils/transactions";

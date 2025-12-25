@@ -18,7 +18,6 @@
     "util:schema-info": "node src/scripts/db/get-table-info.js",
     "util:deploy-commands": "tsx src/discord/deployers/command-deployer.ts",
     "util:db-dump-schema": "tsx src/scripts/db/dump-schema.ts",
-    "generate:db-constants": "tsx src/scripts/db/generate-db-constants.ts",
     "generate:db-query-system": "tsx src/scripts/db/generate-query-system.ts",
     "test": "vitest",
     "test:uni": "vitest --ui",

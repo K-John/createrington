@@ -4,12 +4,37 @@ import { DiscordGuildQueries } from "@/db/queries/discord/guild";
 /**
  * Namespace queries for discord
  * 
- * Auto-generated from database schema
- * DO NOT EDIT MANUALLY - regenerate with: npm run generate:from-db
+ * This is a pure namespace that groups related query classes
+ * It uses the singleton pattern for optimal performance
  * 
- * This file is always regenerated to ensure child accessors stay in sync
+ * Auto-generated from database schema
+ * DO NOT EDIT MANUALLY - regenerate with: npm run generate
  */
 export class DiscordQueries {
+  // Singleton registry
+  private static queryInstances = new WeakMap<
+    Pool | PoolClient,
+    Map<string, any>
+  >();
+
+  protected getOrCreateChild<T>(
+    key: string,
+    QueryClass: new (db: Pool | PoolClient) => T
+  ): T {
+    if (!DiscordQueries.queryInstances.has(this.db)) {
+      DiscordQueries.queryInstances.set(this.db, new Map());
+    }
+
+    const cache = DiscordQueries.queryInstances.get(this.db)!;
+    const fullKey = `discord.${key}`;
+
+    if (!cache.has(fullKey)) {
+      cache.set(fullKey, new QueryClass(this.db));
+    }
+
+    return cache.get(fullKey) as T;
+  }
+
   constructor(protected db: Pool | PoolClient) {}
   private _guild?: DiscordGuildQueries;
 
@@ -18,7 +43,7 @@ export class DiscordQueries {
    */
   get guild(): DiscordGuildQueries {
     if (!this._guild) {
-      this._guild = new DiscordGuildQueries(this.db);
+      this._guild = this.getOrCreateChild<DiscordGuildQueries>('guild', DiscordGuildQueries);
     }
     return this._guild;
   }

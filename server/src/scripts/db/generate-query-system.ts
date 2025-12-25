@@ -519,7 +519,7 @@ async function readSchemaFromDatabase(): Promise<TableInfo[]> {
 }
 
 /**
- * Build hierarchical structure from table names
+ * Build hierarchical structure from table names - with DEEP nesting support
  */
 function buildTableHierarchy(tables: TableInfo[]): TableStructure[] {
   const tableMap = new Map<string, TableStructure>();
@@ -537,7 +537,7 @@ function buildTableHierarchy(tables: TableInfo[]): TableStructure[] {
     tableMap.set(table.tableName, structure);
   }
 
-  // Second pass: build hierarchy
+  // Second pass: build DEEP hierarchy
   for (const table of tables) {
     const parts = table.tableName.split("_");
 
@@ -545,20 +545,21 @@ function buildTableHierarchy(tables: TableInfo[]): TableStructure[] {
       // Root level table
       roots.push(tableMap.get(table.tableName)!);
     } else {
-      // Find or create parent chain
+      // Build the full parent chain
       let currentParentName = "";
       let currentParent: TableStructure | null = null;
 
+      // Create/find all intermediate parents
       for (let i = 0; i < parts.length - 1; i++) {
         currentParentName = currentParentName
           ? `${currentParentName}_${parts[i]}`
           : parts[i];
 
-        // Check if this parent exists as an actual table
+        // Check if this level exists as an actual table
         if (tableMap.has(currentParentName)) {
           currentParent = tableMap.get(currentParentName)!;
         } else {
-          // Create namespace parent
+          // Create namespace parent if it doesn't exist
           if (!tableMap.has(currentParentName)) {
             const namespaceParent: TableStructure = {
               tableName: currentParentName,
@@ -571,7 +572,14 @@ function buildTableHierarchy(tables: TableInfo[]): TableStructure[] {
 
             // Add to parent or roots
             if (currentParent) {
-              currentParent.children.push(namespaceParent);
+              // Check if already a child to avoid duplicates
+              if (
+                !currentParent.children.find(
+                  (c) => c.tableName === currentParentName
+                )
+              ) {
+                currentParent.children.push(namespaceParent);
+              }
             } else {
               roots.push(namespaceParent);
             }
@@ -580,18 +588,296 @@ function buildTableHierarchy(tables: TableInfo[]): TableStructure[] {
         }
       }
 
-      // Add actual table to its parent
+      // Add actual table to its immediate parent
       const actualTable = tableMap.get(table.tableName)!;
       actualTable.parentTable = currentParentName;
       actualTable.depth = parts.length - 1;
 
       if (currentParent) {
-        currentParent.children.push(actualTable);
+        // Check if already a child to avoid duplicates
+        if (
+          !currentParent.children.find((c) => c.tableName === table.tableName)
+        ) {
+          currentParent.children.push(actualTable);
+        }
       }
     }
   }
 
   return roots;
+}
+
+/**
+ * Generate unified DatabaseQueries class
+ * Single class containing all query instances with transaction support
+ */
+function generateDatabaseQueriesClass(hierarchy: TableStructure[]): string {
+  const rootTables = hierarchy.filter((t) => t.depth === 0);
+
+  // Import all root query classes
+  const imports = rootTables
+    .map((t) => {
+      const parts = t.tableName.split("_");
+      return `import { ${t.className}Queries } from "@/db/queries/${parts.join(
+        "/"
+      )}";`;
+    })
+    .join("\n");
+
+  // Generate lazy-loaded getters for each root table
+  const getters = rootTables
+    .map((t) => {
+      const propName = snakeToCamel(t.tableName);
+      return `
+  private _${propName}?: ${t.className}Queries;
+
+  /**
+   * Lazy-loaded singleton accessor for ${t.tableName} queries
+   */
+  get ${propName}(): ${t.className}Queries {
+    if (!this._${propName}) {
+      this._${propName} = new ${t.className}Queries(this.db);
+    }
+    return this._${propName};
+  }`;
+    })
+    .join("\n");
+
+  return `import type { Pool, PoolClient } from "pg";
+import logger from "@/logger";
+${imports}
+
+/**
+ * Unified database queries class
+ * Contains all query instances and transaction management
+ * 
+ * Auto-generated from database schema
+ * DO NOT EDIT MANUALLY - regenerate with: npm run generate
+ * 
+ * @example
+ * // Normal usage
+ * import { db } from "@/db";
+ * await db.player.create({ ... });
+ * await db.player.balance.findAll();
+ * 
+ * @example
+ * // With transactions
+ * import { db } from "@/db";
+ * await db.inTransaction(async (tx) => {
+ *   await tx.player.create({ ... });
+ *   await tx.player.balance.create({ ... });
+ * });
+ */
+export class DatabaseQueries {
+  constructor(protected db: Pool | PoolClient) {}
+${getters}
+
+  /**
+   * Execute a callback within a database transaction
+   * Creates a new DatabaseQueries instance using a transaction client
+   * All queries within the callback will be part of the same transaction
+   * 
+   * @param callback - Function to execute with transaction-enabled queries
+   * @returns Result from callback
+   * 
+   * @example
+   * await db.inTransaction(async (tx) => {
+   *   const player = await tx.player.createAndReturn({ ... });
+   *   await tx.player.balance.create({ playerId: player.id, ... });
+   *   await tx.admin.log.action.create({ ... });
+   * });
+   */
+  async inTransaction<T>(
+    callback: (tx: DatabaseQueries) => Promise<T>
+  ): Promise<T> {
+    // If already in transaction, reuse this instance
+    if (this.isInTransaction()) {
+      logger.debug("Already in transaction, reusing existing client");
+      return callback(this);
+    }
+
+    const client = await (this.db as Pool).connect();
+
+    try {
+      await client.query("BEGIN");
+      logger.debug("Transaction started");
+
+      const txQueries = new DatabaseQueries(client);
+      const result = await callback(txQueries);
+
+      await client.query("COMMIT");
+      logger.debug("Transaction committed");
+
+      return result;
+    } catch (error) {
+      await client.query("ROLLBACK");
+      logger.error("Transaction rolled back:", error);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Check if this instance is using a transaction client
+   * Useful for debugging or conditional logic
+   * 
+   * @returns true if using a transaction client, false if using pool
+   */
+  isInTransaction(): boolean {
+    return "processID" in this.db;
+  }
+
+  /**
+   * Get the underlying database pool or client
+   * Use with caution - prefer using the query methods instead
+   * 
+   * @returns The Pool or PoolClient instance
+   */
+  getDb(): Pool | PoolClient {
+    return this.db;
+  }
+}
+`;
+}
+
+/**
+ * Generate database constants file with table and field names
+ * Includes BOTH snake_case (DB) and camelCase (App) field names
+ */
+function generateDatabaseConstants(tables: TableInfo[]): string {
+  const tableConstants = tables
+    .map((table) => {
+      const constName = table.tableName.toUpperCase().replace(/_/g, "_");
+
+      // Snake_case fields (for database queries)
+      const snakeFields = table.columns
+        .map((col) => {
+          const fieldConstName = col.columnName.toUpperCase();
+          return `      ${fieldConstName}: "${col.columnName}" as const,`;
+        })
+        .join("\n");
+
+      // CamelCase fields (for app logic)
+      const camelFields = table.columns
+        .map((col) => {
+          const fieldConstName = col.columnName.toUpperCase();
+          const camelCaseName = snakeToCamel(col.columnName);
+          return `      ${fieldConstName}: "${camelCaseName}" as const,`;
+        })
+        .join("\n");
+
+      return `  ${constName}: {
+    TABLE: "${table.tableName}" as const,
+    FIELDS: {
+${snakeFields}
+    },
+    CAMEL_FIELDS: {
+${camelFields}
+    },
+  },`;
+    })
+    .join("\n");
+
+  return `/**
+ * Auto-generated database constants
+ * Provides type-safe access to table and field names
+ * 
+ * DO NOT EDIT MANUALLY - regenerate with: npm run generate
+ * Generated: ${new Date().toISOString()}
+ * 
+ * @example
+ * // Access table names
+ * DatabaseTable.PLAYER.TABLE // "player"
+ * 
+ * @example
+ * // Access field names (snake_case for database)
+ * DatabaseTable.PLAYER.FIELDS.MINECRAFT_USERNAME // "minecraft_username"
+ * 
+ * @example
+ * // Access field names (camelCase for app logic)
+ * DatabaseTable.PLAYER.CAMEL_FIELDS.MINECRAFT_USERNAME // "minecraftUsername"
+ * 
+ * @example
+ * // Use in database queries
+ * await tx.admin.log.action.create({
+ *   tableName: DatabaseTable.PLAYER.TABLE,
+ *   fieldName: DatabaseTable.PLAYER.FIELDS.MINECRAFT_USERNAME
+ * });
+ * 
+ * @example
+ * // Use for object property access
+ * const fieldName = DatabaseTable.PLAYER.CAMEL_FIELDS.MINECRAFT_USERNAME;
+ * const value = player[fieldName]; // player.minecraftUsername
+ */
+export const DatabaseTable = {
+${tableConstants}
+} as const;
+
+/**
+ * Type-safe table name type
+ */
+export type TableName = typeof DatabaseTable[keyof typeof DatabaseTable]["TABLE"];
+
+/**
+ * Type-safe snake_case field names for a given table
+ */
+export type FieldName<T extends keyof typeof DatabaseTable> = typeof DatabaseTable[T]["FIELDS"][keyof typeof DatabaseTable[T]["FIELDS"]];
+
+/**
+ * Type-safe camelCase field names for a given table
+ */
+export type CamelFieldName<T extends keyof typeof DatabaseTable> = typeof DatabaseTable[T]["CAMEL_FIELDS"][keyof typeof DatabaseTable[T]["CAMEL_FIELDS"]];
+
+/**
+ * Get all table names as an array
+ * 
+ * @returns Array of all table names
+ */
+export function getAllTableNames(): TableName[] {
+  return Object.values(DatabaseTable).map((t) => t.TABLE);
+}
+
+/**
+ * Check if a string is a valid table name
+ * 
+ * @param name - String to check
+ * @returns True if the name matches a known table
+ */
+export function isValidTableName(name: string): name is TableName {
+  return getAllTableNames().includes(name as TableName);
+}
+
+/**
+ * Get the table constant object by table name
+ * 
+ * @param tableName - Table name to look up
+ * @returns Table constant object or undefined
+ */
+export function getTableByName(tableName: string): typeof DatabaseTable[keyof typeof DatabaseTable] | undefined {
+  return Object.values(DatabaseTable).find((t) => t.TABLE === tableName);
+}
+
+/**
+ * Convert a snake_case field name to camelCase
+ * 
+ * @param snakeCase - Snake case string
+ * @returns Camel case string
+ */
+export function snakeToCamel(snakeCase: string): string {
+  return snakeCase.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+}
+
+/**
+ * Convert a camelCase field name to snake_case
+ * 
+ * @param camelCase - Camel case string
+ * @returns Snake case string
+ */
+export function camelToSnake(camelCase: string): string {
+  return camelCase.replace(/[A-Z]/g, (letter) => \`_\${letter.toLowerCase()}\`);
+}
+`;
 }
 
 /**
@@ -816,7 +1102,7 @@ ${imports}
  * Query singleton instances type
  * 
  * Auto-generated from database schema
- * DO NOT EDIT MANUALLY - regenerate with: npm run generate:from-db
+ * DO NOT EDIT MANUALLY - regenerate with: npm run generate
  */
 export interface QueryInstances {
 ${qTypeProperties}
@@ -885,6 +1171,7 @@ export type IndividualQueryExports = QueryInstances;
 
 /**
  * Generate a barrel export file for all types, base queries, and actual queries
+ * This is your ONE-STOP-SHOP for all database-related imports
  */
 function generateBarrelExport(tables: TableInfo[]): string {
   const typeAndBaseExports = tables
@@ -909,22 +1196,62 @@ export { ${className}BaseQueries } from "./${table.tableName}.queries";`;
   return `/**
  * Barrel export for all generated database types and queries
  * 
+ * ONE-STOP-SHOP: Import everything you need from here!
+ * 
  * Auto-generated from database schema
- * DO NOT EDIT MANUALLY - regenerate with: npm run generate:from-db
+ * DO NOT EDIT MANUALLY - regenerate with: npm run generate
+ * 
+ * @example
+ * // Import types
+ * import type { Player, PlayerCreate, Admin } from "@/generated/db";
+ * 
+ * @example
+ * // Import database singleton
+ * import { DatabaseQueries } from "@/generated/db";
+ * 
+ * @example
+ * // Import constants
+ * import { DatabaseTable } from "@/generated/db";
  */
+
+// ============================================================================
+// TYPE EXPORTS (Row, Entity, Create, Identifier, Filters)
+// ============================================================================
 
 ${typeAndBaseExports}
 
 // ============================================================================
-// ACTUAL QUERY CLASSES (with custom methods)
+// QUERY CLASSES
 // ============================================================================
 
 ${actualQueryExports}
+
+// ============================================================================
+// DATABASE QUERY SINGLETON & HELPERS
+// ============================================================================
+
+export { DatabaseQueries } from "./db";
+export { createQueryInstances, createQueries } from "./queries";
+export type { QueryInstances } from "./queries";
+
+// ============================================================================
+// DATABASE CONSTANTS (Tables & Fields)
+// ============================================================================
+
+export { DatabaseTable } from "./constants";
+export type { TableName, FieldName, CamelFieldName } from "./constants";
+export {
+  getAllTableNames,
+  isValidTableName,
+  getTableByName,
+  snakeToCamel,
+  camelToSnake,
+} from "./constants";
 `;
 }
 
 /**
- * Generate BASE query class with optimized imports
+ * Generate BASE query class with deep hierarchy support
  */
 function generateBaseQueryClass(
   table: TableInfo,
@@ -932,9 +1259,11 @@ function generateBaseQueryClass(
 ): string {
   const className = structure.className;
 
+  // Collect ALL children (both actual tables and namespaces)
+  const allChildren = structure.children;
+
   // Type imports for circular dependency prevention
-  const childTypeImports = structure.children
-    .filter((child) => !child.isNamespaceOnly)
+  const childTypeImports = allChildren
     .map((child) => {
       const childParts = child.tableName.split("_");
       return `import type { ${
@@ -943,9 +1272,8 @@ function generateBaseQueryClass(
     })
     .join("\n");
 
-  // Actual imports for runtime (these are needed for new ChildQueries())
-  const childImports = structure.children
-    .filter((child) => !child.isNamespaceOnly)
+  // Actual imports for runtime
+  const childImports = allChildren
     .map((child) => {
       const childParts = child.tableName.split("_");
       return `import { ${child.className}Queries as ${
@@ -954,10 +1282,14 @@ function generateBaseQueryClass(
     })
     .join("\n");
 
-  const childProperties = structure.children
-    .filter((child) => !child.isNamespaceOnly)
+  // Generate getters for ALL children (tables AND namespaces)
+  const childProperties = allChildren
     .map((child) => {
-      const propName = child.tableName.split("_").pop()!;
+      // For children, get the last part after the parent's name
+      const propName = child.tableName
+        .replace(structure.tableName + "_", "")
+        .split("_")[0]; // Just the next level
+
       return `
   private _${propName}?: ${child.className}Queries;
   
@@ -991,7 +1323,7 @@ ${childTypeImports ? childTypeImports + "\n" : ""}${
  * 
  * Child query instances are singletons per database pool for optimal performance
  * 
- * DO NOT EDIT MANUALLY - regenerate with: npm run generate:from-db
+ * DO NOT EDIT MANUALLY - regenerate with: npm run generate
  */
 export class ${className}BaseQueries extends BaseQueries<{
   DbEntity: ${className}Row;
@@ -1023,7 +1355,7 @@ function generateActualQueryClass(
   const className = structure.className;
 
   return `import { Pool, PoolClient } from "pg";
-import { ${className}BaseQueries } from "@/generated/db/${structure.tableName}.queries";
+import { ${className}BaseQueries } from "@/generated/db";
 
 /**
  * Custom queries for ${table.tableName} table
@@ -1041,8 +1373,7 @@ export class ${className}Queries extends ${className}BaseQueries {
 }
 
 /**
- * Generate namespace query class (for parents that don't have actual tables)
- * These are ALWAYS regenerated and copied to ensure child getters stay in sync
+ * Generate namespace query class with deep hierarchy support
  */
 function generateNamespaceQuery(structure: TableStructure): string {
   const className = structure.className;
@@ -1056,12 +1387,14 @@ function generateNamespaceQuery(structure: TableStructure): string {
     })
     .join("\n");
 
-  // Namespace classes also use singleton pattern for consistency
+  // Generate getters for all children using the same singleton pattern
   const childProperties = structure.children
     .map((child) => {
-      const propName = snakeToCamel(
-        child.tableName.replace(structure.tableName + "_", "")
-      );
+      // Get the property name - just the next segment after current namespace
+      const propName = child.tableName
+        .replace(structure.tableName + "_", "")
+        .split("_")[0];
+
       return `
   private _${propName}?: ${child.className}Queries;
 
@@ -1070,7 +1403,7 @@ function generateNamespaceQuery(structure: TableStructure): string {
    */
   get ${propName}(): ${child.className}Queries {
     if (!this._${propName}) {
-      this._${propName} = new ${child.className}Queries(this.db);
+      this._${propName} = this.getOrCreateChild<${child.className}Queries>('${propName}', ${child.className}Queries);
     }
     return this._${propName};
   }`;
@@ -1083,12 +1416,37 @@ ${childImports}
 /**
  * Namespace queries for ${structure.tableName}
  * 
- * Auto-generated from database schema
- * DO NOT EDIT MANUALLY - regenerate with: npm run generate:from-db
+ * This is a pure namespace that groups related query classes
+ * It uses the singleton pattern for optimal performance
  * 
- * This file is always regenerated to ensure child accessors stay in sync
+ * Auto-generated from database schema
+ * DO NOT EDIT MANUALLY - regenerate with: npm run generate
  */
 export class ${className}Queries {
+  // Singleton registry
+  private static queryInstances = new WeakMap<
+    Pool | PoolClient,
+    Map<string, any>
+  >();
+
+  protected getOrCreateChild<T>(
+    key: string,
+    QueryClass: new (db: Pool | PoolClient) => T
+  ): T {
+    if (!${className}Queries.queryInstances.has(this.db)) {
+      ${className}Queries.queryInstances.set(this.db, new Map());
+    }
+
+    const cache = ${className}Queries.queryInstances.get(this.db)!;
+    const fullKey = \`${structure.tableName}.\${key}\`;
+
+    if (!cache.has(fullKey)) {
+      cache.set(fullKey, new QueryClass(this.db));
+    }
+
+    return cache.get(fullKey) as T;
+  }
+
   constructor(protected db: Pool | PoolClient) {}${childProperties}
 }
 `;
@@ -1222,6 +1580,16 @@ export async function generate() {
   const queryHelpersFile = path.join(generatedDir, "queries.ts");
   fs.writeFileSync(queryHelpersFile, queryHelpersContent, "utf-8");
   generatedFiles.push(path.relative(projectRoot, queryHelpersFile));
+
+  const dbQueriesContent = generateDatabaseQueriesClass(hierarchy);
+  const dbQueriesFile = path.join(generatedDir, "db.ts");
+  fs.writeFileSync(dbQueriesFile, dbQueriesContent, "utf-8");
+  generatedFiles.push(path.relative(projectRoot, dbQueriesFile));
+
+  const constantsContent = generateDatabaseConstants(tables);
+  const constantsFile = path.join(generatedDir, "constants.ts");
+  fs.writeFileSync(constantsFile, constantsContent, "utf-8");
+  generatedFiles.push(path.relative(projectRoot, constantsFile));
 
   fs.writeFileSync(cacheFile, JSON.stringify(currentSchema, null, 2), "utf-8");
 

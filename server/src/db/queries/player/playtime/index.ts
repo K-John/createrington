@@ -1,5 +1,5 @@
 import { Pool, PoolClient } from "pg";
-import { PlayerPlaytimeBaseQueries } from "@/generated/db/player_playtime.queries";
+import { PlayerPlaytimeBaseQueries } from "@/generated/db";
 
 /**
  * Custom queries for player_playtime table

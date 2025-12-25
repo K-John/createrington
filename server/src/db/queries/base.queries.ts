@@ -162,6 +162,66 @@ export abstract class BaseQueries<
   }
 
   /**
+   * Extracts a valid identifier from an object that may contain extra fields
+   * Picks the first matching unique identifier field with a non-null value
+   *
+   * This allows passing full entities to methods like get(), update(), delete(), etc.
+   * The Identifier type union determines which fields are tried
+   *
+   * @param obj - Object that may contain identifier fields plus extra data
+   * @returns Valid identifier object with only the necessary field(s)
+   *
+   * @example
+   * // PlayerIdentifier = { minecraftUuid: string } | { discordId: string }
+   * extractIdentifier(player)
+   * // returns { minecraftUuid: "..." } if player.minecraftUuid exists
+   *
+   * @example
+   * // Explicit identifier still works
+   * extractIdentifier({ discordId: "123" })
+   * // Returns { discordId: "123" }
+   */
+  protected extractIdentifier(
+    obj: Record<string, any>
+  ): NonNullable<TConfig["Identifier"]> {
+    // Get all keys with non-null/undefined values
+    const availableKeys = Object.keys(obj).filter(
+      (key) => obj[key] !== undefined && obj[key] !== null
+    );
+
+    // If object has only 1-2 keys, it's likely already an identifier
+    // Use it directly for performance
+    if (availableKeys.length <= 2) {
+      return obj as NonNullable<TConfig["Identifier"]>;
+    }
+
+    // Try each available key as a potential single-field identifier
+    // We test by checking if the column exists
+    for (const key of availableKeys) {
+      try {
+        const columnName = this.getColumnName(key);
+
+        // If we got a valid column name, try using this as identifier
+        if (columnName) {
+          const testIdentifier = { [key]: obj[key] };
+
+          // Test if this creates a valid WHERE clause
+          // This validates it's actually an identifier field
+          this.getColumnMapping(testIdentifier);
+
+          return testIdentifier as NonNullable<TConfig["Identifier"]>;
+        }
+      } catch {
+        // This key didn't work, try next one
+        // Loop continues automatically - no 'continue' needed in catch
+      }
+    }
+
+    // If no single-key identifier worked, fallback to using object as-is
+    // This handles composite keys or when user explicitly passes minimal identifier
+    return obj as NonNullable<TConfig["Identifier"]>;
+  }
+  /**
    * Maps an update object to an array of column-value pairs
    *
    * @param updates - Update data object
@@ -228,13 +288,27 @@ export abstract class BaseQueries<
    * Finds a single entity by unique identifier
    * Returns null if not found
    *
-   * @param identifier - Unique identifier
+   * Accepts either a minimal identifier OR a full entity object
+   *
+   * @param identifier - Unique identifier or full entity object
    * @returns Promise resolving to the entity or null
+   *
+   * @example
+   * // Explicit identifier
+   * await Q.player.find({ minecraftUuid: "abc-123" })
+   *
+   * @example
+   * // Pass full entity (auto-extracts identifier)
+   * await Q.player.find(somePlayer)
    */
   async find(
-    identifier: NonNullable<TConfig["Identifier"]>
+    identifier:
+      | NonNullable<TConfig["Identifier"]>
+      | TConfig["Entity"]
+      | Record<string, any>
   ): Promise<TConfig["Entity"] | null> {
-    const { whereClause, values } = this.getColumnMapping(identifier);
+    const extracted = this.extractIdentifier(identifier as Record<string, any>);
+    const { whereClause, values } = this.getColumnMapping(extracted);
     const query = `SELECT * FROM ${this.table} WHERE ${whereClause} LIMIT 1`;
 
     try {
@@ -251,17 +325,34 @@ export abstract class BaseQueries<
    * Retrieves a single entity by unique identifier
    * Throws an error if not found
    *
-   * @param identifier - Unique identifier
+   * Accepts either a minimal identifier OR a full entity object
+   *
+   * @param identifier - Unique identifier or full entity object
    * @returns Promise resolving to the entity
    * @throws Error if entity is not found
+   *
+   * @example
+   * // Explicit identifier
+   * await Q.player.get({ discordId: "123" })
+   *
+   * @example
+   * // Pass full entity
+   * await Q.player.get(player) // Uses player.minecraftUuid
+   * await Q.player.balance.get(player) // Uses player.id (maps to playerId)
    */
   async get(
-    identifier: NonNullable<TConfig["Identifier"]>
+    identifier:
+      | NonNullable<TConfig["Identifier"]>
+      | TConfig["Entity"]
+      | Record<string, any>
   ): Promise<TConfig["Entity"]> {
     const entity = await this.find(identifier);
 
     if (!entity) {
-      throw createNotFoundError(this.table, identifier);
+      const extracted = this.extractIdentifier(
+        identifier as Record<string, any>
+      );
+      throw createNotFoundError(this.table, extracted);
     }
 
     return entity;
@@ -270,13 +361,24 @@ export abstract class BaseQueries<
   /**
    * Checks if an entity exists by unique identifier
    *
-   * @param identifier - Unique identifier
+   * Accepts either a minimal identifier OR a full entity object
+   *
+   * @param identifier - Unique identifier or full entity object
    * @returns Promise resolving to true if entity exists, false otherwise
+   *
+   * @example
+   * if (await Q.player.exists(player)) {
+   *   // Player exists
+   * }
    */
   async exists(
-    identifier: NonNullable<TConfig["Identifier"]>
+    identifier:
+      | NonNullable<TConfig["Identifier"]>
+      | TConfig["Entity"]
+      | Record<string, any>
   ): Promise<boolean> {
-    const { whereClause, values } = this.getColumnMapping(identifier);
+    const extracted = this.extractIdentifier(identifier as Record<string, any>);
+    const { whereClause, values } = this.getColumnMapping(extracted);
     const query = `SELECT EXISTS(SELECT 1 FROM ${this.table} WHERE ${whereClause})`;
 
     try {
@@ -292,17 +394,31 @@ export abstract class BaseQueries<
   /**
    * Updates a single entity by unique identifier
    *
-   * @param identifier - Unique identifier to find the entity
+   * Accepts either a minimal identifier OR a full entity object
+   *
+   * @param identifier - Unique identifier or full entity object to find the entity
    * @param updates - Object containing fields to update
    * @returns Promise resolving when the update is complete
    * @throws Error if no entity is found with the specified identifier
+   *
+   * @example
+   * // Explicit identifier
+   * await Q.player.update({ discordId: "123" }, { minecraftUsername: "NewName" })
+   *
+   * @example
+   * // Pass full entity
+   * await Q.player.update(player, { minecraftUsername: "NewName" })
    */
   async update(
-    identifier: NonNullable<TConfig["Identifier"]>,
+    identifier:
+      | NonNullable<TConfig["Identifier"]>
+      | TConfig["Entity"]
+      | Record<string, any>,
     updates: Partial<NonNullable<TConfig["Update"]>>
   ): Promise<void> {
+    const extracted = this.extractIdentifier(identifier as Record<string, any>);
     const { whereClause, values: identifierValues } =
-      this.getColumnMapping(identifier);
+      this.getColumnMapping(extracted);
     const updateMappings = this.getUpdateMapping(updates);
 
     const setClauses = updateMappings.map(
@@ -311,9 +427,9 @@ export abstract class BaseQueries<
     );
 
     const query = `
-        UPDATE ${this.table}
-        SET ${setClauses.join(", ")}
-        WHERE ${whereClause}`;
+      UPDATE ${this.table}
+      SET ${setClauses.join(", ")}
+      WHERE ${whereClause}`;
 
     const params = [...identifierValues, ...updateMappings.map((m) => m.value)];
 
@@ -321,7 +437,7 @@ export abstract class BaseQueries<
       const result = await this.db.query(query, params);
 
       if (result.rowCount === 0) {
-        throw createNotFoundError(this.table, identifier);
+        throw createNotFoundError(this.table, extracted);
       }
     } catch (error) {
       logger.error(`Failed to update ${this.table}:`, error);
@@ -332,17 +448,28 @@ export abstract class BaseQueries<
   /**
    * Updates a single entity and returns the updated record
    *
-   * @param identifier - Unique identifier to find the entity
+   * Accepts either a minimal identifier OR a full entity object
+   *
+   * @param identifier - Unique identifier or full entity object to find the entity
    * @param updates - Object containing fields to update
    * @returns Promise resolving to the updated entity
    * @throws Error if no entity is found with the specified identifier
+   *
+   * @example
+   * const updated = await Q.player.updateAndReturn(player, {
+   *   minecraftUsername: "NewName"
+   * });
    */
   async updateAndReturn(
-    identifier: NonNullable<TConfig["Identifier"]>,
+    identifier:
+      | NonNullable<TConfig["Identifier"]>
+      | TConfig["Entity"]
+      | Record<string, any>,
     updates: Partial<NonNullable<TConfig["Update"]>>
   ): Promise<TConfig["Entity"]> {
+    const extracted = this.extractIdentifier(identifier as Record<string, any>);
     const { whereClause, values: identifierValues } =
-      this.getColumnMapping(identifier);
+      this.getColumnMapping(extracted);
     const updateMappings = this.getUpdateMapping(updates);
 
     const setClauses = updateMappings.map(
@@ -351,10 +478,10 @@ export abstract class BaseQueries<
     );
 
     const query = `
-        UPDATE ${this.table}
-        SET ${setClauses.join(", ")}
-        WHERE ${whereClause}
-        RETURNING *`;
+      UPDATE ${this.table}
+      SET ${setClauses.join(", ")}
+      WHERE ${whereClause}
+      RETURNING *`;
 
     const params = [...identifierValues, ...updateMappings.map((m) => m.value)];
 
@@ -362,7 +489,7 @@ export abstract class BaseQueries<
       const result = await this.db.query<TConfig["DbEntity"]>(query, params);
 
       if (result.rowCount === 0) {
-        throw createNotFoundError(this.table, identifier);
+        throw createNotFoundError(this.table, extracted);
       }
 
       return this.mapRowToEntity(result.rows[0]);
@@ -375,19 +502,30 @@ export abstract class BaseQueries<
   /**
    * Deletes a single entity by unique identifier
    *
-   * @param identifier - Unique identifier to find the entity
+   * Accepts either a minimal identifier OR a full entity object
+   *
+   * @param identifier - Unique identifier or full entity object to find the entity
    * @returns Promise resolving when the deletion is complete
    * @throws Error if no entity is found with the specified identifier
+   *
+   * @example
+   * await Q.player.delete(player) // Uses player.minecraftUuid
    */
-  async delete(identifier: NonNullable<TConfig["Identifier"]>): Promise<void> {
-    const { whereClause, values } = this.getColumnMapping(identifier);
+  async delete(
+    identifier:
+      | NonNullable<TConfig["Identifier"]>
+      | TConfig["Entity"]
+      | Record<string, any>
+  ): Promise<void> {
+    const extracted = this.extractIdentifier(identifier as Record<string, any>);
+    const { whereClause, values } = this.getColumnMapping(extracted);
     const query = `DELETE FROM ${this.table} WHERE ${whereClause}`;
 
     try {
       const result = await this.db.query(query, values);
 
       if (result.rowCount === 0) {
-        throw createNotFoundError(this.table, identifier);
+        throw createNotFoundError(this.table, extracted);
       }
     } catch (error) {
       logger.error(`Failed to delete ${this.table}:`, error);
@@ -399,16 +537,25 @@ export abstract class BaseQueries<
    * Gets a specific field value with an optimized query
    * Only fetches the requested column from the database
    *
-   * @param identifier - Unique identifier
+   * Accepts either a minimal identifier OR a full entity object
+   *
+   * @param identifier - Unique identifier or full entity object
    * @param field - Field name to retrieve
    * @returns Promise resolving to the field value
    * @throws Error if entity not found
+   *
+   * @example
+   * const username = await Q.player.pluck(player, "minecraftUsername")
    */
   async pluck<K extends keyof TConfig["Entity"]>(
-    identifier: NonNullable<TConfig["Identifier"]>,
+    identifier:
+      | NonNullable<TConfig["Identifier"]>
+      | TConfig["Entity"]
+      | Record<string, any>,
     field: K
   ): Promise<TConfig["Entity"][K]> {
-    const { whereClause, values } = this.getColumnMapping(identifier);
+    const extracted = this.extractIdentifier(identifier as Record<string, any>);
+    const { whereClause, values } = this.getColumnMapping(extracted);
     const columnName = this.getColumnName(field as string);
 
     const query = `SELECT ${columnName} FROM ${this.table} WHERE ${whereClause} LIMIT 1`;
@@ -417,7 +564,7 @@ export abstract class BaseQueries<
       const result = await this.db.query(query, values);
 
       if (result.rows.length === 0) {
-        throw createNotFoundError(this.table, identifier);
+        throw createNotFoundError(this.table, extracted);
       }
 
       const row = result.rows[0];
@@ -433,17 +580,30 @@ export abstract class BaseQueries<
 
   /**
    * Proxy based optimized field getter
-   * Uses pluck() under the good for efficient queries
+   * Uses pluck() under the hood for efficient queries
+   *
+   * Now supports both minimal identifiers and full entities
+   *
+   * @example
+   * const username = await Q.player.select.minecraftUsername(player)
    */
   readonly select = new Proxy({} as any, {
     get: (_, field: string) => {
-      return async (identifier: NonNullable<TConfig["Identifier"]>) => {
+      return async (
+        identifier:
+          | NonNullable<TConfig["Identifier"]>
+          | TConfig["Entity"]
+          | Record<string, any>
+      ) => {
         return this.pluck(identifier, field as keyof TConfig["Entity"]);
       };
     },
   }) as {
     [K in keyof TConfig["Entity"]]: (
-      identifier: NonNullable<TConfig["Identifier"]>
+      identifier:
+        | NonNullable<TConfig["Identifier"]>
+        | TConfig["Entity"]
+        | Record<string, any>
     ) => Promise<TConfig["Entity"][K]>;
   };
 

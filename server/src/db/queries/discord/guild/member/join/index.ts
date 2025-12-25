@@ -1,5 +1,5 @@
 import { Pool, PoolClient } from "pg";
-import { DiscordGuildMemberJoinBaseQueries } from "@/generated/db/discord_guild_member_join.queries";
+import { DiscordGuildMemberJoinBaseQueries } from "@/generated/db";
 
 /**
  * Custom queries for discord_guild_member_join table
@@ -12,6 +12,7 @@ export class DiscordGuildMemberJoinQueries extends DiscordGuildMemberJoinBaseQue
   }
 
   // Custom methods can be implemented here
+
   /**
    * Records a new member join and returns their join number
    *
@@ -51,17 +52,5 @@ export class DiscordGuildMemberJoinQueries extends DiscordGuildMemberJoinBaseQue
         throw error;
       }
     }
-  }
-
-  /**
-   * Gets a member's join number by their user ID
-   * Returns null if they haven't joined before
-   *
-   * @param userId - Discord user ID
-   * @returns Join number or null
-   */
-  async getJoinNumber(userId: string): Promise<number | null> {
-    const member = await this.find({ userId });
-    return member?.joinNumber ?? null;
   }
 }

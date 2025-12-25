@@ -35,12 +35,6 @@ interface GeneratorResult {
  */
 const GENERATORS: GeneratorConfig[] = [
   {
-    name: "Database Constants",
-    description: "Generate database table enums and constants",
-    scriptPath: "./db/generate-db-constants.ts",
-    enabled: true,
-  },
-  {
     name: "Database Query System",
     description: "Generate full base queries directly from the database",
     scriptPath: "./db/generate-query-system.ts",

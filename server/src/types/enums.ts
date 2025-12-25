@@ -4,3 +4,7 @@ export enum WaitlistStatus {
   DECLINED = "declined",
   COMPLETED = "completed",
 }
+
+export enum AdminEdit {
+  UPDATE_PLAYER = "UPDATE_PLAYER",
+}
