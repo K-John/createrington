@@ -6,6 +6,9 @@ export default defineConfig({
     globals: true,
     environment: "node",
     setupFiles: ["./src/tests/setup.ts"],
+    env: {
+      VALIDATION_MODE: "generation",
+    },
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],
