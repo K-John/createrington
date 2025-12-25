@@ -31,7 +31,7 @@ describe("Authentication middleware", () => {
         discordId: "123",
         username: "testUser",
         role: AuthRole.USER,
-        isAdmin: "false",
+        isAdmin: false,
         minecraftUuid: "uuid-123",
         minecraftUsername: "adminMC",
       };
@@ -40,7 +40,7 @@ describe("Authentication middleware", () => {
         authorization: "Bearer valid-token",
       };
 
-      vi.mocked(jwtService.verify).mockReturnValue(mockPayload as any);
+      (jwtService.verify as any).mockReturnValue(mockPayload);
 
       await authenticate(req as Request, res as Response, next);
 
@@ -59,7 +59,7 @@ describe("Authentication middleware", () => {
         authorization: "Bearer invalid-token",
       };
 
-      vi.mocked(jwtService.verify).mockImplementation(() => {
+      (jwtService.verify as any).mockImplementation(() => {
         throw new Error("Invalid token");
       });
 
@@ -82,7 +82,7 @@ describe("Authentication middleware", () => {
         authorization: "Bearer token-with-prefix",
       };
 
-      vi.mocked(jwtService.verify).mockReturnValue(mockPayload as any);
+      (jwtService.verify as any).mockReturnValue(mockPayload);
 
       await authenticate(req as Request, res as Response, next);
 
