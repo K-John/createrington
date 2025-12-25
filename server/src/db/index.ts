@@ -1,6 +1,6 @@
 import pg from "pg";
 import config from "@/config";
-import * as queries from "./queries";
+import { createQueryInstances, createQueries } from "@/generated/db/queries";
 import * as repositories from "./repositories";
 
 /**
@@ -23,18 +23,32 @@ try {
   process.exit(1);
 }
 
-// Queries
-export const player = new queries.PlayerQueries(db);
-export const discord = new queries.DiscordQueries(db);
-export const waitlist = new queries.WaitlistQueries(db);
-export const admin = new queries.AdminQueries(db);
-export const server = new queries.ServerQueries(db);
+// ============================================================================
+// QUERY SINGLETONS (for normal usage)
+// ============================================================================
 
-export const Q = { player, discord, waitlist, admin, server };
+export const Q = createQueryInstances(db);
 
-// Repositories
+// Individual exports for convenience
+export const { player, discord, waitlist, admin, server } = Q;
+
+// ============================================================================
+// QUERY FACTORY (for transactions)
+// ============================================================================
+
+export { createQueries };
+
+// ============================================================================
+// REPOSITORIES
+// ============================================================================
+
 export const waitlistRepo = new repositories.WaitlistRepository();
 
 export const R = { waitlistRepo };
 
+// ============================================================================
+// EXPORTS
+// ============================================================================
+
 export default db;
+export { transaction, Transaction } from "./utils/transactions";

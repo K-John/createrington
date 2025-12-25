@@ -1,4 +1,4 @@
-import type { Pool, QueryResultRow } from "pg";
+import type { Pool, PoolClient, QueryResultRow } from "pg";
 import logger from "@/logger";
 import { createNotFoundError } from "../utils/query-helpers";
 
@@ -19,7 +19,47 @@ export abstract class BaseQueries<
   protected abstract readonly table: string;
   protected readonly COLUMN_MAP?: Record<string, string>;
 
-  constructor(protected db: Pool) {}
+  // ============================================================================
+  // SINGLETON REGISTRY FOR CHILD QUERIES
+  // ============================================================================
+
+  /**
+   * Global registry for query instances, keyed by pool
+   * Uses WeakMap so instances are garbage collected when pool is destroyed
+   */
+  private static queryInstances = new WeakMap<
+    Pool | PoolClient,
+    Map<string, any>
+  >();
+
+  /**
+   * Gets or creates a child query instance as a singleton per pool
+   * This ensures we only have one instance of each query class per database connection
+   *
+   * @param key - Unique key for this child (e.g., 'balance')
+   * @param QueryClass - The query class constructor
+   * @returns Singleton instance of the query class
+   */
+  protected getOrCreateChild<T>(
+    key: string,
+    QueryClass: new (db: Pool | PoolClient) => T
+  ): T {
+    if (!BaseQueries.queryInstances.has(this.db)) {
+      BaseQueries.queryInstances.set(this.db, new Map());
+    }
+
+    const cache = BaseQueries.queryInstances.get(this.db)!;
+
+    const fullKey = `${this.table}.${key}`;
+
+    if (!cache.has(fullKey)) {
+      cache.set(fullKey, new QueryClass(this.db));
+    }
+
+    return cache.get(fullKey) as T;
+  }
+
+  constructor(protected db: Pool | PoolClient) {}
 
   /**
    * Converts snake_case to camelCase
@@ -757,15 +797,67 @@ export abstract class BaseQueries<
     }
   }
 
+  // ============================================================================
+  // TRANSACTION SUPPORT
+  // ============================================================================
+
   /**
-   * Begins a database transaction
-   * Returns a transaction client that must be commited or rolled back
+   * Create a new instance of this qeury class using a transaction client
+   * Allows using the same query API with the transaction helper
    *
-   * @returns Promise resolving to the transaction client
+   * @param client - Transaction client
+   * @returns New instance using the transaction client
+   *
+   * @example
+   * import { transaction } from "@/db/utils/transactions";
+   * import { PlayerQueries } fron "@/db/queries/player";
+   *
+   * await transaction(db, async (client) => {
+   *    const queries = new PlayerQueries(db).useClient(client);
+   *    await queries.create({...});
+   *    await queries.balance.create({...});
+   * })
    */
-  async begin() {
-    const client = await this.db.connect();
-    await client.query("BEGIN");
-    return client;
+  useClient(client: PoolClient): this {
+    const Constructor = this.constructor as new (db: Pool | PoolClient) => this;
+    return new Constructor(client);
+  }
+
+  /**
+   * Check if this query instance is using a transaction client
+   * Useful for debugging or conditional logic
+   */
+  isInTransaction(): boolean {
+    return "processID" in this.db;
+  }
+
+  /**
+   * Execute a callback within a transaction using this query class
+   * Convenience wrapper around the transaction helper
+   *
+   * @param callback - Function to execute with transaction enables queries
+   * @returns Result from callback
+   */
+  async inTransaction<T>(callback: (queries: this) => Promise<T>): Promise<T> {
+    const client = await (this.db as Pool).connect();
+
+    try {
+      await client.query("BEGIN");
+      logger.debug("Transaction started");
+
+      const txQueries = this.useClient(client);
+      const result = await callback(txQueries);
+
+      await client.query("COMMIT");
+      logger.debug("Transaction committed");
+
+      return result;
+    } catch (error) {
+      await client.query("ROLLBACK");
+      logger.error("Transaction rolled back:", error);
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 }

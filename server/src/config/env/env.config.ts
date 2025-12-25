@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-import { readonly, z } from "zod";
+import { z } from "zod";
 
 dotenv.config({ quiet: true });
 

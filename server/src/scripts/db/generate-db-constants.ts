@@ -1,45 +1,57 @@
+import "@/logger.global";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import pg from "pg";
+import config from "@/config";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 interface TableInfo {
   tableName: string;
   enumKey: string;
-  filePath: string;
 }
 
-function convert(tableName: string): string {
+/**
+ * Convert table name to enum key format
+ * Examples:
+ *   player -> PLAYER
+ *   player_balance -> PLAYER_BALANCE
+ *   discord_message -> DISCORD_MESSAGE
+ */
+function tableNameToEnumKey(tableName: string): string {
   return tableName.toUpperCase();
 }
 
-function extract(dir: string, tables: TableInfo[] = []): TableInfo[] {
-  const entries = fs.readdirSync(dir, { withFileTypes: true });
+/**
+ * Reads all table names from PostgreSQL database
+ */
+async function readTablesFromDatabase(): Promise<TableInfo[]> {
+  const db = new pg.Pool(config.database.pool);
 
-  for (const entry of entries) {
-    const fullPath = path.join(dir, entry.name);
+  try {
+    const result = await db.query<{ table_name: string }>(
+      `SELECT table_name 
+       FROM information_schema.tables 
+       WHERE table_schema = 'public' 
+       AND table_type = 'BASE TABLE'
+       ORDER BY table_name`
+    );
 
-    if (entry.isDirectory()) {
-      extract(fullPath, tables);
-    } else if (entry.name === "queries.ts") {
-      const content = fs.readFileSync(fullPath, "utf-8");
-      const tableMatch = content.match(
-        /protected\s+readonly\s+table\s*=\s*["']([^"']+)["']/
-      );
-
-      if (tableMatch) {
-        const tableName = tableMatch[1];
-        const enumKey = convert(tableName);
-        tables.push({ tableName, enumKey, filePath: fullPath });
-      }
-    }
+    return result.rows.map(({ table_name }) => ({
+      tableName: table_name,
+      enumKey: tableNameToEnumKey(table_name),
+    }));
+  } finally {
+    await db.end();
   }
-
-  return tables;
 }
 
+/**
+ * Generate the DatabaseTable enum file
+ */
 function generateTablesFile(tables: TableInfo[]): string {
+  // Sort by enum key for consistent ordering
   const sortedTables = [...tables].sort((a, b) =>
     a.enumKey.localeCompare(b.enumKey)
   );
@@ -53,8 +65,8 @@ function generateTablesFile(tables: TableInfo[]): string {
  *
  * DO NOT EDIT MANUALLY
  * 
- * To regenerate: npm run generate
- * Source: src/db/queries/**\\/queries.ts files
+ * To regenerate: npm run generate:db-tables
+ * Source: PostgreSQL information_schema.tables
  * 
  * Generated: ${new Date().toISOString()}
  */
@@ -63,16 +75,40 @@ export enum DatabaseTable {
 ${enumEntries}
 }
 
+/**
+ * Get the actual table name from a DatabaseTable enum value
+ * 
+ * @param table - Database table enum value
+ * @returns Actual table name as a string
+ */
 export function getTableName(table: DatabaseTable): string {
   return table;
 }
 
+/**
+ * Get all table names as an array
+ * 
+ * @returns Array of all table names
+ */
 export function getAllTableNames(): string[] {
   return Object.values(DatabaseTable);
+}
+
+/**
+ * Check if a string is a valid table name
+ * 
+ * @param name - String to check
+ * @returns True if the name matches a known table
+ */
+export function isValidTableName(name: string): name is DatabaseTable {
+  return Object.values(DatabaseTable).includes(name as DatabaseTable);
 }
 `;
 }
 
+/**
+ * Generate index file that exports tables
+ */
 function generateIndexFile(): string {
   return `/**
  * Auto-generated database constants
@@ -80,37 +116,39 @@ function generateIndexFile(): string {
  * DO NOT EDIT MANUALLY
  */
 
-${"export"} * ${"from"} "./tables";
+export * from "./tables";
 `;
 }
 
 /**
  * Main generation function
- * @returns Result with generated files
  */
 export async function generate() {
   const projectRoot = path.resolve(__dirname, "../../..");
-  const queriesDir = path.resolve(projectRoot, "src/db/queries");
   const outputDir = path.resolve(projectRoot, "src/generated/db");
   const tablesFile = path.resolve(outputDir, "tables.ts");
   const indexFile = path.resolve(outputDir, "index.ts");
 
-  if (!fs.existsSync(queriesDir)) {
-    throw new Error(`Queries directory not found: ${queriesDir}`);
-  }
-
-  const tables = extract(queriesDir);
+  console.log("Connecting to database...");
+  const tables = await readTablesFromDatabase();
+  console.log(`Found ${tables.length} tables`);
 
   if (tables.length === 0) {
-    throw new Error("No tables found in query files");
+    throw new Error("No tables found in database");
   }
 
+  // Ensure output directory exists
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
   }
 
-  fs.writeFileSync(tablesFile, generateTablesFile(tables), "utf-8");
-  fs.writeFileSync(indexFile, generateIndexFile(), "utf-8");
+  // Generate tables enum file
+  const tablesContent = generateTablesFile(tables);
+  fs.writeFileSync(tablesFile, tablesContent, "utf-8");
+
+  // Generate index file
+  const indexContent = generateIndexFile();
+  fs.writeFileSync(indexFile, indexContent, "utf-8");
 
   return {
     files: [
@@ -126,12 +164,14 @@ export default generate;
 if (import.meta.url === `file://${process.argv[1]}`) {
   generate()
     .then((result) => {
-      console.log(`✅ Generated ${result.files.length} files`);
-      console.log(`📊 Found ${result.tablesFound} tables`);
+      console.log(`\nGenerated ${result.files.length} files`);
+      console.log(`Found ${result.tablesFound} tables`);
+      console.log("\nGenerated files:");
       result.files.forEach((file) => console.log(`   - ${file}`));
     })
     .catch((error) => {
-      console.error("❌ Error:", error.message);
+      console.error("Error:", error.message);
+      console.error(error);
       process.exit(1);
     });
 }

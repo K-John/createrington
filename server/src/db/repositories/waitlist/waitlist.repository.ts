@@ -1,13 +1,10 @@
 import config from "@/config";
 import { Q } from "@/db";
-import {
-  WaitlistEntry,
-  WaitlistEntryCreate,
-  WaitlistStatus,
-} from "@/db/queries/waitlist-entry/types";
 import { Discord } from "@/discord/constants";
 import { EmbedPresets } from "@/discord/embeds";
+import { WaitlistEntry, WaitlistEntryCreate } from "@/generated/db";
 import { email, EmailTemplate } from "@/services/email";
+import { WaitlistStatus } from "@/types";
 import crypto from "node:crypto";
 
 interface RegistrationResult {
@@ -38,7 +35,7 @@ export class WaitlistRepository {
    * @returns Registration result with auto-invite status
    */
   async register(data: WaitlistEntryCreate): Promise<RegistrationResult> {
-    const entry = await Q.waitlist.createAndReturn({
+    const entry = await Q.waitlist.entry.createAndReturn({
       email: data.email,
       discordName: data.discordName,
     });
@@ -55,7 +52,7 @@ export class WaitlistRepository {
 
         const messageId = await this.notifyAdmins(entry, true);
         if (messageId) {
-          await Q.waitlist.update(
+          await Q.waitlist.entry.update(
             { id: entry.id },
             { discordMessageId: messageId }
           );
@@ -72,7 +69,7 @@ export class WaitlistRepository {
 
         const messageId = await this.notifyAdmins(entry, false);
         if (messageId) {
-          await Q.waitlist.update(
+          await Q.waitlist.entry.update(
             { id: entry.id },
             { discordMessageId: messageId }
           );
@@ -86,7 +83,7 @@ export class WaitlistRepository {
     } else {
       const messageId = await this.notifyAdmins(entry, false);
       if (messageId) {
-        await Q.waitlist.update(
+        await Q.waitlist.entry.update(
           { id: entry.id },
           { discordMessageId: messageId }
         );
@@ -116,11 +113,11 @@ export class WaitlistRepository {
    * @private
    */
   private async autoInvite(entryId: number): Promise<string> {
-    const entry = await Q.waitlist.get({ id: entryId });
+    const entry = await Q.waitlist.entry.get({ id: entryId });
 
     const token = crypto.randomBytes(32).toString("hex");
 
-    await Q.waitlist.update(
+    await Q.waitlist.entry.update(
       { id: entryId },
       {
         token,
@@ -227,14 +224,14 @@ export class WaitlistRepository {
    * @param adminId - Discord ID of admin who approved
    */
   async manualInvite(entryId: number, adminId: string): Promise<WaitlistEntry> {
-    const entry = await Q.waitlist.get({ id: entryId });
+    const entry = await Q.waitlist.entry.get({ id: entryId });
 
     let token = entry.token;
     if (!token) {
       token = crypto.randomBytes(32).toString("hex");
     }
 
-    await Q.waitlist.update(
+    await Q.waitlist.entry.update(
       { id: entry.id },
       {
         token,
@@ -255,7 +252,7 @@ export class WaitlistRepository {
       `Manually invited waitlist entry #${entryId} by admin ${adminId}`
     );
 
-    return Q.waitlist.get({ id: entryId });
+    return Q.waitlist.entry.get({ id: entryId });
   }
 
   /**
@@ -269,9 +266,9 @@ export class WaitlistRepository {
     discordId: string,
     step: ProgressStep
   ): Promise<void> {
-    const entry = await Q.waitlist.get({ discordId });
+    const entry = await Q.waitlist.entry.get({ discordId });
 
-    await Q.waitlist.update({ id: entry.id }, { [step]: true });
+    await Q.waitlist.entry.update({ id: entry.id }, { [step]: true });
 
     await this.updateProgressEmbed(entry.id);
   }
@@ -284,7 +281,7 @@ export class WaitlistRepository {
    */
   async updateProgressEmbed(entryId: number): Promise<void> {
     try {
-      const entry = await Q.waitlist.get({ id: entryId });
+      const entry = await Q.waitlist.entry.get({ id: entryId });
 
       if (!entry.discordMessageId) {
         logger.warn(`No Discord message ID for entry ${entryId}`);

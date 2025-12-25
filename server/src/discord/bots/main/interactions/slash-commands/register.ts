@@ -131,7 +131,7 @@ export async function execute(
 
   try {
     await randomDelay();
-    const entry = await Q.waitlist.find({ discordId });
+    const entry = await Q.waitlist.entry.find({ discordId });
 
     if (!entry || !entry.verified) {
       steps[currentStep].error = "No verified waitlist entry found";
@@ -178,7 +178,7 @@ export async function execute(
     });
 
     await randomDelay();
-    const exists = await Q.player.exists({ uuid });
+    const exists = await Q.player.exists({ minecraftUuid: uuid });
 
     if (exists) {
       steps[currentStep].error = "Account already registered";
@@ -229,7 +229,7 @@ export async function execute(
       discordId,
     });
 
-    await Q.waitlist.update({ id: entry.id }, { registered: true });
+    await Q.waitlist.entry.update({ id: entry.id }, { registered: true });
     await waitlistRepo.updateProgressEmbed(entry.id);
 
     steps[currentStep].completed = true;

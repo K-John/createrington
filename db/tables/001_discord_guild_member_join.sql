@@ -1,8 +1,8 @@
--- Migration: Create guild_member_join table
+-- Migration: Create discord_guild_member_join table
 -- This table tracks the order in which members join the guild
 -- Each member gets a unique, persistent join number
 
-CREATE TABLE IF NOT EXISTS guild_member_join (
+CREATE TABLE IF NOT EXISTS discord_guild_member_join (
     -- Auto-incrementing join number (this is what shows in the welcome image)
     join_number SERIAL PRIMARY KEY,
     
@@ -20,21 +20,21 @@ CREATE TABLE IF NOT EXISTS guild_member_join (
 );
 
 -- Create index for faster queries
-CREATE INDEX IF NOT EXISTS idx_guild_member_join_joined_at 
-    ON guild_member_join(joined_at DESC);
+CREATE INDEX IF NOT EXISTS idx_discord_guild_member_join_joined_at 
+    ON discord_guild_member_join(joined_at DESC);
 
 -- Add comment to table
-COMMENT ON TABLE guild_member_join IS 
+COMMENT ON TABLE discord_guild_member_join IS 
     'Tracks guild member join order with persistent sequential numbers';
 
-COMMENT ON COLUMN guild_member_join.join_number IS 
+COMMENT ON COLUMN discord_guild_member_join.join_number IS 
     'Unique sequential number assigned to each member (shown in welcome image)';
 
-COMMENT ON COLUMN guild_member_join.user_id IS 
+COMMENT ON COLUMN discord_guild_member_join.user_id IS 
     'Discord user snowflake ID';
 
-COMMENT ON COLUMN guild_member_join.username IS 
+COMMENT ON COLUMN discord_guild_member_join.username IS 
     'Username at the time of joining (for historical reference)';
 
-COMMENT ON COLUMN guild_member_join.joined_at IS 
+COMMENT ON COLUMN discord_guild_member_join.joined_at IS 
     'Timestamp when the member joined the guild';

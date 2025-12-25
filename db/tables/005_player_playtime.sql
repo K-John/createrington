@@ -1,5 +1,5 @@
 CREATE TABLE player_playtime (
-    player_uuid UUID NOT NULL REFERENCES player(uuid) ON DELETE CASCADE,
+    player_uuid UUID NOT NULL REFERENCES player(minecraft_uuid) ON DELETE CASCADE,
     server_id INTEGER NOT NULL REFERENCES server(id) ON DELETE CASCADE,
     total_seconds BIGINT DEFAULT 0 NOT NULL,
     session_start TIMESTAMP WITH TIME ZONE,

@@ -1,5 +1,5 @@
 import { waitlist, waitlistRepo } from "@/db";
-import { WaitlistStatus } from "@/db/queries/waitlist-entry/types";
+import { WaitlistStatus } from "@/types";
 import { Discord } from "@/discord/constants";
 import {
   ActionRowBuilder,
@@ -103,7 +103,7 @@ export async function execute(interaction: ButtonInteraction): Promise<void> {
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   try {
-    const entry = await waitlist.get({ id: parsedId });
+    const entry = await waitlist.entry.get({ id: parsedId });
 
     if (action === "accept") {
       if (entry.status === WaitlistStatus.ACCEPTED || entry.token) {
@@ -124,7 +124,7 @@ export async function execute(interaction: ButtonInteraction): Promise<void> {
         return;
       }
 
-      await waitlist.update(
+      await waitlist.entry.update(
         { id: parsedId },
         {
           status: WaitlistStatus.DECLINED,

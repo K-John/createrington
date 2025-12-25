@@ -94,7 +94,7 @@ export async function execute(
   }
 
   try {
-    const entry = await Q.waitlist.find({ token });
+    const entry = await Q.waitlist.entry.find({ token });
 
     if (!entry) {
       const embed = EmbedPresets.errorWithAdmin(
@@ -120,7 +120,7 @@ export async function execute(
       return;
     }
 
-    await Q.waitlist.update(
+    await Q.waitlist.entry.update(
       { id: entry.id },
       {
         discordId,

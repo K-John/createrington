@@ -38,13 +38,13 @@ const GENERATORS: GeneratorConfig[] = [
     scriptPath: "./db/generate-db-constants.ts",
     enabled: true,
   },
-  // Add future generators here:
-  // {
-  //   name: "API Routes",
-  //   description: "Generate API route constants from controllers",
-  //   scriptPath: "./api/generate-api-constants.ts",
-  //   enabled: true,
-  // },
+  {
+    name: "Database Query System",
+    description: "Generate full base queries directly from the database",
+    scriptPath: "./db/generate-query-system.ts",
+    enabled: true,
+  },
+  // TODO
 ];
 
 /**

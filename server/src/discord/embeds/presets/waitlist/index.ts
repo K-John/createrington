@@ -2,8 +2,7 @@ import { createEmbed, DiscordEmbedBuilder } from "../../embed-builder";
 import { EmbedColors } from "../../colors";
 import { ActionRowBuilder, ButtonBuilder, User } from "discord.js";
 import { ButtonPresets } from "../buttons";
-import { WaitlistEntry } from "@/db/queries/waitlist-entry/types";
-import { Player } from "@/db/queries/player/types";
+import { Player, WaitlistEntry } from "@/generated/db";
 
 export const WaitlistEmbedPresets = {
   /**

@@ -1,30 +1,17 @@
-import { Pool } from "pg";
-import { BaseQueries } from "../../base.queries";
-import { GuildMemberJoin } from "./types";
-import { GuildMemberJoinCreate, GuildMemberJoinRow } from "./types";
-
-type Identifier = { joinNumber: number } | { userId: string };
+import { Pool, PoolClient } from "pg";
+import { DiscordGuildMemberJoinBaseQueries } from "@/generated/db/discord_guild_member_join.queries";
 
 /**
- * Database queries for guild_member_joins table
+ * Custom queries for discord_guild_member_join table
  *
- * This table tracks the persistent join order or members
- * Each member gets a unique join_number that never changes
+ * Extends the auto-generated base class with custom methods
  */
-export class GuildMemberJoinQueries extends BaseQueries<{
-  Entity: GuildMemberJoin;
-  DbEntity: GuildMemberJoinRow;
-  Identifier: Identifier;
-  Filters: Partial<GuildMemberJoin>;
-  Update: never;
-  Create: GuildMemberJoinCreate;
-}> {
-  protected readonly table = "guild_member_join";
-
-  constructor(db: Pool) {
+export class DiscordGuildMemberJoinQueries extends DiscordGuildMemberJoinBaseQueries {
+  constructor(db: Pool | PoolClient) {
     super(db);
   }
 
+  // Custom methods can be implemented here
   /**
    * Records a new member join and returns their join number
    *

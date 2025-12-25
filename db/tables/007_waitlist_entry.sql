@@ -22,7 +22,8 @@ CREATE TABLE waitlist_entry (
 
     CONSTRAINT uq_waitlist_email UNIQUE (email),
     CONSTRAINT uq_waitlist_discord_name UNIQUE (discord_name),
-    CONSTRAINT uq_discord_id UNIQUE (discord_id)
+    CONSTRAINT uq_discord_id UNIQUE (discord_id),
+    CONSTRAINT uq_token UNIQUE (token)
 );
 
 CREATE INDEX idx_waitlist_token ON waitlist_entry(token);

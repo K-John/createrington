@@ -14,7 +14,7 @@ export class WaitlistController {
    * GET /api/waitlist
    */
   static async getAll(req: Request, res: Response): Promise<void> {
-    const entries = await waitlist.getAll({
+    const entries = await waitlist.entry.getAll({
       orderBy: "submittedAt",
       orderDirection: "DESC",
     });
@@ -38,7 +38,7 @@ export class WaitlistController {
       throw new BadRequestError("Invalid entry ID");
     }
 
-    const entry = await waitlist.get({ id });
+    const entry = await waitlist.entry.get({ id });
 
     res.json({
       success: true,
@@ -64,12 +64,12 @@ export class WaitlistController {
       throw new BadRequestError("Invalid email format");
     }
 
-    const emailExists = await waitlist.find({ email });
+    const emailExists = await waitlist.entry.find({ email });
     if (emailExists) {
       throw new ConflictError("This email is already on the waitlist");
     }
 
-    const discordExists = await waitlist.find({ discordName });
+    const discordExists = await waitlist.entry.find({ discordName });
     if (discordExists) {
       throw new ConflictError(
         "This Discord username is already on teh waitlist"
@@ -117,7 +117,7 @@ export class WaitlistController {
       throw new BadRequestError("Invalid entry ID");
     }
 
-    await waitlist.delete({ id });
+    await waitlist.entry.delete({ id });
 
     res.json({
       success: true,
@@ -131,7 +131,7 @@ export class WaitlistController {
    * GET /api/waitlist/stats
    */
   static async getStats(req: Request, res: Response): Promise<void> {
-    const total = await waitlist.count();
+    const total = await waitlist.entry.count();
 
     res.json({
       success: true,

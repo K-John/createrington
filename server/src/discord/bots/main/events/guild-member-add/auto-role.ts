@@ -48,7 +48,7 @@ export async function execute(
   member: GuildMember
 ): Promise<void> {
   try {
-    const joinNumber = await discord.guildMemberJoin.recordJoin(
+    const joinNumber = await discord.guild.member.join.recordJoin(
       member.user.id,
       member.user.username
     );
