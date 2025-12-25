@@ -39,3 +39,6 @@ Thumbs.db
 .cache/
 assets
 
+# Auto-generated files
+generated
+
