@@ -1,3 +1,5 @@
+process.env.VALIDATION_MODE = "generation";
+
 import { SingleBar, Presets } from "cli-progress";
 import chalk from "chalk";
 import ora from "ora";
