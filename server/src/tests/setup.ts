@@ -1,3 +1,5 @@
+process.env.VALIDATION_MODE = "generation";
+
 import { beforeAll, afterAll } from "vitest";
 import "@/logger.global";
 
