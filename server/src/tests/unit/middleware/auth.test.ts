@@ -5,6 +5,14 @@ import { UnauthorizedError, ForbiddenError } from "@/app/middleware";
 import { jwtService } from "@/services/auth/jwt";
 import { AuthRole } from "@/services/discord/oauth/oauth.service";
 
+vi.mock("@/db", () => ({
+  default: {
+    query: vi.fn(),
+    connect: vi.fn(),
+    end: vi.fn(),
+  },
+}));
+
 vi.mock("@/services/auth/jwt", () => ({
   jwtService: {
     verify: vi.fn(),
