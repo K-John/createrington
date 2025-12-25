@@ -1,4 +1,3 @@
-// src/scripts/db/generate-db-constants.ts
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -52,7 +51,7 @@ function generateTablesFile(tables: TableInfo[]): string {
   return `/**
  * Auto-generated database table names
  *
- * ⚠️  DO NOT EDIT MANUALLY
+ * DO NOT EDIT MANUALLY
  * 
  * To regenerate: npm run generate
  * Source: src/db/queries/**\\/queries.ts files
@@ -78,10 +77,10 @@ function generateIndexFile(): string {
   return `/**
  * Auto-generated database constants
  *
- * ⚠️  DO NOT EDIT MANUALLY
+ * DO NOT EDIT MANUALLY
  */
 
-export * from "./tables";
+${"export"} * ${"from"} "./tables";
 `;
 }
 
@@ -122,10 +121,8 @@ export async function generate() {
   };
 }
 
-// Allow direct execution
 export default generate;
 
-// If run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   generate()
     .then((result) => {
