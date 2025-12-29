@@ -10,10 +10,10 @@
 
 export { AdminQueries } from "./admin";
 export { AdminLogActionQueries } from "./admin/log/action";
-export { DailyPlaytimeQueries } from "./daily/playtime";
 export { DiscordGuildMemberJoinQueries } from "./discord/guild/member/join";
 export { PlayerQueries } from "./player";
 export { PlayerBalanceQueries } from "./player/balance";
 export { PlayerPlaytimeQueries } from "./player/playtime";
+export { PlayerPlaytimeDailyQueries } from "./player/playtime/daily";
 export { ServerQueries } from "./server";
 export { WaitlistEntryQueries } from "./waitlist/entry";

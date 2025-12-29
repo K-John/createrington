@@ -36,6 +36,7 @@ export class DiscordGuildMemberQueries {
   }
 
   constructor(protected db: Pool | PoolClient) {}
+
   private _join?: DiscordGuildMemberJoinQueries;
 
   /**

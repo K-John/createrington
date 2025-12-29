@@ -36,6 +36,7 @@ export class WaitlistQueries {
   }
 
   constructor(protected db: Pool | PoolClient) {}
+
   private _entry?: WaitlistEntryQueries;
 
   /**

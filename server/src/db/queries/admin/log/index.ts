@@ -36,6 +36,7 @@ export class AdminLogQueries {
   }
 
   constructor(protected db: Pool | PoolClient) {}
+
   private _action?: AdminLogActionQueries;
 
   /**

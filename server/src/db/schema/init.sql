@@ -188,20 +188,6 @@ CREATE VIEW public.admin_log_action_readable AS
 ALTER TABLE public.admin_log_action_readable OWNER TO postgres;
 
 --
--- Name: daily_playtime; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.daily_playtime (
-    player_minecraft_uuid uuid NOT NULL,
-    server_id integer NOT NULL,
-    play_date date NOT NULL,
-    seconds_played bigint DEFAULT 0 NOT NULL
-);
-
-
-ALTER TABLE public.daily_playtime OWNER TO postgres;
-
---
 -- Name: discord_guild_member_join; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -277,6 +263,7 @@ ALTER SEQUENCE public.discord_guild_member_join_join_number_seq OWNED BY public.
 --
 
 CREATE TABLE public.player (
+    id integer NOT NULL,
     minecraft_uuid uuid NOT NULL,
     minecraft_username text NOT NULL,
     discord_id text NOT NULL,
@@ -304,6 +291,28 @@ CREATE TABLE public.player_balance (
 ALTER TABLE public.player_balance OWNER TO postgres;
 
 --
+-- Name: player_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.player_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.player_id_seq OWNER TO postgres;
+
+--
+-- Name: player_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.player_id_seq OWNED BY public.player.id;
+
+
+--
 -- Name: player_playtime; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -318,6 +327,20 @@ CREATE TABLE public.player_playtime (
 
 
 ALTER TABLE public.player_playtime OWNER TO postgres;
+
+--
+-- Name: player_playtime_daily; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.player_playtime_daily (
+    player_minecraft_uuid uuid NOT NULL,
+    server_id integer NOT NULL,
+    play_date date NOT NULL,
+    seconds_played bigint DEFAULT 0 NOT NULL
+);
+
+
+ALTER TABLE public.player_playtime_daily OWNER TO postgres;
 
 --
 -- Name: server_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -459,6 +482,13 @@ ALTER TABLE ONLY public.discord_guild_member_join ALTER COLUMN join_number SET D
 
 
 --
+-- Name: player id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.player ALTER COLUMN id SET DEFAULT nextval('public.player_id_seq'::regclass);
+
+
+--
 -- Name: server id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -486,14 +516,6 @@ ALTER TABLE ONLY public.admin_log_action
 
 ALTER TABLE ONLY public.admin
     ADD CONSTRAINT admin_pkey PRIMARY KEY (discord_id);
-
-
---
--- Name: daily_playtime daily_playtime_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.daily_playtime
-    ADD CONSTRAINT daily_playtime_pkey PRIMARY KEY (player_minecraft_uuid, server_id, play_date);
 
 
 --
@@ -525,7 +547,15 @@ ALTER TABLE ONLY public.player_balance
 --
 
 ALTER TABLE ONLY public.player
-    ADD CONSTRAINT player_pkey PRIMARY KEY (minecraft_uuid);
+    ADD CONSTRAINT player_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: player_playtime_daily player_playtime_daily_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.player_playtime_daily
+    ADD CONSTRAINT player_playtime_daily_pkey PRIMARY KEY (player_minecraft_uuid, server_id, play_date);
 
 
 --
@@ -585,6 +615,14 @@ ALTER TABLE ONLY public.player
 
 
 --
+-- Name: player uq_player_minecraft_uuid; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.player
+    ADD CONSTRAINT uq_player_minecraft_uuid UNIQUE (minecraft_uuid);
+
+
+--
 -- Name: waitlist_entry uq_token; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -614,13 +652,6 @@ ALTER TABLE ONLY public.waitlist_entry
 
 ALTER TABLE ONLY public.waitlist_entry
     ADD CONSTRAINT waitlist_entry_pkey PRIMARY KEY (id);
-
-
---
--- Name: idx_daily_playtime_date; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_daily_playtime_date ON public.daily_playtime USING btree (play_date);
 
 
 --
@@ -687,10 +718,24 @@ CREATE INDEX idx_player_minecraft_username ON public.player USING btree (minecra
 
 
 --
+-- Name: idx_player_minecraft_uuid; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_player_minecraft_uuid ON public.player USING btree (minecraft_uuid);
+
+
+--
 -- Name: idx_player_online; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX idx_player_online ON public.player USING btree (online) WHERE (online = true);
+
+
+--
+-- Name: idx_player_playtime_daily_date; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_player_playtime_daily_date ON public.player_playtime_daily USING btree (play_date);
 
 
 --
@@ -761,7 +806,7 @@ CREATE TRIGGER update_player_updated_at BEFORE UPDATE ON public.player FOR EACH 
 --
 
 ALTER TABLE ONLY public.admin
-    ADD CONSTRAINT admin_discord_id_fkey FOREIGN KEY (discord_id) REFERENCES public.player(discord_id);
+    ADD CONSTRAINT admin_discord_id_fkey FOREIGN KEY (discord_id) REFERENCES public.player(discord_id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
@@ -769,23 +814,7 @@ ALTER TABLE ONLY public.admin
 --
 
 ALTER TABLE ONLY public.admin_log_action
-    ADD CONSTRAINT admin_log_action_server_id_fkey FOREIGN KEY (server_id) REFERENCES public.server(id) ON DELETE CASCADE;
-
-
---
--- Name: daily_playtime daily_playtime_player_minecraft_uuid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.daily_playtime
-    ADD CONSTRAINT daily_playtime_player_minecraft_uuid_fkey FOREIGN KEY (player_minecraft_uuid) REFERENCES public.player(minecraft_uuid) ON DELETE CASCADE;
-
-
---
--- Name: daily_playtime daily_playtime_server_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.daily_playtime
-    ADD CONSTRAINT daily_playtime_server_id_fkey FOREIGN KEY (server_id) REFERENCES public.server(id) ON DELETE CASCADE;
+    ADD CONSTRAINT admin_log_action_server_id_fkey FOREIGN KEY (server_id) REFERENCES public.server(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
@@ -793,7 +822,23 @@ ALTER TABLE ONLY public.daily_playtime
 --
 
 ALTER TABLE ONLY public.player_balance
-    ADD CONSTRAINT player_balance_player_uuid_fkey FOREIGN KEY (player_uuid) REFERENCES public.player(minecraft_uuid) ON DELETE CASCADE;
+    ADD CONSTRAINT player_balance_player_uuid_fkey FOREIGN KEY (player_uuid) REFERENCES public.player(minecraft_uuid) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: player_playtime_daily player_playtime_daily_player_minecraft_uuid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.player_playtime_daily
+    ADD CONSTRAINT player_playtime_daily_player_minecraft_uuid_fkey FOREIGN KEY (player_minecraft_uuid) REFERENCES public.player(minecraft_uuid) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: player_playtime_daily player_playtime_daily_server_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.player_playtime_daily
+    ADD CONSTRAINT player_playtime_daily_server_id_fkey FOREIGN KEY (server_id) REFERENCES public.server(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
@@ -801,7 +846,7 @@ ALTER TABLE ONLY public.player_balance
 --
 
 ALTER TABLE ONLY public.player_playtime
-    ADD CONSTRAINT player_playtime_player_uuid_fkey FOREIGN KEY (player_uuid) REFERENCES public.player(minecraft_uuid) ON DELETE CASCADE;
+    ADD CONSTRAINT player_playtime_player_uuid_fkey FOREIGN KEY (player_uuid) REFERENCES public.player(minecraft_uuid) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
@@ -809,7 +854,7 @@ ALTER TABLE ONLY public.player_playtime
 --
 
 ALTER TABLE ONLY public.player_playtime
-    ADD CONSTRAINT player_playtime_server_id_fkey FOREIGN KEY (server_id) REFERENCES public.server(id) ON DELETE CASCADE;
+    ADD CONSTRAINT player_playtime_server_id_fkey FOREIGN KEY (server_id) REFERENCES public.server(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
