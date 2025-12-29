@@ -10,7 +10,7 @@ CREATE TABLE admin_log_action (
     old_value TEXT, -- Stored as JSON string for complex types
     new_value TEXT, -- Stored as JSON string for complex types
     reason TEXT, -- Admin's reason for the change
-    server_id INTEGER REFERENCES server(id) ON DELETE CASCADE, -- For playtime changes
+    server_id INTEGER REFERENCES server(id) ON DELETE CASCADE ON UPDATE CASCADE, -- For playtime changes
     performed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
     metadata JSONB -- Additional conext (IP, command, used, etc.)
 );

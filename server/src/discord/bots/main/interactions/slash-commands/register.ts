@@ -228,6 +228,9 @@ export async function execute(
       minecraftUsername: correctName,
       discordId,
     });
+    await Q.player.balance.create({
+      playerUuid: uuid,
+    });
 
     await Q.waitlist.entry.update({ id: entry.id }, { registered: true });
     await waitlistRepo.updateProgressEmbed(entry.id);

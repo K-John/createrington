@@ -1182,36 +1182,11 @@ export { ${className}BaseQueries } from "./${table.tableName}.queries";`;
     })
     .join("\n");
 
-  // Add actual query exports (from /db/queries)
-  const actualQueryExports = tables
-    .map((table) => {
-      const className = snakeToPascal(table.tableName);
-      const parts = table.tableName.split("_");
-      return `export { ${className}Queries } from "@/db/queries/${parts.join(
-        "/"
-      )}";`;
-    })
-    .join("\n");
-
   return `/**
  * Barrel export for all generated database types and queries
  * 
- * ONE-STOP-SHOP: Import everything you need from here!
- * 
  * Auto-generated from database schema
  * DO NOT EDIT MANUALLY - regenerate with: npm run generate
- * 
- * @example
- * // Import types
- * import type { Player, PlayerCreate, Admin } from "@/generated/db";
- * 
- * @example
- * // Import database singleton
- * import { DatabaseQueries } from "@/generated/db";
- * 
- * @example
- * // Import constants
- * import { DatabaseTable } from "@/generated/db";
  */
 
 // ============================================================================
@@ -1221,10 +1196,10 @@ export { ${className}BaseQueries } from "./${table.tableName}.queries";`;
 ${typeAndBaseExports}
 
 // ============================================================================
-// QUERY CLASSES
+// BASE QUERY CLASSES (DO NOT export actual queries here - causes circular deps)
 // ============================================================================
 
-${actualQueryExports}
+// Actual query classes are exported from @/db directly, not from generated/
 
 // ============================================================================
 // DATABASE QUERY SINGLETON & HELPERS
@@ -1355,7 +1330,7 @@ function generateActualQueryClass(
   const className = structure.className;
 
   return `import { Pool, PoolClient } from "pg";
-import { ${className}BaseQueries } from "@/generated/db";
+import { ${className}BaseQueries } from "@/generated/db/${structure.tableName}.queries";
 
 /**
  * Custom queries for ${table.tableName} table
@@ -1449,6 +1424,45 @@ export class ${className}Queries {
 
   constructor(protected db: Pool | PoolClient) {}${childProperties}
 }
+`;
+}
+
+/**
+ * Generate barrel export for actual query classes in /db/queries
+ * This gets written to /db/queries/index.ts
+ */
+function generateActualQueriesBarrel(hierarchy: TableStructure[]): string {
+  const allStructures: TableStructure[] = [];
+
+  function collectAll(structure: TableStructure) {
+    allStructures.push(structure);
+    structure.children.forEach(collectAll);
+  }
+
+  hierarchy.forEach(collectAll);
+
+  // Only export actual table query classes (not namespaces)
+  const actualTables = allStructures.filter((s) => !s.isNamespaceOnly);
+
+  const exports = actualTables
+    .map((structure) => {
+      const className = structure.className;
+      const parts = structure.tableName.split("_");
+      return `export { ${className}Queries } from "./${parts.join("/")}";`;
+    })
+    .join("\n");
+
+  return `/**
+ * Barrel export for all actual query classes
+ * 
+ * Auto-generated from database schema
+ * DO NOT EDIT MANUALLY - regenerate with: npm run generate
+ * 
+ * @example
+ * import { PlayerQueries, AdminLogActionQueries } from "@/db/queries";
+ */
+
+${exports}
 `;
 }
 
@@ -1590,6 +1604,15 @@ export async function generate() {
   const constantsFile = path.join(generatedDir, "constants.ts");
   fs.writeFileSync(constantsFile, constantsContent, "utf-8");
   generatedFiles.push(path.relative(projectRoot, constantsFile));
+
+  const actualQueriesBarrelContent = generateActualQueriesBarrel(hierarchy);
+  const actualQueriesBarrelFile = path.join(actualQueriesDir, "index.ts");
+  fs.writeFileSync(
+    actualQueriesBarrelFile,
+    actualQueriesBarrelContent,
+    "utf-8"
+  );
+  generatedFiles.push(path.relative(projectRoot, actualQueriesBarrelFile));
 
   fs.writeFileSync(cacheFile, JSON.stringify(currentSchema, null, 2), "utf-8");
 

@@ -12,6 +12,7 @@ export interface AdminChangeConfirmation {
   onConfirm: () => Promise<void>;
   onCancel?: () => Promise<void>;
   timeout?: number;
+  isDeferred?: boolean;
 }
 
 export async function confirmAdminChange(
@@ -27,6 +28,7 @@ export async function confirmAdminChange(
     onConfirm,
     onCancel,
     timeout = 2 * 60 * 1000,
+    isDeferred = false,
   } = options;
 
   const confirmEmbed = EmbedPresets.confirmation.create({
@@ -75,5 +77,6 @@ export async function confirmAdminChange(
     timeout,
     ephemeral: true,
     authorOnly: true,
+    isDeferred,
   });
 }

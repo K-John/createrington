@@ -7,4 +7,6 @@ export enum WaitlistStatus {
 
 export enum AdminEdit {
   UPDATE_PLAYER = "UPDATE_PLAYER",
+  UPDATE_BALANCE = "UPDATE_BALANCE",
+  UPDATE_PLAYTIME = "UPDATE_PLAYTIME",
 }

@@ -1,1 +1,1 @@
-export { WaitlistRepository } from "./waitlist/waitlist.repository";
+export { WaitlistRepository } from "./waitlist";

@@ -38,8 +38,8 @@ export const ConfirmationEmbedPresets = {
     });
 
     if (warnings.length > 0) {
-      const warningsText = warnings.map((w) => `⚠️ ${w}`).join("\n");
-      embed.field("⚠️ Warnings", warningsText, false);
+      const warningsText = warnings.map((w) => `${w}`).join("\n");
+      embed.field("Warnings", warningsText, false);
     }
 
     if (footer) {

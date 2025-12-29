@@ -36,6 +36,8 @@ export interface ConfirmationFlowOptions {
   onTimeout?: () => Promise<void>;
   /** Only allow the command author to interact (default: true) */
   authorOnly?: boolean;
+  /** Whether the interaction has already been deferred (default: false) */
+  isDeferred?: boolean;
 }
 
 export class ConfirmationFlow {
@@ -58,6 +60,7 @@ export class ConfirmationFlow {
       ephemeral = true,
       onTimeout,
       authorOnly = true,
+      isDeferred = false,
     } = options;
 
     const flowId = `${interaction.id}-${Date.now()}`;
@@ -74,12 +77,17 @@ export class ConfirmationFlow {
       buttonComponents
     );
 
-    const message = await interaction.reply({
-      embeds: [embed.build()],
-      components: [row],
-      flags: ephemeral ? MessageFlags.Ephemeral : undefined,
-      fetchReply: true,
-    });
+    const message = isDeferred
+      ? await interaction.editReply({
+          embeds: [embed.build()],
+          components: [row],
+        })
+      : await interaction.reply({
+          embeds: [embed.build()],
+          components: [row],
+          flags: ephemeral ? MessageFlags.Ephemeral : undefined,
+          fetchReply: true,
+        });
 
     const handlerMap = new Map<string, ConfirmationButton["handler"]>();
     buttons.forEach((btn) => {

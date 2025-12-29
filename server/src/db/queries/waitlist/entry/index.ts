@@ -1,5 +1,5 @@
 import { Pool, PoolClient } from "pg";
-import { WaitlistEntryBaseQueries } from "@/generated/db";
+import { WaitlistEntryBaseQueries } from "@/generated/db/waitlist_entry.queries";
 
 /**
  * Custom queries for waitlist_entry table

@@ -19,6 +19,16 @@ export interface CommandModule {
   execute: (interaction: ChatInputCommandInteraction) => Promise<void>;
   prodOnly?: boolean;
 
+  // Permission configuration
+  permissions?: {
+    /** Requires admin role to execute */
+    requireAdmin?: boolean;
+    /** Custom permission check function */
+    customCheck?: (
+      interaction: ChatInputCommandInteraction
+    ) => Promise<boolean>;
+  };
+
   // Cooldown configuration
   cooldown?: {
     duration: number; // in seconds
@@ -82,6 +92,10 @@ export async function loadCommandHandlers(): Promise<
       }
 
       commandHandlers.set(commandModule.data.name, commandModule);
+
+      if (commandModule.permissions?.requireAdmin) {
+        logger.debug(`Command ${commandModule.data.name} requires admin`);
+      }
 
       if (commandModule.cooldown) {
         logger.debug(

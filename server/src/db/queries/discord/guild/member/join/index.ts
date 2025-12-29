@@ -1,5 +1,5 @@
 import { Pool, PoolClient } from "pg";
-import { DiscordGuildMemberJoinBaseQueries } from "@/generated/db";
+import { DiscordGuildMemberJoinBaseQueries } from "@/generated/db/discord_guild_member_join.queries";
 
 /**
  * Custom queries for discord_guild_member_join table

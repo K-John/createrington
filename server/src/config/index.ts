@@ -68,7 +68,7 @@ const config: Config = {
       },
       channels: {
         welcome: "1446998934428848238",
-        adminChat: "1452981508909305962",
+        adminChat: "1455003488881869066",
         adminNotifications: "1453171290700779530",
       },
       categories: {

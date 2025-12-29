@@ -64,6 +64,16 @@ export const { player, discord, waitlist, admin, server } = Q;
 export { createQueries };
 
 // ============================================================================
+// RE-EXPORT ALL ACTUAL QUERY CLASSES
+// ============================================================================
+
+/**
+ * Export all actual query classes from the auto-generated barrel
+ * This allows: import { PlayerQueries, AdminQueries } from "@/db"
+ */
+export * from "./queries";
+
+// ============================================================================
 // REPOSITORIES
 // ============================================================================
 

@@ -10,6 +10,7 @@ import { CommandModule } from "../loaders/command-loader";
 import { cooldownManager } from "@/discord/utils/cooldown";
 import { EmbedPresets } from "@/discord/embeds";
 import { ButtonModule, findButtonHandler } from "../loaders/button-loader";
+import { requireAdmin } from "@/discord/utils/admin-guard";
 
 /**
  * Formats a cooldown duration in seconds into a human-readable string
@@ -76,14 +77,64 @@ function canBypassCooldown(
 }
 
 /**
+ * Checks command permissions before execution
+ *
+ * @param interaction - The chat input interaction
+ * @param command - The command module being executed
+ * @returns True if the user has permission, false otherwise (and sends error message)
+ */
+async function checkPermission(
+  interaction: ChatInputCommandInteraction,
+  command: CommandModule
+): Promise<boolean> {
+  if (!command.permissions) return true;
+
+  if (command.permissions.requireAdmin) {
+    const hasPermission = await requireAdmin(interaction);
+    if (!hasPermission) {
+      return false;
+    }
+  }
+
+  if (command.permissions.customCheck) {
+    try {
+      const hasPermission = await command.permissions.customCheck(interaction);
+      if (!hasPermission) {
+        return false;
+      }
+    } catch (error) {
+      logger.error(
+        `Error in custom permission check for ${interaction.commandName}`,
+        error
+      );
+
+      const embed = EmbedPresets.error(
+        "Permission Check Failed",
+        "An error ocurred while checking permissions"
+      );
+
+      await interaction.reply({
+        embeds: [embed.build()],
+        flags: MessageFlags.Ephemeral,
+      });
+
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
  * Handles execution of slash commands with cooldown management
  *
  * Process:
  * 1. Retrieves the command handler
- * 2. Checks if the command is on cooldown (unless user can bypass)
- * 3. Executes the command if not on cooldown
- * 4. Sets cooldown after successful execution
- * 5. Handles errors with ephemeral error messages
+ * 2. Checks permissions (admin, custom checks)
+ * 3. Checks if the command is on cooldown (unless user can bypass)
+ * 4. Executes the command if not on cooldown
+ * 5. Sets cooldown after successful execution
+ * 6. Handles errors with ephemeral error messages
  *
  * @param interaction - The chat input command interaction
  * @param commandHandlers - Collection of registered command handlers
@@ -103,6 +154,14 @@ async function handleChatCommands(
   logger.info(
     `${interaction.user.tag} (${interaction.user.id}) ran /${interaction.commandName}`
   );
+
+  const hasPermission = await checkPermission(interaction, command);
+  if (!hasPermission) {
+    logger.debug(
+      `${interaction.user.tag} denied permission for /${interaction.commandName}`
+    );
+    return;
+  }
 
   if (command.cooldown && !canBypassCooldown(interaction, command)) {
     const cooldownRemaining = cooldownManager.check(

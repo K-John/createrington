@@ -1,5 +1,5 @@
 import { Pool, PoolClient } from "pg";
-import { DailyPlaytimeBaseQueries } from "@/generated/db";
+import { DailyPlaytimeBaseQueries } from "@/generated/db/daily_playtime.queries";
 
 /**
  * Custom queries for daily_playtime table

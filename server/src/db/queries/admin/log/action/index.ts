@@ -1,5 +1,5 @@
 import { Pool, PoolClient } from "pg";
-import { AdminLogActionBaseQueries } from "@/generated/db";
+import { AdminLogActionBaseQueries } from "@/generated/db/admin_log_action.queries";
 
 /**
  * Custom queries for admin_log_action table

@@ -1,5 +1,5 @@
 import { Pool, PoolClient } from "pg";
-import { ServerBaseQueries } from "@/generated/db";
+import { ServerBaseQueries } from "@/generated/db/server.queries";
 
 /**
  * Custom queries for server table
