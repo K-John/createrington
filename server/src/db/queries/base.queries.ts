@@ -2,6 +2,35 @@ import type { Pool, PoolClient, QueryResultRow } from "pg";
 import logger from "@/logger";
 import { createNotFoundError } from "../utils/query-helpers";
 
+export type FilterOperators<T> = {
+  /** Equal to */
+  $eq?: T;
+  /** Not equal to */
+  $ne?: T;
+  /** Greater than */
+  $gt?: T;
+  /** Greater than or equal to */
+  $gte?: T;
+  /** Less than */
+  $lt?: T;
+  /** Less than or equal to */
+  $lte?: T;
+  /** In array (matches any value in the array) */
+  $in?: T[];
+  /** Not in array (doesn't match any value in the array) */
+  $nin?: T[];
+  /** SQL LIKE pattern match (case-sensitive) */
+  $like?: string;
+  /** SQL ILIKE pattern match (case-insensitive) */
+  $ilike?: string;
+  /** IS NOT NULL (true) or IS NULL (false) */
+  $exists?: boolean;
+  /** Between two values (inclusive) */
+  $between?: [T, T];
+};
+
+export type FilterValue<T> = T | FilterOperators<T> | null;
+
 /**
  * Base class for database query operations
  * Provides common CRUD functionality that can be extended by specific entity data
@@ -254,7 +283,11 @@ export abstract class BaseQueries<
    * @returns Object containing the WHERE clause and all parameter values
    */
   protected buildFilterClause(
-    filters: Partial<NonNullable<TConfig["Filters"]>>
+    filters: Partial<{
+      [K in keyof NonNullable<TConfig["Filters"]>]: FilterValue<
+        NonNullable<TConfig["Filters"]>[K]
+      >;
+    }>
   ): {
     whereClause: string;
     params: any[];
@@ -264,20 +297,160 @@ export abstract class BaseQueries<
     let paramIndex = 1;
 
     for (const [key, value] of Object.entries(filters)) {
-      if (value !== undefined && value !== null) {
-        const column = this.getColumnName(key);
-        if (column) {
-          conditions.push(`${column} = $${paramIndex}`);
-          params.push(value);
-          paramIndex++;
-        }
+      const column = this.getColumnName(key);
+      if (!column) continue;
+
+      // Skip undefined (means "don't filter")
+      if (value === undefined) continue;
+
+      // Handle null explicitly
+      if (value === null) {
+        conditions.push(`${column} IS NULL`);
+        continue;
       }
+
+      // Check if value is an operator object
+      if (this.isOperatorObject(value)) {
+        this.buildOperatorConditions(column, value, conditions, params);
+        paramIndex = params.length + 1;
+        continue;
+      }
+
+      // Default equality check
+      conditions.push(`${column} = $${paramIndex}`);
+      params.push(value);
+      paramIndex++;
     }
 
     return {
       whereClause: conditions.length > 0 ? conditions.join(" AND ") : "1=1",
       params,
     };
+  }
+
+  /**
+   * Checks if value is an operator object (has kes starting with $)
+   *
+   * @param value - The value to check
+   * @returns True if the value is an operator object, false otherwise
+   */
+  private isOperatorObject(value: any): boolean {
+    return (
+      value &&
+      typeof value === "object" &&
+      !Array.isArray(value) &&
+      Object.keys(value).some((key) => key.startsWith("$"))
+    );
+  }
+
+  /**
+   * Build conditions for operator objects
+   *
+   * @param column - The column to build
+   * @param operators - The operators to add to the query
+   * @param conditions - The conditions of the columns
+   * @returns Promise resolving once the operation is completed
+   */
+  private buildOperatorConditions(
+    column: string,
+    operators: Record<string, any>,
+    conditions: string[],
+    params: any[]
+  ): void {
+    for (const [op, val] of Object.entries(operators)) {
+      const paramIndex = params.length + 1;
+
+      switch (op) {
+        case "$exists":
+          if (val === true) {
+            conditions.push(`${column} IS NOT NULL`);
+          } else if (val === false) {
+            conditions.push(`${column} IS NULL`);
+          }
+          break;
+
+        case "$between":
+          if (!Array.isArray(val) || val.length !== 2) {
+            throw new Error("$between requires an array of exactly 2 values");
+          }
+          conditions.push(
+            `${column} BETWEEN $${paramIndex} AND $${paramIndex + 1}`
+          );
+          params.push(val[0], val[1]);
+          break;
+
+        case "$eq":
+          conditions.push(`${column} = $${paramIndex}`);
+          params.push(val);
+          break;
+
+        case "$ne":
+          if (val === null) {
+            conditions.push(`${column} IS NOT NULL`);
+          } else {
+            conditions.push(`${column} != $${paramIndex}`);
+            params.push(val);
+          }
+          break;
+
+        case "$gt":
+          conditions.push(`${column} > $${paramIndex}`);
+          params.push(val);
+          break;
+
+        case "$gte":
+          conditions.push(`${column} >= $${paramIndex}`);
+          params.push(val);
+          break;
+
+        case "$lt":
+          conditions.push(`${column} < $${paramIndex}`);
+          params.push(val);
+          break;
+
+        case "$lte":
+          conditions.push(`${column} <= $${paramIndex}`);
+          params.push(val);
+          break;
+
+        case "$in":
+          if (!Array.isArray(val)) {
+            throw new Error("$in requires an array value");
+          }
+          if (val.length === 0) {
+            conditions.push("1=0");
+          } else {
+            conditions.push(`${column} = ANY($${paramIndex})`);
+            params.push(val);
+          }
+          break;
+
+        case "$nin":
+          if (!Array.isArray(val)) {
+            throw new Error("$nin requires an array value");
+          }
+          if (val.length === 0) {
+            conditions.push("1=1");
+          } else {
+            conditions.push(`${column} != ALL($${paramIndex})`);
+            params.push(val);
+          }
+          break;
+
+        case "$like":
+          conditions.push(`${column} LIKE $${paramIndex}`);
+          params.push(val);
+          break;
+
+        case "$ilike":
+          conditions.push(`${column} ILIKE $${paramIndex}`);
+          params.push(val);
+          break;
+
+        default:
+          logger.warn(`Unknown operator: ${op}`);
+      }
+    }
   }
 
   // ============================================================================

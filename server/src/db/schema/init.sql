@@ -40,26 +40,27 @@ CREATE FUNCTION public.sync_player_online_status() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 BEGIN
-    -- Player started a session
-    IF NEW.session_start IS NOT NULL THEN
+    IF TG_OP = 'INSERT' AND NEW.session_end IS NULL THEN
+        -- Player started a session
         UPDATE player
         SET online = true,
-            last_seen = NOW()
-        WHERE uuid = NEW.player_uuid;
-
-    -- Player ended a session
-    ELSIF OLD.session_start IS NOT NULL AND NEW.session_start IS NULL THEN
-        -- Check if player is still online on any other server
+            last_seen = NOW(),
+            current_server_id = NEW.server_id
+        WHERE minecraft_uuid = NEW.player_minecraft_uuid;
+        
+    ELSIF TG_OP = 'UPDATE' AND OLD.session_end IS NULL AND NEW.session_end IS NOT NULL THEN
+        -- Player ended a session - check if they're still online elsewhere
         IF NOT EXISTS (
-            SELECT 1 FROM player_playtime
-            WHERE player_uuid = NEW.player_uuid
-            AND session_start IS NOT NULL
-            AND server_id != NEW.server_id  -- Different server, same player
+            SELECT 1 FROM player_session
+            WHERE player_minecraft_uuid = NEW.player_minecraft_uuid
+            AND session_end IS NULL
+            AND id != NEW.id
         ) THEN
             UPDATE player
             SET online = false,
-                last_seen = NOW()
-            WHERE uuid = NEW.player_uuid;
+                last_seen = NEW.session_end,
+                current_server_id = NULL
+            WHERE minecraft_uuid = NEW.player_minecraft_uuid;
         END IF;
     END IF;
 
@@ -69,6 +70,94 @@ $$;
 
 
 ALTER FUNCTION public.sync_player_online_status() OWNER TO postgres;
+
+--
+-- Name: update_playtime_aggregates(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.update_playtime_aggregates() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    v_play_date DATE;
+    v_hour_start TIMESTAMP WITH TIME ZONE;
+    v_hour_end TIMESTAMP WITH TIME ZONE;
+    v_current_hour TIMESTAMP WITH TIME ZONE;
+    v_seconds_in_hour BIGINT;
+BEGIN
+    -- Only process when session ends
+    IF NEW.session_end IS NULL THEN
+        RETURN NEW;
+    END IF;
+
+    -- Update daily aggregate
+    v_play_date := NEW.session_start::DATE;
+    
+    -- Handle sessions that span multiple days
+    WHILE v_play_date <= NEW.session_end::DATE LOOP
+        INSERT INTO player_playtime_daily (player_minecraft_uuid, server_id, play_date, seconds_played)
+        VALUES (
+            NEW.player_minecraft_uuid,
+            NEW.server_id,
+            v_play_date,
+            EXTRACT(EPOCH FROM (
+                LEAST(NEW.session_end, (v_play_date + INTERVAL '1 day')::TIMESTAMP WITH TIME ZONE) -
+                GREATEST(NEW.session_start, v_play_date::TIMESTAMP WITH TIME ZONE)
+            ))::BIGINT
+        )
+        ON CONFLICT (player_minecraft_uuid, server_id, play_date)
+        DO UPDATE SET seconds_played = player_playtime_daily.seconds_played + EXCLUDED.seconds_played;
+        
+        v_play_date := v_play_date + 1;
+    END LOOP;
+
+    -- Update hourly aggregates
+    v_current_hour := DATE_TRUNC('hour', NEW.session_start);
+    
+    WHILE v_current_hour < NEW.session_end LOOP
+        v_hour_start := GREATEST(NEW.session_start, v_current_hour);
+        v_hour_end := LEAST(NEW.session_end, v_current_hour + INTERVAL '1 hour');
+        v_seconds_in_hour := EXTRACT(EPOCH FROM (v_hour_end - v_hour_start))::BIGINT;
+        
+        INSERT INTO player_playtime_hourly (player_minecraft_uuid, server_id, play_hour, seconds_played)
+        VALUES (NEW.player_minecraft_uuid, NEW.server_id, v_current_hour, v_seconds_in_hour)
+        ON CONFLICT (player_minecraft_uuid, server_id, play_hour)
+        DO UPDATE SET seconds_played = player_playtime_hourly.seconds_played + EXCLUDED.seconds_played;
+        
+        v_current_hour := v_current_hour + INTERVAL '1 hour';
+    END LOOP;
+
+    -- Update summary
+    INSERT INTO player_playtime_summary (
+        player_minecraft_uuid, 
+        server_id, 
+        total_seconds, 
+        total_sessions,
+        first_seen,
+        last_seen
+    )
+    VALUES (
+        NEW.player_minecraft_uuid,
+        NEW.server_id,
+        NEW.seconds_played,
+        1,
+        NEW.session_start,
+        NEW.session_end
+    )
+    ON CONFLICT (player_minecraft_uuid, server_id)
+    DO UPDATE SET
+        total_seconds = player_playtime_summary.total_seconds + NEW.seconds_played,
+        total_sessions = player_playtime_summary.total_sessions + 1,
+        first_seen = LEAST(player_playtime_summary.first_seen, NEW.session_start),
+        last_seen = GREATEST(player_playtime_summary.last_seen, NEW.session_end),
+        updated_at = NOW();
+
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION public.update_playtime_aggregates() OWNER TO postgres;
 
 --
 -- Name: update_updated_at_column(); Type: FUNCTION; Schema: public; Owner: postgres
@@ -313,22 +402,6 @@ ALTER SEQUENCE public.player_id_seq OWNED BY public.player.id;
 
 
 --
--- Name: player_playtime; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.player_playtime (
-    player_uuid uuid NOT NULL,
-    server_id integer NOT NULL,
-    total_seconds bigint DEFAULT 0 NOT NULL,
-    session_start timestamp with time zone,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT chk_playtime_non_negative CHECK ((total_seconds >= 0))
-);
-
-
-ALTER TABLE public.player_playtime OWNER TO postgres;
-
---
 -- Name: player_playtime_daily; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -341,6 +414,85 @@ CREATE TABLE public.player_playtime_daily (
 
 
 ALTER TABLE public.player_playtime_daily OWNER TO postgres;
+
+--
+-- Name: player_playtime_hourly; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.player_playtime_hourly (
+    player_minecraft_uuid uuid NOT NULL,
+    server_id integer NOT NULL,
+    play_hour timestamp with time zone NOT NULL,
+    seconds_played bigint DEFAULT 0 NOT NULL
+);
+
+
+ALTER TABLE public.player_playtime_hourly OWNER TO postgres;
+
+--
+-- Name: player_playtime_summary; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.player_playtime_summary (
+    player_minecraft_uuid uuid NOT NULL,
+    server_id integer NOT NULL,
+    total_seconds bigint DEFAULT 0 NOT NULL,
+    total_sessions integer DEFAULT 0 NOT NULL,
+    first_seen timestamp with time zone,
+    last_seen timestamp with time zone,
+    avg_session_seconds bigint GENERATED ALWAYS AS (
+CASE
+    WHEN (total_sessions > 0) THEN (total_seconds / total_sessions)
+    ELSE (0)::bigint
+END) STORED,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.player_playtime_summary OWNER TO postgres;
+
+--
+-- Name: player_session; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.player_session (
+    id integer NOT NULL,
+    player_minecraft_uuid uuid NOT NULL,
+    server_id integer NOT NULL,
+    session_start timestamp with time zone NOT NULL,
+    session_end timestamp with time zone,
+    seconds_played bigint GENERATED ALWAYS AS (
+CASE
+    WHEN (session_end IS NOT NULL) THEN (EXTRACT(epoch FROM (session_end - session_start)))::bigint
+    ELSE NULL::bigint
+END) STORED,
+    CONSTRAINT chk_session_end_after_start CHECK (((session_end IS NULL) OR (session_end >= session_start)))
+);
+
+
+ALTER TABLE public.player_session OWNER TO postgres;
+
+--
+-- Name: player_session_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.player_session_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.player_session_id_seq OWNER TO postgres;
+
+--
+-- Name: player_session_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.player_session_id_seq OWNED BY public.player_session.id;
+
 
 --
 -- Name: server_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -489,6 +641,13 @@ ALTER TABLE ONLY public.player ALTER COLUMN id SET DEFAULT nextval('public.playe
 
 
 --
+-- Name: player_session id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.player_session ALTER COLUMN id SET DEFAULT nextval('public.player_session_id_seq'::regclass);
+
+
+--
 -- Name: server id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -559,11 +718,27 @@ ALTER TABLE ONLY public.player_playtime_daily
 
 
 --
--- Name: player_playtime player_playtime_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: player_playtime_hourly player_playtime_hourly_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.player_playtime
-    ADD CONSTRAINT player_playtime_pkey PRIMARY KEY (player_uuid, server_id);
+ALTER TABLE ONLY public.player_playtime_hourly
+    ADD CONSTRAINT player_playtime_hourly_pkey PRIMARY KEY (player_minecraft_uuid, server_id, play_hour);
+
+
+--
+-- Name: player_playtime_summary player_playtime_summary_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.player_playtime_summary
+    ADD CONSTRAINT player_playtime_summary_pkey PRIMARY KEY (player_minecraft_uuid, server_id);
+
+
+--
+-- Name: player_session player_session_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.player_session
+    ADD CONSTRAINT player_session_pkey PRIMARY KEY (id);
 
 
 --
@@ -739,10 +914,59 @@ CREATE INDEX idx_player_playtime_daily_date ON public.player_playtime_daily USIN
 
 
 --
--- Name: idx_player_playtime_server; Type: INDEX; Schema: public; Owner: postgres
+-- Name: idx_player_playtime_hourly_date; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_player_playtime_server ON public.player_playtime USING btree (server_id);
+CREATE INDEX idx_player_playtime_hourly_date ON public.player_playtime_hourly USING btree (play_hour);
+
+
+--
+-- Name: idx_player_playtime_hourly_player_date; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_player_playtime_hourly_player_date ON public.player_playtime_hourly USING btree (player_minecraft_uuid, play_hour);
+
+
+--
+-- Name: idx_player_playtime_summary_total; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_player_playtime_summary_total ON public.player_playtime_summary USING btree (total_seconds DESC);
+
+
+--
+-- Name: idx_player_session_active; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_player_session_active ON public.player_session USING btree (player_minecraft_uuid, server_id) WHERE (session_end IS NULL);
+
+
+--
+-- Name: idx_player_session_date_range; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_player_session_date_range ON public.player_session USING btree (player_minecraft_uuid, session_start, session_end);
+
+
+--
+-- Name: idx_player_session_player; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_player_session_player ON public.player_session USING btree (player_minecraft_uuid);
+
+
+--
+-- Name: idx_player_session_server; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_player_session_server ON public.player_session USING btree (server_id);
+
+
+--
+-- Name: idx_player_session_start; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_player_session_start ON public.player_session USING btree (session_start);
 
 
 --
@@ -774,10 +998,17 @@ CREATE INDEX idx_waitlist_token ON public.waitlist_entry USING btree (token);
 
 
 --
--- Name: player_playtime trigger_sync_player_online; Type: TRIGGER; Schema: public; Owner: postgres
+-- Name: player_session trigger_sync_player_online; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
-CREATE TRIGGER trigger_sync_player_online AFTER INSERT OR UPDATE ON public.player_playtime FOR EACH ROW EXECUTE FUNCTION public.sync_player_online_status();
+CREATE TRIGGER trigger_sync_player_online AFTER INSERT OR UPDATE ON public.player_session FOR EACH ROW EXECUTE FUNCTION public.sync_player_online_status();
+
+
+--
+-- Name: player_session trigger_update_playtime_aggregates; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER trigger_update_playtime_aggregates AFTER INSERT OR UPDATE OF session_end ON public.player_session FOR EACH ROW EXECUTE FUNCTION public.update_playtime_aggregates();
 
 
 --
@@ -785,13 +1016,6 @@ CREATE TRIGGER trigger_sync_player_online AFTER INSERT OR UPDATE ON public.playe
 --
 
 CREATE TRIGGER update_player_balance_updated_at BEFORE UPDATE ON public.player_balance FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-
---
--- Name: player_playtime update_player_playtime_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
---
-
-CREATE TRIGGER update_player_playtime_updated_at BEFORE UPDATE ON public.player_playtime FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 
 --
@@ -842,19 +1066,51 @@ ALTER TABLE ONLY public.player_playtime_daily
 
 
 --
--- Name: player_playtime player_playtime_player_uuid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: player_playtime_hourly player_playtime_hourly_player_minecraft_uuid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.player_playtime
-    ADD CONSTRAINT player_playtime_player_uuid_fkey FOREIGN KEY (player_uuid) REFERENCES public.player(minecraft_uuid) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE ONLY public.player_playtime_hourly
+    ADD CONSTRAINT player_playtime_hourly_player_minecraft_uuid_fkey FOREIGN KEY (player_minecraft_uuid) REFERENCES public.player(minecraft_uuid) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
--- Name: player_playtime player_playtime_server_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: player_playtime_hourly player_playtime_hourly_server_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.player_playtime
-    ADD CONSTRAINT player_playtime_server_id_fkey FOREIGN KEY (server_id) REFERENCES public.server(id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE ONLY public.player_playtime_hourly
+    ADD CONSTRAINT player_playtime_hourly_server_id_fkey FOREIGN KEY (server_id) REFERENCES public.server(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: player_playtime_summary player_playtime_summary_player_minecraft_uuid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.player_playtime_summary
+    ADD CONSTRAINT player_playtime_summary_player_minecraft_uuid_fkey FOREIGN KEY (player_minecraft_uuid) REFERENCES public.player(minecraft_uuid) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: player_playtime_summary player_playtime_summary_server_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.player_playtime_summary
+    ADD CONSTRAINT player_playtime_summary_server_id_fkey FOREIGN KEY (server_id) REFERENCES public.server(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: player_session player_session_player_minecraft_uuid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.player_session
+    ADD CONSTRAINT player_session_player_minecraft_uuid_fkey FOREIGN KEY (player_minecraft_uuid) REFERENCES public.player(minecraft_uuid) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: player_session player_session_server_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.player_session
+    ADD CONSTRAINT player_session_server_id_fkey FOREIGN KEY (server_id) REFERENCES public.server(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --

@@ -61,6 +61,7 @@
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
+    "minecraft-server-util": "^5.4.4",
     "nodemailer": "^7.0.11",
     "pg": "^8.16.3",
     "rcon-client": "^4.2.5",

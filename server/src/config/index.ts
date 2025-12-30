@@ -137,6 +137,7 @@ const config: Config = {
     cogs: {
       ip: env.COGS_AND_STEAM_SERVER_IP,
       port: env.COGS_AND_STEAM_SERVER_PORT,
+      id: 1,
       rcon: {
         host: env.COGS_AND_STEAM_SERVER_IP,
         port: env.COGS_AND_STEAM_RCON_PORT,
@@ -146,6 +147,7 @@ const config: Config = {
     test: {
       ip: env.TEST_SERVER_IP,
       port: env.TEST_SERVER_PORT,
+      id: 2,
       rcon: {
         host: env.TEST_SERVER_IP,
         port: env.TEST_RCON_PORT,

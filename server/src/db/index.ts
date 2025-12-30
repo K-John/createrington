@@ -79,7 +79,9 @@ export * from "./queries";
 
 export const waitlistRepo = new repositories.WaitlistRepository();
 
-export const R = { waitlistRepo };
+export const playtimeRepo = new repositories.PlaytimeRepository();
+
+export const R = { waitlistRepo, playtimeRepo };
 
 // ============================================================================
 // EXPORTS

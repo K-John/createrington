@@ -8,3 +8,4 @@ CREATE TABLE player_playtime_daily (
 );
 
 CREATE INDEX idx_player_playtime_daily_date ON player_playtime_daily(play_date);
+Wha

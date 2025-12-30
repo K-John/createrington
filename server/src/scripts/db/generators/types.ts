@@ -172,20 +172,9 @@ function generateIdentifierType(table: TableInfo, className: string): string {
  * Generate the Filters type (non-unique, non-pk fields)
  */
 function generateFiltersType(table: TableInfo, className: string): string {
-  const filterFields = table.columns
-    .filter((c) => !c.isPrimaryKey && !c.isUnique)
-    .map((col) => {
-      const type = pgTypeToTsType(
-        col.udtName,
-        col.isNullable,
-        col.numericPrecision,
-        col.numericScale
-      );
-      return `  ${snakeToCamel(col.columnName)}: ${type};`;
-    });
+  return `import type { FilterValue } from "@/db/queries/base.queries";
 
-  const fieldsContent =
-    filterFields.length > 0 ? `{\n${filterFields.join("\n")}\n}` : "{}";
-
-  return `export type ${className}Filters = ${fieldsContent};`;
+export type ${className}Filters = {
+  [K in keyof ${className}]?: FilterValue<${className}[K]>;
+};`;
 }

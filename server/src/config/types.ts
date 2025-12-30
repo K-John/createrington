@@ -116,6 +116,7 @@ interface onGuildMemberAddConfig {
 interface MinecraftServerConfig {
   readonly ip: string;
   readonly port: number;
+  readonly id: number;
   readonly rcon?: {
     readonly host: string;
     readonly password: string;
