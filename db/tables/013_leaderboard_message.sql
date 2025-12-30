@@ -4,7 +4,7 @@ CREATE TABLE leaderboard_message (
     channel_id TEXT NOT NULL,
     message_id TEXT NOT NULL,
     last_refreshed TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
     
     CONSTRAINT uq_leaderboard_type UNIQUE (leaderboard_type)
 );

@@ -20,6 +20,7 @@ export interface LeaderboardData {
   entries: LeaderboardEntry[];
   footer?: string;
   lastUpdated: Date;
+  icon?: string;
 }
 
 export interface LeaderboardProvider {
