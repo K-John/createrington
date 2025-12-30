@@ -161,6 +161,12 @@ class ServerRconConnection {
         this.lastUsed = Date.now();
         return this.connection;
       }
+
+      throw new RconCommandError(
+        "Previous connection attempt failed",
+        "connect",
+        this.serverId
+      );
     }
 
     this.isConnecting = true;
@@ -256,7 +262,7 @@ class ServerRconConnection {
    * Checks if a connection is currently active
    */
   public isConnected(): boolean {
-    return this.connect !== null;
+    return this.connection !== null;
   }
 }
 
@@ -291,23 +297,20 @@ export class MinecraftRconManager {
    * Loads server configurations from config
    */
   private loadServerConfigs(): void {
-    if (
-      config.servers?.cogs?.rcon &&
-      !this.serverConfigs.has(ServerId.COGS) &&
-      config.servers?.test?.rcon &&
-      !this.serverConfigs.has(ServerId.TEST)
-    ) {
-      this.serverConfigs
-        .set(ServerId.COGS, {
-          host: config.servers.cogs.rcon.host,
-          port: config.servers.cogs.rcon.port,
-          password: config.servers.cogs.rcon.password,
-        })
-        .set(ServerId.TEST, {
-          host: config.servers.test.rcon.host,
-          port: config.servers.test.rcon.port,
-          password: config.servers.test.rcon.password,
-        });
+    if (config.servers?.cogs?.rcon && !this.serverConfigs.has(ServerId.COGS)) {
+      this.serverConfigs.set(ServerId.COGS, {
+        host: config.servers.cogs.rcon.host,
+        port: config.servers.cogs.rcon.port,
+        password: config.servers.cogs.rcon.password,
+      });
+    }
+
+    if (config.servers?.test?.rcon && !this.serverConfigs.has(ServerId.TEST)) {
+      this.serverConfigs.set(ServerId.TEST, {
+        host: config.servers.test.rcon.host,
+        port: config.servers.test.rcon.port,
+        password: config.servers.test.rcon.password,
+      });
     }
 
     logger.info(
@@ -457,6 +460,7 @@ export class MinecraftRconManager {
       Array.from(this.connections.values()).map((conn) => conn.disconnect())
     );
     this.connections.clear();
+    this.stopCleanup();
   }
 
   /**
@@ -495,6 +499,12 @@ export class MinecraftRconManager {
       clearInterval(this.cleanupInterval);
       this.cleanupInterval = null;
     }
+  }
+
+  public async shutdown(): Promise<void> {
+    this.stopCleanup();
+    await this.disconnectAll();
+    MinecraftRconManager.instance = null;
   }
 
   /**
@@ -681,7 +691,7 @@ export class MinecraftRconManager {
     playerName?: string
   ): Promise<string> {
     if (
-      (action === WhitelistAction.ADD || action === WhitelistAction.RELOAD) &&
+      (action === WhitelistAction.ADD || action === WhitelistAction.REMOVE) &&
       !playerName
     ) {
       throw new RconCommandError(

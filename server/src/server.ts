@@ -9,6 +9,7 @@ import {
   shutdownPlaytimeService,
   isPlaytimeServiceInitialized,
 } from "@/services/playtime/playtime.manager";
+import { minecraftRcon } from "./utils/rcon";
 
 const PORT = env.PORT;
 
@@ -28,8 +29,12 @@ async function shutdown(httpServer: http.Server): Promise<void> {
     // Stop playtime service first (ends all active sessions)
     if (isPlaytimeServiceInitialized()) {
       shutdownPlaytimeService();
+      await new Promise((resolve) => setTimeout(resolve, 500));
       logger.info("PlaytimeService stopped");
     }
+
+    await minecraftRcon.shutdown();
+    logger.info("RCON connections closed");
 
     // Destroy Discord bot
     await mainBot.destroy();
