@@ -4,6 +4,7 @@ import { EmbedPresets } from "@/discord/embeds";
 import { confirmAdminChange } from "@/discord/utils/flows/confirmation/admin-confirmation";
 import { DatabaseTable, Player } from "@/generated/db";
 import { AdminEdit } from "@/types";
+import { minecraftRcon, ServerId, WhitelistAction } from "@/utils/rcon";
 import {
   ChatInputCommandInteraction,
   MessageFlags,
@@ -202,9 +203,10 @@ async function handleUsernameUpdate(
   const oldUsername = player.minecraftUsername;
 
   const warnings = [
-    "⚠️ This will NOT update the server whitelist automatically",
-    "⚠️ You may need to manually update via RCON or SERVER CONSOLE",
+    "⚠️ This method should be used only if a player changed their username",
     "⚠️ This does not sync UUID with the new username, use 'Full Account' to update both",
+    "✅ All related records (balance, playtime, etc.) will be updated automatically",
+    "✅ Whitelist will be updated automatically",
   ];
 
   await confirmAdminChange({
@@ -247,6 +249,18 @@ async function handleUsernameUpdate(
             },
           });
         });
+
+        await minecraftRcon.whitelist(
+          ServerId.COGS,
+          WhitelistAction.REMOVE,
+          oldUsername
+        );
+
+        await minecraftRcon.whitelist(
+          ServerId.COGS,
+          WhitelistAction.ADD,
+          newUsername
+        );
 
         const successEmbed = EmbedPresets.success(
           "Username Updated",
@@ -313,9 +327,10 @@ async function handleUuidUpdate(
   const oldUuid = player.minecraftUuid;
 
   const warnings = [
-    "⚠️ This is a sensitive operation - make sure the UUID is correct",
+    "⚠️ This method should not be used, only very special cases (username sync error)",
     "⚠️ This does not sync username with the new UUID, use 'Full Account' to update both",
     "✅ All related records (balance, playtime, etc.) will be updated automatically",
+    "✅ Whitelist will be updated automatically",
   ];
 
   await confirmAdminChange({
@@ -534,6 +549,18 @@ async function handleFullAccountUpdate(
               },
             });
           });
+
+          minecraftRcon.whitelist(
+            ServerId.COGS,
+            WhitelistAction.REMOVE,
+            oldUsername
+          );
+
+          minecraftRcon.whitelist(
+            ServerId.COGS,
+            WhitelistAction.ADD,
+            newUsername
+          );
 
           const successEmbed = EmbedPresets.success(
             "Account Updated",

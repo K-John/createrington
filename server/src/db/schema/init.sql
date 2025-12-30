@@ -359,7 +359,8 @@ CREATE TABLE public.player (
     online boolean DEFAULT false NOT NULL,
     last_seen timestamp with time zone DEFAULT now() NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    current_server_id integer
 );
 
 
@@ -872,6 +873,13 @@ CREATE INDEX idx_log_actions_target ON public.admin_log_action USING btree (targ
 
 
 --
+-- Name: idx_player_current_server; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_player_current_server ON public.player USING btree (current_server_id) WHERE (current_server_id IS NOT NULL);
+
+
+--
 -- Name: idx_player_discord_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1047,6 +1055,14 @@ ALTER TABLE ONLY public.admin_log_action
 
 ALTER TABLE ONLY public.player_balance
     ADD CONSTRAINT player_balance_player_uuid_fkey FOREIGN KEY (player_uuid) REFERENCES public.player(minecraft_uuid) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: player player_current_server_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.player
+    ADD CONSTRAINT player_current_server_id_fkey FOREIGN KEY (current_server_id) REFERENCES public.server(id) ON DELETE SET NULL;
 
 
 --

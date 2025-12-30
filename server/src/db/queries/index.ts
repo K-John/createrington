@@ -11,6 +11,7 @@
 export { AdminQueries } from "./admin";
 export { AdminLogActionQueries } from "./admin/log/action";
 export { DiscordGuildMemberJoinQueries } from "./discord/guild/member/join";
+export { LeaderboardMessageQueries } from "./leaderboard/message";
 export { PlayerQueries } from "./player";
 export { PlayerBalanceQueries } from "./player/balance";
 export { PlayerPlaytimeDailyQueries } from "./player/playtime/daily";
