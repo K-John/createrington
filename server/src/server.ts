@@ -155,5 +155,3 @@ function start(): void {
 }
 
 start();
-
-logger.info(mainBot);
