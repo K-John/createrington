@@ -21,7 +21,7 @@ export const Discord = {
   Users: DiscordUsers,
 
   // Getter for message service
-  get messages(): DiscordMessageService {
+  get Messages(): DiscordMessageService {
     if (!messageService) {
       throw new Error("Discord message service not initialized");
     }

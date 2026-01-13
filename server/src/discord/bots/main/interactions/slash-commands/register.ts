@@ -290,7 +290,7 @@ export async function execute(
       steps[currentStep]?.name || "Unknown step"
     );
 
-    await Discord.messages.send({
+    await Discord.Messages.send({
       channelId: Discord.Channels.ADMIN_NOTIFICATIONS,
       embeds: adminEmbed.build(),
       content: Discord.Roles.mention(Discord.Roles.ADMIN),

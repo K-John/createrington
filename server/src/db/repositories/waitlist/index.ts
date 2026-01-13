@@ -184,7 +184,7 @@ export class WaitlistRepository {
             botMention: `<@${config.discord.bots.main.id}>` || "bot",
           });
 
-        const result = await Discord.messages.send({
+        const result = await Discord.Messages.send({
           channelId: Discord.Channels.ADMIN_NOTIFICATIONS,
           embeds: embed,
           components,
@@ -199,7 +199,7 @@ export class WaitlistRepository {
           discordName: entry.discordName,
         });
 
-        const result = await Discord.messages.send({
+        const result = await Discord.Messages.send({
           channelId: Discord.Channels.ADMIN_NOTIFICATIONS,
           embeds: embed,
           components,
@@ -314,7 +314,7 @@ export class WaitlistRepository {
         player
       );
 
-      await Discord.messages.edit({
+      await Discord.Messages.edit({
         channelId: Discord.Channels.ADMIN_NOTIFICATIONS,
         messageId: entry.discordMessageId,
         embeds: progressEmbed.build(),

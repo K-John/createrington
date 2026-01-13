@@ -1,5 +1,3 @@
-// src/services/playtime/PlaytimeService.ts
-
 import EventEmitter from "node:events";
 import {
   ActiveSession,

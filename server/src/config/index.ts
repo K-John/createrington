@@ -1,5 +1,6 @@
 import type { Config } from "./types";
 import { env, envMode } from "./env/env.config";
+import discordEntities from "./discord-entities.json";
 
 const config: Config = {
   envMode,
@@ -60,23 +61,9 @@ const config: Config = {
 
     guild: {
       id: env.DISCORD_GUILD_ID,
-      roles: {
-        owner: "1447340667767361670",
-        admin: "1447343808147750952",
-        unverified: "1447307459449327616",
-        player: "1447001301824045128",
-      },
-      channels: {
-        welcome: "1446998934428848238",
-        adminChat: "1455003488881869066",
-        adminNotifications: "1453171290700779530",
-      },
-      categories: {
-        welcome: "1446996633731731628",
-        administration: "1452981460494585957",
-        dev: "1447344417177604096",
-        verification: "1453343658983297180",
-      },
+      roles: discordEntities.roles,
+      channels: discordEntities.channels,
+      categories: discordEntities.categories,
     },
 
     embeds: {
