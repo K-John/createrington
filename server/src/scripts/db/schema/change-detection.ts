@@ -145,21 +145,21 @@ function hasColumnChanged(prevCol: any, currCol: any): boolean {
  */
 export function printChanges(changes: SchemaChange[]): void {
   if (changes.length === 0) {
-    console.log("\n✅ No schema changes detected\n");
+    console.log("\nNo schema changes detected\n");
     return;
   }
 
-  console.log("\n⚠️  Schema changes detected:\n");
+  console.log("\nSchema changes detected:\n");
 
   const grouped = groupChangesByType(changes);
 
-  printTableChanges(grouped.added, "📦 Tables Added:", "+");
-  printTableChanges(grouped.removed, "🗑️  Tables Removed:", "-");
-  printColumnChanges(grouped.colAdded, "➕ Columns Added:");
-  printColumnChanges(grouped.colRemoved, "➖ Columns Removed:");
-  printColumnChanges(grouped.colModified, "🔄 Columns Modified:");
+  printTableChanges(grouped.added, "Tables Added:", "+");
+  printTableChanges(grouped.removed, "Tables Removed:", "-");
+  printColumnChanges(grouped.colAdded, "Columns Added:");
+  printColumnChanges(grouped.colRemoved, "Columns Removed:");
+  printColumnChanges(grouped.colModified, "Columns Modified:");
 
-  console.log("💡 Review changes in CHANGELOG.md\n");
+  console.log("Review changes in CHANGELOG.md\n");
 }
 
 /**
@@ -284,11 +284,11 @@ function generateChangelogEntry(changes: SchemaChange[]): string {
 
   const grouped = groupChangesByType(changes);
 
-  entry += generateTableSection(grouped.added, "✨ Tables Added");
-  entry += generateTableSection(grouped.removed, "❌ Tables Removed");
-  entry += generateColumnSection(grouped.colAdded, "➕ Columns Added");
-  entry += generateColumnSection(grouped.colRemoved, "➖ Columns Removed");
-  entry += generateColumnSection(grouped.colModified, "🔄 Columns Modified");
+  entry += generateTableSection(grouped.added, "Tables Added");
+  entry += generateTableSection(grouped.removed, "Tables Removed");
+  entry += generateColumnSection(grouped.colAdded, "Columns Added");
+  entry += generateColumnSection(grouped.colRemoved, "Columns Removed");
+  entry += generateColumnSection(grouped.colModified, "Columns Modified");
 
   return entry;
 }

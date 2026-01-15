@@ -229,7 +229,7 @@ export async function execute(
       discordId,
     });
     await Q.player.balance.create({
-      playerUuid: uuid,
+      minecraftUuid: uuid,
     });
 
     await Q.waitlist.entry.update({ id: entry.id }, { registered: true });

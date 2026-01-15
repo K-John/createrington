@@ -1,5 +1,5 @@
 CREATE TABLE player_balance (
-    player_uuid UUID PRIMARY KEY REFERENCES player(minecraft_uuid) ON DELETE CASCADE ON UPDATE CASCADE,
+    minecraft_uuid UUID PRIMARY KEY REFERENCES player(minecraft_uuid) ON DELETE CASCADE ON UPDATE CASCADE,
     balance NUMERIC(20,8) DEFAULT 0 NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 

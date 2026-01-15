@@ -202,6 +202,7 @@ async function handleChatCommands(
             : formatCooldown(cooldownRemaining),
           true
         )
+        .noTimestamp()
         .build();
 
       await interaction.reply({

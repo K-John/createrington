@@ -186,7 +186,7 @@ export class WaitlistRepository {
 
         const result = await Discord.Messages.send({
           channelId: Discord.Channels.ADMIN_NOTIFICATIONS,
-          embeds: embed,
+          embeds: embed.setTimestamp(),
           components,
           content,
         });
@@ -201,7 +201,7 @@ export class WaitlistRepository {
 
         const result = await Discord.Messages.send({
           channelId: Discord.Channels.ADMIN_NOTIFICATIONS,
-          embeds: embed,
+          embeds: embed.setTimestamp(),
           components,
         });
 
@@ -308,11 +308,9 @@ export class WaitlistRepository {
         }
       }
 
-      const progressEmbed = EmbedPresets.waitlist.createProgressEmbed(
-        entry,
-        discordUser,
-        player
-      );
+      const progressEmbed = EmbedPresets.waitlist
+        .createProgressEmbed(entry, discordUser, player)
+        .timestamp();
 
       await Discord.Messages.edit({
         channelId: Discord.Channels.ADMIN_NOTIFICATIONS,

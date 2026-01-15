@@ -7,7 +7,7 @@ export class DiscordEmbedBuilder {
   private embed: EmbedBuilder;
 
   constructor() {
-    this.embed = new EmbedBuilder().setTimestamp();
+    this.embed = new EmbedBuilder();
   }
 
   public title(text: string): this {

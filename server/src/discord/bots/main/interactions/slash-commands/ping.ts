@@ -64,6 +64,7 @@ export async function execute(
   const embed = EmbedPresets.info("🏓 Pong!")
     .field("Bot Latency", `${latency}ms`, true)
     .field("WebSocket Latency", `${wsLatency}ms`, true)
+    .timestamp()
     .build();
 
   await interaction.editReply({ embeds: [embed] });

@@ -2,6 +2,7 @@ import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
   PermissionFlagsBits,
+  MessageFlags,
 } from "discord.js";
 import { EmbedPresets } from "@/discord/embeds";
 import { cooldownManager } from "@/discord/utils/cooldown/cooldown-manager";
@@ -89,7 +90,10 @@ export async function execute(
         `Reset ${count} cooldown(s) for ${user.tag}`
       ).build();
 
-      await interaction.reply({ embeds: [embed] });
+      await interaction.reply({
+        embeds: [embed],
+        flags: MessageFlags.Ephemeral,
+      });
       break;
     }
 
@@ -107,7 +111,10 @@ export async function execute(
             `No active cooldowns found for \`/${commandName}\``
           );
 
-      await interaction.reply({ embeds: [embed.build()] });
+      await interaction.reply({
+        embeds: [embed.build()],
+        flags: MessageFlags.Ephemeral,
+      });
       break;
     }
 
@@ -116,7 +123,10 @@ export async function execute(
 
       const embed = EmbedPresets.commands.cooldownStats(stats);
 
-      await interaction.reply({ embeds: [embed.build()] });
+      await interaction.reply({
+        embeds: [embed.build()],
+        flags: MessageFlags.Ephemeral,
+      });
       break;
     }
   }

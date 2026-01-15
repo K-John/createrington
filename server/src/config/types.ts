@@ -191,6 +191,7 @@ interface ChannelConfig {
   readonly adminChat: string;
   readonly adminNotifications: string;
   readonly leaderboards: string;
+  readonly transcripts: string;
 }
 
 interface CategoriesConfig {
@@ -198,6 +199,7 @@ interface CategoriesConfig {
   readonly dev: string;
   readonly welcome: string;
   readonly verification: string;
+  readonly tickets: string;
 }
 
 interface ColorsConfig {

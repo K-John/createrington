@@ -1,13 +1,18 @@
 import type { TableInfo, TableStructure } from "../types";
+import { extractIdentifierFieldNames } from "./types";
 
 /**
- * Generate base query class with child accessor patterns
+ * Generate base query class with child accessor patterns and identifier validation
  */
 export function generateBaseQueries(
   table: TableInfo,
   structure: TableStructure
 ): string {
   const { className, tableName, children } = structure;
+  const identifierFields = extractIdentifierFieldNames(table);
+  const identifierFieldsSet = `new Set([${identifierFields
+    .map((f) => `'${f}'`)
+    .join(", ")}])`;
 
   return `import { Pool, PoolClient } from "pg";
 import { BaseQueries } from "@/db/queries/base.queries";
@@ -36,6 +41,12 @@ export class ${className}BaseQueries extends BaseQueries<{
   Create: ${className}Create;
 }> {
   protected readonly table = "${tableName}";
+  
+  /**
+   * Valid identifier fields for this table
+   * Used by extractIdentifier to skip invalid fields when passed full entities
+   */
+  protected readonly VALID_IDENTIFIER_FIELDS = ${identifierFieldsSet};
 
   constructor(db: Pool | PoolClient) {
     super(db);

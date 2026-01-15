@@ -47,6 +47,7 @@ export abstract class BaseQueries<
 > {
   protected abstract readonly table: string;
   protected readonly COLUMN_MAP?: Record<string, string>;
+  protected readonly VALID_IDENTIFIER_FIELDS?: Set<string>;
 
   // ============================================================================
   // SINGLETON REGISTRY FOR CHILD QUERIES
@@ -229,6 +230,14 @@ export abstract class BaseQueries<
     for (const key of availableKeys) {
       try {
         const columnName = this.getColumnName(key);
+
+        // Check if this is a valid identifier field
+        if (
+          this.VALID_IDENTIFIER_FIELDS &&
+          !this.VALID_IDENTIFIER_FIELDS.has(key)
+        ) {
+          continue;
+        }
 
         // If we got a valid column name, try using this as identifier
         if (columnName) {

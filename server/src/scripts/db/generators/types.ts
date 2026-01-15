@@ -128,6 +128,26 @@ function partitionCreateFields(table: TableInfo) {
 }
 
 /**
+ * Extract identifier field names (camelCase) from table
+ * Used by base-queries generator to create VALID_IDENTIFIER_FIELDS
+ */
+export function extractIdentifierFieldNames(table: TableInfo): string[] {
+  const fields: string[] = [];
+
+  // Primary key(s)
+  const pkColumns = table.columns.filter((c) => c.isPrimaryKey);
+  fields.push(...pkColumns.map((col) => snakeToCamel(col.columnName)));
+
+  // Unique columns
+  const uniqueColumns = table.columns.filter(
+    (c) => c.isUnique && !c.isPrimaryKey
+  );
+  fields.push(...uniqueColumns.map((col) => snakeToCamel(col.columnName)));
+
+  return fields.length > 0 ? fields : ["id"];
+}
+
+/**
  * Generate the Identifier type (for queries)
  */
 function generateIdentifierType(table: TableInfo, className: string): string {

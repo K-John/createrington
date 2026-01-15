@@ -19,4 +19,6 @@ export { PlayerPlaytimeHourlyQueries } from "./player/playtime/hourly";
 export { PlayerPlaytimeSummaryQueries } from "./player/playtime/summary";
 export { PlayerSessionQueries } from "./player/session";
 export { ServerQueries } from "./server";
+export { TicketQueries } from "./ticket";
+export { TicketActionQueries } from "./ticket/action";
 export { WaitlistEntryQueries } from "./waitlist/entry";

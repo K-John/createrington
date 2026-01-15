@@ -348,6 +348,44 @@ ALTER SEQUENCE public.discord_guild_member_join_join_number_seq OWNED BY public.
 
 
 --
+-- Name: leaderboard_message; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.leaderboard_message (
+    id integer NOT NULL,
+    leaderboard_type character varying(50) NOT NULL,
+    channel_id text NOT NULL,
+    message_id text NOT NULL,
+    last_refreshed timestamp with time zone DEFAULT now(),
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+ALTER TABLE public.leaderboard_message OWNER TO postgres;
+
+--
+-- Name: leaderboard_message_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.leaderboard_message_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.leaderboard_message_id_seq OWNER TO postgres;
+
+--
+-- Name: leaderboard_message_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.leaderboard_message_id_seq OWNED BY public.leaderboard_message.id;
+
+
+--
 -- Name: player; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -635,6 +673,13 @@ ALTER TABLE ONLY public.discord_guild_member_join ALTER COLUMN join_number SET D
 
 
 --
+-- Name: leaderboard_message id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.leaderboard_message ALTER COLUMN id SET DEFAULT nextval('public.leaderboard_message_id_seq'::regclass);
+
+
+--
 -- Name: player id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -692,6 +737,14 @@ ALTER TABLE ONLY public.discord_guild_member_join
 
 ALTER TABLE ONLY public.discord_guild_member_join
     ADD CONSTRAINT idx_user_id UNIQUE (user_id);
+
+
+--
+-- Name: leaderboard_message leaderboard_message_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.leaderboard_message
+    ADD CONSTRAINT leaderboard_message_pkey PRIMARY KEY (id);
 
 
 --
@@ -775,6 +828,14 @@ ALTER TABLE ONLY public.waitlist_entry
 
 
 --
+-- Name: leaderboard_message uq_leaderboard_type; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.leaderboard_message
+    ADD CONSTRAINT uq_leaderboard_type UNIQUE (leaderboard_type);
+
+
+--
 -- Name: player uq_player_discord_id; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -835,6 +896,13 @@ ALTER TABLE ONLY public.waitlist_entry
 --
 
 CREATE INDEX idx_discord_guild_member_join_joined_at ON public.discord_guild_member_join USING btree (joined_at DESC);
+
+
+--
+-- Name: idx_leaderboard_type; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_leaderboard_type ON public.leaderboard_message USING btree (leaderboard_type);
 
 
 --

@@ -49,6 +49,16 @@ export const CommonEmbedPresets = {
     return embed;
   },
 
+  plain(title: string, description?: string) {
+    const embed = createEmbed().title(`${title}`).color(EmbedColors.Info);
+
+    if (description) {
+      embed.description(description);
+    }
+
+    return embed;
+  },
+
   loading(message: string = "Processing...") {
     return createEmbed()
       .title("⏳ Please wait")
