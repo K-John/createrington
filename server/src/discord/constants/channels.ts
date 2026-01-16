@@ -90,6 +90,23 @@ export const DiscordChannelsNamespace = {
   },
 
   /**
+   * Formats a Discord channel mention string
+   *
+   * Creates a Discord mention string that will reference the channel
+   * when sent in a message. Does not validate whether the channel exists in the guild.
+   *
+   * @param channelId - The Discord channel ID to mention
+   * @returns The formatted role mention string
+   *
+   * @example
+   * const mention = DiscordChannelsNamespace.mention(Discord.Channels.CHANNEL_ID)
+   * await channel.send(`Look here ${mention}`); // "Look here #channel"
+   */
+  mention(channelId: DiscordChannelId): string {
+    return `<#${channelId}>`;
+  },
+
+  /**
    * Retrieves the human-readable SCREAMING_SNAKE_CASE name for a given Discord channel ID
    *
    * Performs a reverse lookup to find the configuration key name associated with

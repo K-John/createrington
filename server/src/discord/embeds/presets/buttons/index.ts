@@ -1,4 +1,5 @@
 import config from "@/config";
+import { TicketButtonGenerator } from "@/discord/bots/main/utils/tickets/types";
 import { ButtonBuilder, ButtonStyle } from "discord.js";
 
 const cfg = config.meta.links;

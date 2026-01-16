@@ -60,7 +60,10 @@ export async function execute(
     const balanceInt = Math.floor(num);
     const formattedBalance = balanceInt.toLocaleString("en-US");
 
-    const embed = EmbedPresets.plain("💰 Your Balance", `$${formattedBalance}`);
+    const embed = EmbedPresets.plain({
+      title: "💰 Your Balance",
+      description: `$${formattedBalance}`,
+    });
 
     await interaction.reply({
       embeds: [embed.build()],

@@ -3,6 +3,7 @@ import { CommonEmbedPresets } from "./common";
 import { ConfirmationEmbedPresets } from "./confirmation";
 import { ProgressEmbedPresets } from "./progress";
 import { RegistrationEmbedPresets } from "./registration";
+import { TicketEmbedPresets } from "./ticket";
 import { WaitlistEmbedPresets } from "./waitlist";
 
 export const EmbedPresets = {
@@ -12,4 +13,5 @@ export const EmbedPresets = {
   registration: RegistrationEmbedPresets,
   confirmation: ConfirmationEmbedPresets,
   progress: ProgressEmbedPresets,
+  ticket: TicketEmbedPresets,
 };

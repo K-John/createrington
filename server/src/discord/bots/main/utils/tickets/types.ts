@@ -4,6 +4,8 @@
  * Defines types for the ticket system
  */
 
+import { TextChannel } from "discord.js";
+
 export enum TicketType {
   GENERAL = "general",
   REPORT = "report",

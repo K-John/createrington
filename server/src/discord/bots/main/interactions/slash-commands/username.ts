@@ -46,7 +46,9 @@ export async function execute(
       discordId: user.id,
     });
 
-    const embed = EmbedPresets.plain(`${username}`);
+    const embed = EmbedPresets.plain({
+      description: `${username}`,
+    });
 
     await interaction.reply({
       embeds: [embed.build()],

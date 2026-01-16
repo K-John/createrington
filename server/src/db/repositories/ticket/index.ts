@@ -14,7 +14,7 @@ import { Q } from "@/db";
 
 interface TicketCloseData {
   closedByDiscordId: string;
-  transcriptUrl?: string;
+  transcriptPath?: string;
 }
 
 export class TicketRepository {
@@ -71,7 +71,7 @@ export class TicketRepository {
    * @returns Promise resolving to the updated ticket
    */
   async close(ticketId: number, data: TicketCloseData): Promise<Ticket> {
-    const ticket = await Q.ticket.get({ ticketId });
+    const ticket = await Q.ticket.get({ id: ticketId });
 
     if (ticket.status === TicketStatus.CLOSED) {
       throw new Error(`Ticket #${ticket.ticketNumber} is already closed`);
@@ -85,7 +85,7 @@ export class TicketRepository {
         closedByDiscordId: data.closedByDiscordId,
         metadata: {
           ...ticket.metadata,
-          transcriptUrl: data.transcriptUrl,
+          transcriptUrl: data.transcriptPath,
         },
       }
     );
@@ -95,7 +95,7 @@ export class TicketRepository {
       actionType: TicketUserAction.CLOSED,
       performedByDiscordId: data.closedByDiscordId,
       metadata: {
-        transcriptUrl: data.transcriptUrl,
+        transcriptUrl: data.transcriptPath,
       },
     });
 
@@ -220,7 +220,7 @@ export class TicketRepository {
    */
   async getTicketActions(ticketId: number): Promise<TicketAction[]> {
     return await Q.ticket.action.findAll(
-      { ticketId },
+      { id: ticketId },
       {
         orderBy: DatabaseTable.TICKET_ACTION.CAMEL_FIELDS.PERFORMED_AT,
         orderDirection: "ASC",

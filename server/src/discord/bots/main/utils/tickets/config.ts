@@ -22,7 +22,7 @@ export const TICKET_TYPE_CONFIGS: Record<TicketType, TicketTypeConfig> = {
   [TicketType.REPORT]: {
     type: TicketType.REPORT,
     label: "Report Staff Member",
-    emoji: "❗️",
+    emoji: "⚠️",
     channelPrefix: "report",
     description: "Report a staff member's behavior or actions",
     allowedRoleIds: [TicketSystemIds.OWNER_ROLE],

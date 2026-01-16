@@ -4,6 +4,7 @@ const { GREEN, RED, ORANGE, BLUE, GRAY, DARK_RED, PURPLE, GOLD } =
   config.discord.embeds.colors;
 
 export const EmbedColors = {
+  Neutral: GRAY,
   Success: GREEN,
   Error: RED,
   Warning: ORANGE,
