@@ -2,7 +2,7 @@ import {
   TicketStatus,
   TicketType,
   TicketUserAction,
-} from "@/discord/bots/main/utils/tickets/types";
+} from "@/services/discord/tickets";
 import {
   DatabaseTable,
   Ticket,

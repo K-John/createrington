@@ -7,7 +7,7 @@ import {
   SlashCommandBuilder,
 } from "discord.js";
 import { ticketService } from "../..";
-import { TicketType } from "../../utils/tickets/types";
+import { TicketType } from "@/services/discord/tickets";
 import { Discord } from "@/discord/constants";
 
 /**

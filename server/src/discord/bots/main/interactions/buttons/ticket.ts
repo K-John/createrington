@@ -6,13 +6,13 @@ import {
   EmbedBuilder,
   MessageFlags,
 } from "discord.js";
-import { parseTicketButtonId, TicketStatus } from "../../utils/tickets/types";
+import { parseTicketButtonId, TicketStatus } from "@/services/discord/tickets";
 import { ticketService } from "../../index";
 import { EmbedColors, EmbedPresets } from "@/discord/embeds";
 import { Discord } from "@/discord/constants";
 import { Q } from "@/db";
 import { isSendableChannel } from "@/discord/utils/channel-guard";
-import { TicketSystemIds } from "../../utils/tickets/config";
+import { TicketSystemIds } from "@/services/discord/tickets";
 
 /**
  * Handles ticket-related buttons

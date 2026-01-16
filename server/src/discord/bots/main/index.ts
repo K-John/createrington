@@ -8,6 +8,7 @@ import { loadButtonHandlers } from "./loaders/button-loader";
 import { createDiscordMessageService } from "@/services/discord/messages/message.service";
 import { Discord } from "@/discord/constants";
 import { TicketService } from "@/services/discord/tickets";
+import { startLeaderboardScheduler } from "@/services/discord/leaderboard";
 
 /**
  * Ticket service instance
@@ -42,6 +43,8 @@ export const ticketService = new TicketService(mainBot);
 
   mainBot.once("clientReady", () => {
     logger.info("Discord bot ready and ticket service initialized");
+
+    startLeaderboardScheduler();
   });
 })().catch((error) => {
   logger.error("Failed to initialize:", error);

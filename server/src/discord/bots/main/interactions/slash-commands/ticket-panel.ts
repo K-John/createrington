@@ -8,8 +8,8 @@ import {
   ButtonStyle,
 } from "discord.js";
 import { EmbedPresets } from "@/discord/embeds";
-import { getAllTicketTypes } from "../../utils/tickets/config";
-import { TicketButtonGenerator } from "../../utils/tickets/types";
+import { getAllTicketTypes } from "@/services/discord/tickets";
+import { TicketButtonGenerator } from "@/services/discord/tickets";
 import { isSendableChannel } from "@/discord/utils/channel-guard";
 
 /**

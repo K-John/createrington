@@ -17,11 +17,8 @@ import {
   TicketStatus,
   CreateTicketOptions,
   TicketUserAction,
-} from "@/discord/bots/main/utils/tickets/types";
-import {
-  getTicketTypeConfig,
-  TicketSystemIds,
-} from "@/discord/bots/main/utils/tickets/config";
+} from "./";
+import { getTicketTypeConfig, TicketSystemIds } from "./";
 import { Discord } from "@/discord/constants";
 import { Q } from "@/db";
 import config from "@/config";
