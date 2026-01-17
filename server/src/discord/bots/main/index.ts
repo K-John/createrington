@@ -1,4 +1,3 @@
-// server/src/discord/bots/main/index.ts
 import config from "@/config";
 import { mainBot } from "./client";
 import { loadCommandHandlers } from "./loaders/command-loader";

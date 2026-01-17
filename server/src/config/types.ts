@@ -130,6 +130,7 @@ interface PoolConfig {
 interface DiscordConfig {
   bots: {
     main: BotConfig;
+    web: BotConfig;
   };
   guild: {
     id: string;
@@ -204,6 +205,7 @@ interface CategoriesConfig {
   readonly welcome: string;
   readonly verification: string;
   readonly tickets: string;
+  readonly cogsAndSteam: string;
 }
 
 interface ColorsConfig {

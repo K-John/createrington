@@ -17,7 +17,9 @@ dotenv.config({ quiet: true });
  * // Discord
  * @property {string} DISCORD_GUILD_ID - Discord server/guild ID
  * @property {string} DISCORD_MAIN_BOT_TOKEN - Discord bot authentication token
- * @property {string} DISCORD__MAIN_BOT_ID - Discord bot application/client ID
+ * @property {string} DISCORD_MAIN_BOT_ID - Discord bot application/client ID
+ * @property {string} DISCORD_WEB_BOT_TOKEN - Discord bot authentication token
+ * @property {string} DISCORD_WEB_BOT_ID - Discord bot application/client ID
  * @property {string} DISCORD_OAUTH_CLIENT_ID - Discord auth app ID
  * @property {string} DISCORD_OAUTH_CLIENT_SECRET - Application secret used for OAuth
  * @property {string} DISCORD_OAUTH_REDIRECT_URI_DEV - Development mode redirect uri
@@ -76,6 +78,14 @@ const envSchema = z.object({
     .string()
     .min(1, "Bot ID is required")
     .regex(/^\d+$/, "Bot ID must be numeric"),
+  DISCORD_WEB_BOT_TOKEN: z
+    .string()
+    .min(1, "Bot token is required")
+    .regex(/^[\w\-\.]+$/, "Bot token must be a valid Discord token format"),
+  DISCORD_WEB_BOT_ID: z
+    .string()
+    .min(1, "Bot ID is required")
+    .regex(/^\d+$/, "Bot ID must be numeric"),
   DISCORD_OAUTH_CLIENT_ID: z
     .string()
     .min(1, "OAuth client ID is required")
@@ -99,7 +109,7 @@ const envSchema = z.object({
     .string()
     .regex(
       /^\d+[smhd]$/,
-      "JWT_EXPIRES_IN must be in format: number + unit (s/m/h/d). Examples: 60s, 15m, 24h, 7d"
+      "JWT_EXPIRES_IN must be in format: number + unit (s/m/h/d). Examples: 60s, 15m, 24h, 7d",
     )
     .default("7d"),
 
@@ -120,7 +130,7 @@ const envSchema = z.object({
           return num >= 0 && num <= 255;
         });
       },
-      { message: "Cogs and Steam server IP must be a valid IPv4 address" }
+      { message: "Cogs and Steam server IP must be a valid IPv4 address" },
     ),
   COGS_AND_STEAM_SERVER_PORT: z.coerce
     .number()
@@ -145,7 +155,7 @@ const envSchema = z.object({
           return num >= 0 && num <= 255;
         });
       },
-      { message: "Cogs and Steam server IP must be a valid IPv4 address" }
+      { message: "Cogs and Steam server IP must be a valid IPv4 address" },
     ),
   TEST_SERVER_PORT: z.coerce
     .number()
@@ -193,10 +203,10 @@ const envSchema = z.object({
       (host) => {
         if (host === "localhost" || host === "127.0.0.1") return true;
         return /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/.test(
-          host
+          host,
         );
       },
-      { message: "Email host must be a valid hostname or IP address" }
+      { message: "Email host must be a valid hostname or IP address" },
     ),
   EMAIL_PORT: z.coerce
     .number()
@@ -215,7 +225,7 @@ const envSchema = z.object({
         .number()
         .int()
         .positive()
-        .refine((port) => port >= 1 && port <= 65535)
+        .refine((port) => port >= 1 && port <= 65535),
     ),
   EMAIL_SECURE: z.coerce.boolean().default(false),
   EMAIL_ADDRESS: z

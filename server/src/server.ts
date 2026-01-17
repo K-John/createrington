@@ -3,6 +3,7 @@ import "./logger.global";
 import http from "node:http";
 import { createApp } from "./app";
 import mainBot from "./discord/bots/main";
+import webBot from "./discord/bots/web";
 import pool from "@/db";
 import {
   initializePlaytimeService,
@@ -36,9 +37,13 @@ async function shutdown(httpServer: http.Server): Promise<void> {
     await minecraftRcon.shutdown();
     logger.info("RCON connections closed");
 
-    // Destroy Discord bot
+    // Destroy main Discord bot
     await mainBot.destroy();
-    logger.info("Discord bot destroyed");
+    logger.info("Discord main bot destroyed");
+
+    // Destroy web Discord bot
+    await webBot.destroy();
+    logger.info("Discord web bot destroyed");
 
     // Close database connection
     await pool.end();
@@ -95,7 +100,7 @@ function setupProcessHandlers(httpServer: http.Server): void {
     // Ignore PlaytimeService connection errors - they're handled internally
     if (isPlaytimeServiceError(reason)) {
       logger.debug(
-        "Ignoring PlaytimeService connection error in unhandledRejection"
+        "Ignoring PlaytimeService connection error in unhandledRejection",
       );
       return;
     }
@@ -110,7 +115,7 @@ function setupProcessHandlers(httpServer: http.Server): void {
     // Ignore PlaytimeService connection errors - they're handled internally
     if (isPlaytimeServiceError(error)) {
       logger.debug(
-        "Ignoring PlaytimeService connection error in uncaughtException"
+        "Ignoring PlaytimeService connection error in uncaughtException",
       );
       return;
     }
@@ -146,7 +151,7 @@ function start(): void {
   try {
     initializePlaytimeService();
     logger.info(
-      "PlaytimeService initialized - will poll Minecraft server every 60s"
+      "PlaytimeService initialized - will poll Minecraft server every 60s",
     );
   } catch (error) {
     logger.error("Failed to initialize PlaytimeService:", error);

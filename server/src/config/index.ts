@@ -57,6 +57,10 @@ const config: Config = {
         id: env.DISCORD_MAIN_BOT_ID,
         token: env.DISCORD_MAIN_BOT_TOKEN,
       },
+      web: {
+        id: env.DISCORD_WEB_BOT_ID,
+        token: env.DISCORD_WEB_BOT_TOKEN,
+      },
     },
 
     guild: {
