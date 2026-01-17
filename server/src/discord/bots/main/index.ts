@@ -4,7 +4,7 @@ import { loadCommandHandlers } from "./loaders/command-loader";
 import { registerInteractionHandler } from "./handlers/interaction-handler";
 import { loadEventHandlers } from "./loaders/event-loader";
 import { loadButtonHandlers } from "./loaders/button-loader";
-import { createDiscordMessageService } from "@/services/discord/messages/message.service";
+import { createDiscordMessageService } from "@/services/discord/message/message.service";
 import { Discord } from "@/discord/constants";
 import { TicketService } from "@/services/discord/tickets";
 import { startLeaderboardScheduler } from "@/services/discord/leaderboard";

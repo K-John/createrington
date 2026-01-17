@@ -1,0 +1,20 @@
+import config from "@/config";
+import { MessageCacheServiceConfig } from "./types";
+import { Discord } from "@/discord/constants";
+
+/**
+ * Message cache service configuration
+ *
+ * Defines which channels to monitor for each Minecraft server
+ */
+export const MESSAGE_CACHE_CONFIG: MessageCacheServiceConfig = {
+  servers: [
+    {
+      serverId: config.servers.cogs.id,
+      channelId: Discord.Channels.COGS_MINECRAFT_CHAT,
+      maxMessages: 100,
+    },
+    // Add more servers
+  ],
+  loadHistoryOnStartup: true,
+};

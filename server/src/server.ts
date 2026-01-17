@@ -3,7 +3,7 @@ import "./logger.global";
 import http from "node:http";
 import { createApp } from "./app";
 import mainBot from "./discord/bots/main";
-import webBot from "./discord/bots/web";
+import webBot, { messageCacheService } from "./discord/bots/web";
 import pool from "@/db";
 import {
   initializePlaytimeService,
