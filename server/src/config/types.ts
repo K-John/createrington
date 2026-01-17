@@ -197,6 +197,7 @@ interface ChannelConfig {
   readonly leaderboards: string;
   readonly transcripts: string;
   readonly hallOfFame: string;
+  readonly cogsMinecraftChat: string;
 }
 
 interface CategoriesConfig {
