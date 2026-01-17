@@ -1,26 +1,7 @@
 import config from "@/config";
 import { LeaderboardConfig, LeaderboardType } from "./types";
 import { Q } from "@/db";
-
-/**
- * Formats playtime in seconds to a human-readable string
- *
- * Converts total seconds into hours and minutes format.
- * If less than an hour, only minutes are shown.
- *
- * @param seconds - Total playtime in seconds
- * @returns Formatted string (e.g., "5h 23m" or "45m")
- */
-function formatPlaytime(seconds: number): string {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-
-  if (hours > 0) {
-    return `${hours}h ${minutes}m`;
-  }
-
-  return `${minutes}m`;
-}
+import { formatPlaytime } from "@/utils/format";
 
 /**
  * Configuration registry for all leaderboard types

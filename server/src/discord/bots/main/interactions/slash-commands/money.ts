@@ -1,6 +1,7 @@
 import { Q } from "@/db";
 import { EmbedPresets } from "@/discord/embeds";
 import { CooldownType } from "@/discord/utils/cooldown";
+import { formatBalance } from "@/utils/format";
 import {
   ChatInputCommandInteraction,
   MessageFlags,
@@ -54,15 +55,11 @@ export async function execute(
 
   try {
     const player = await Q.player.get({ discordId });
-    const raw = await Q.player.balance.get(player);
-
-    const num = parseFloat(raw.balance);
-    const balanceInt = Math.floor(num);
-    const formattedBalance = balanceInt.toLocaleString("en-US");
+    const balance = await Q.player.balance.get(player);
 
     const embed = EmbedPresets.plain({
       title: "💰 Your Balance",
-      description: `$${formattedBalance}`,
+      description: formatBalance(balance.balance),
     });
 
     await interaction.reply({

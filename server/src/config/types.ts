@@ -184,6 +184,9 @@ interface MemberRolesConfig {
   readonly regular: string;
   readonly veteran: string;
   readonly legend: string;
+
+  /** Special roles */
+  readonly theSleepless: string;
 }
 
 interface ChannelConfig {
@@ -192,6 +195,7 @@ interface ChannelConfig {
   readonly adminNotifications: string;
   readonly leaderboards: string;
   readonly transcripts: string;
+  readonly hallOfFame: string;
 }
 
 interface CategoriesConfig {

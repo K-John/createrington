@@ -4,6 +4,7 @@ import { ConfirmationEmbedPresets } from "./confirmation";
 import { LeaderboardEmbedPresets } from "./leaderboard";
 import { ProgressEmbedPresets } from "./progress";
 import { RegistrationEmbedPresets } from "./registration";
+import { RoleAssignmentEmbedPresets } from "./role-assignment";
 import { TicketEmbedPresets } from "./ticket";
 import { WaitlistEmbedPresets } from "./waitlist";
 
@@ -16,4 +17,5 @@ export const EmbedPresets = {
   progress: ProgressEmbedPresets,
   ticket: TicketEmbedPresets,
   leaderboard: LeaderboardEmbedPresets,
+  roleAssignment: RoleAssignmentEmbedPresets,
 };

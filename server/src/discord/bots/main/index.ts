@@ -9,6 +9,14 @@ import { createDiscordMessageService } from "@/services/discord/messages/message
 import { Discord } from "@/discord/constants";
 import { TicketService } from "@/services/discord/tickets";
 import { startLeaderboardScheduler } from "@/services/discord/leaderboard";
+import {
+  DailyRoleScheduler,
+  RealtimeRoleHandler,
+} from "@/services/discord/role";
+import { getPlaytimeService } from "@/services/playtime";
+
+let realtimeRoleHandler: RealtimeRoleHandler;
+let dailyRoleScheduler: DailyRoleScheduler;
 
 /**
  * Ticket service instance
@@ -45,6 +53,13 @@ export const ticketService = new TicketService(mainBot);
     logger.info("Discord bot ready and ticket service initialized");
 
     startLeaderboardScheduler();
+
+    const playtimeService = getPlaytimeService();
+    realtimeRoleHandler = new RealtimeRoleHandler(mainBot, playtimeService);
+
+    dailyRoleScheduler = new DailyRoleScheduler(mainBot);
+    dailyRoleScheduler.start();
+    dailyRoleScheduler.triggerManualCheck();
   });
 })().catch((error) => {
   logger.error("Failed to initialize:", error);
