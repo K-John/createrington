@@ -1,19 +1,17 @@
-import { ServerStats } from "./types";
 import { Client } from "discord.js";
-import { ServerStatsConfig } from "./types";
+import { ServerStatsConfig, ServerStats } from "./types";
 
 /**
  * Service for updating Discord server statistics in channel names
  *
  * Features:
- * - Automatically updates channel names with member counts
+ * - Updates channel names with member counts on member join/leave events
  * - Tracks members, bots, and total separately
  * - Only updates when counts change to minimize API calls
- * - Configurable update interval
+ * - Event-driven updates (no polling intervals)
  * - Graceful error handling and logging
  */
 export class ServerStatsService {
-  private intervalId: NodeJS.Timeout | null = null;
   private lastStats: ServerStats | null = null;
   private isRunning = false;
 
@@ -23,11 +21,14 @@ export class ServerStatsService {
   ) {}
 
   /**
-   * Starts the periodic stats update
+   * Starts the stats service
+   *
+   * - Performs initial update
+   * - Sets up event listeners for member changes
    *
    * @returns Promise resolving when the first update completes
    */
-  async start(): Promise<void> {
+  public async start(): Promise<void> {
     if (this.isRunning) {
       logger.warn("ServerStatsService is already running");
       return;
@@ -37,29 +38,41 @@ export class ServerStatsService {
 
     await this.updateStats();
 
-    const interval = this.config.updateInterval || 30 * 60 * 1000;
-    this.intervalId = setInterval(() => {
-      this.updateStats();
-    }, interval);
+    this.setupEventListeners();
 
     this.isRunning = true;
-    logger.info(
-      `ServerStatsService started (update interval: ${interval / 1000})s`,
-    );
+    logger.info("ServerStatsService started (event-driven mode)");
   }
 
   /**
-   * Stops the periodic stats update
+   * Sets up event listeners for member join/leave
+   *
+   * @private
+   */
+  private setupEventListeners(): void {
+    this.client.on("guildMemberAdd", async (member) => {
+      logger.debug(`Member joined: ${member.user.tag}, updating stats`);
+      await this.updateStats();
+    });
+
+    this.client.on("guildMemberRemove", async (member) => {
+      logger.debug(`Member left: ${member.user.tag}, updating stats`);
+      await this.updateStats();
+    });
+
+    logger.debug("ServerStatsService event listeners registered");
+  }
+
+  /**
+   * Stops the stats service
+   *
+   * Note: Event listeners are tied to the client and will be cleaned up
+   * when the client is destroyed
    */
   public stop(): void {
     if (!this.isRunning) {
       logger.warn("ServerStatsService is not running");
       return;
-    }
-
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-      this.intervalId = null;
     }
 
     this.isRunning = false;
@@ -76,13 +89,20 @@ export class ServerStatsService {
   private async fetchStats(): Promise<ServerStats> {
     const guild = await this.client.guilds.fetch(this.config.guildId);
 
-    await guild.members.fetch();
+    if (guild.members.cache.size === 0) {
+      logger.debug("Member cache empty, fetching all members...");
+      await guild.members.fetch();
+    }
 
     const members = guild.members.cache.filter((m) => !m.user.bot).size;
     const bots = guild.members.cache.filter((m) => m.user.bot).size;
     const total = members + bots;
 
-    return { members, bots, total };
+    return {
+      members,
+      bots,
+      total,
+    };
   }
 
   /**
@@ -108,7 +128,7 @@ export class ServerStatsService {
   /**
    * Updates channel names with current statistics
    *
-   * Only updates if stats have changed since last update to minize API calls
+   * Only updates if stats have changed since last update to minimize API calls
    *
    * @private
    */
@@ -153,17 +173,16 @@ export class ServerStatsService {
         );
         if (totalChannel) {
           await totalChannel.setName(`All Members: ${stats.total}`);
-          logger.debug(`Updated total members channel: ${stats.total}`);
         } else {
           logger.warn(
-            `Total members channel ${this.config.totalMembersChannelId} not found`,
+            `All Members channel ${this.config.totalMembersChannelId} not found`,
           );
         }
       }
 
       this.lastStats = stats;
       logger.info(
-        `Server stats updated - Members: ${stats.members}, Bots: ${stats.bots}, Total: ${stats.total}`,
+        `Server stats updated - Members: ${stats.members}, Bots: ${stats.bots}, Total ${stats.total}`,
       );
     } catch (error) {
       logger.error("Failed to update server stats:", error);
@@ -191,9 +210,9 @@ export class ServerStatsService {
   }
 
   /**
-   * Checks if the service is currently running
+   * Checks if the server is currently running
    *
-   * @returns True if runnng, false otherwise
+   * @returns True if running, false otherwise
    */
   public isActive(): boolean {
     return this.isRunning;
