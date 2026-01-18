@@ -17,6 +17,31 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
+-- Name: ticket_status; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public.ticket_status AS ENUM (
+    'open',
+    'closed',
+    'deleted'
+);
+
+
+ALTER TYPE public.ticket_status OWNER TO postgres;
+
+--
+-- Name: ticket_type; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public.ticket_type AS ENUM (
+    'general',
+    'report'
+);
+
+
+ALTER TYPE public.ticket_type OWNER TO postgres;
+
+--
 -- Name: cleanup_old_waitlist_entries(); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -357,7 +382,8 @@ CREATE TABLE public.leaderboard_message (
     channel_id text NOT NULL,
     message_id text NOT NULL,
     last_refreshed timestamp with time zone DEFAULT now(),
-    created_at timestamp with time zone DEFAULT now()
+    last_manual_refresh timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 
@@ -409,7 +435,7 @@ ALTER TABLE public.player OWNER TO postgres;
 --
 
 CREATE TABLE public.player_balance (
-    player_uuid uuid NOT NULL,
+    minecraft_uuid uuid NOT NULL,
     balance numeric(20,8) DEFAULT 0 NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT chk_balance_non_negative CHECK ((balance >= (0)::numeric))
@@ -554,6 +580,115 @@ ALTER TABLE public.server_id_seq OWNER TO postgres;
 
 ALTER SEQUENCE public.server_id_seq OWNED BY public.server.id;
 
+
+--
+-- Name: ticket; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.ticket (
+    id integer NOT NULL,
+    ticket_number integer NOT NULL,
+    type public.ticket_type NOT NULL,
+    creator_discord_id text NOT NULL,
+    channel_id text NOT NULL,
+    status public.ticket_status DEFAULT 'open'::public.ticket_status NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    closed_at timestamp with time zone,
+    closed_by_discord_id text,
+    deleted_at timestamp with time zone,
+    metadata jsonb DEFAULT '{}'::jsonb
+);
+
+
+ALTER TABLE public.ticket OWNER TO postgres;
+
+--
+-- Name: TABLE ticket; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON TABLE public.ticket IS 'Stores all Discord support ticket with persistence across bot restarts';
+
+
+--
+-- Name: ticket_action; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.ticket_action (
+    id integer NOT NULL,
+    ticket_id integer NOT NULL,
+    action_type text NOT NULL,
+    performed_by_discord_id text NOT NULL,
+    performed_at timestamp with time zone DEFAULT now() NOT NULL,
+    metadata jsonb DEFAULT '{}'::jsonb
+);
+
+
+ALTER TABLE public.ticket_action OWNER TO postgres;
+
+--
+-- Name: TABLE ticket_action; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON TABLE public.ticket_action IS 'Audit log of all actions performed on ticket';
+
+
+--
+-- Name: ticket_action_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.ticket_action_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.ticket_action_id_seq OWNER TO postgres;
+
+--
+-- Name: ticket_action_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.ticket_action_id_seq OWNED BY public.ticket_action.id;
+
+
+--
+-- Name: ticket_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.ticket_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.ticket_id_seq OWNER TO postgres;
+
+--
+-- Name: ticket_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.ticket_id_seq OWNED BY public.ticket.id;
+
+
+--
+-- Name: ticket_number_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.ticket_number_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.ticket_number_seq OWNER TO postgres;
 
 --
 -- Name: waitlist_entry; Type: TABLE; Schema: public; Owner: postgres
@@ -701,6 +836,20 @@ ALTER TABLE ONLY public.server ALTER COLUMN id SET DEFAULT nextval('public.serve
 
 
 --
+-- Name: ticket id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ticket ALTER COLUMN id SET DEFAULT nextval('public.ticket_id_seq'::regclass);
+
+
+--
+-- Name: ticket_action id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ticket_action ALTER COLUMN id SET DEFAULT nextval('public.ticket_action_id_seq'::regclass);
+
+
+--
 -- Name: waitlist_entry id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -752,7 +901,7 @@ ALTER TABLE ONLY public.leaderboard_message
 --
 
 ALTER TABLE ONLY public.player_balance
-    ADD CONSTRAINT player_balance_pkey PRIMARY KEY (player_uuid);
+    ADD CONSTRAINT player_balance_pkey PRIMARY KEY (minecraft_uuid);
 
 
 --
@@ -817,6 +966,30 @@ ALTER TABLE ONLY public.server
 
 ALTER TABLE ONLY public.server
     ADD CONSTRAINT server_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ticket_action ticket_action_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ticket_action
+    ADD CONSTRAINT ticket_action_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ticket ticket_channel_id_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ticket
+    ADD CONSTRAINT ticket_channel_id_unique UNIQUE (channel_id);
+
+
+--
+-- Name: ticket ticket_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ticket
+    ADD CONSTRAINT ticket_pkey PRIMARY KEY (id);
 
 
 --
@@ -1046,6 +1219,48 @@ CREATE INDEX idx_player_session_start ON public.player_session USING btree (sess
 
 
 --
+-- Name: idx_ticket_action_ticket; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_ticket_action_ticket ON public.ticket_action USING btree (ticket_id);
+
+
+--
+-- Name: idx_ticket_action_type; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_ticket_action_type ON public.ticket_action USING btree (action_type);
+
+
+--
+-- Name: idx_ticket_channel; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_ticket_channel ON public.ticket USING btree (channel_id);
+
+
+--
+-- Name: idx_ticket_creator; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_ticket_creator ON public.ticket USING btree (creator_discord_id);
+
+
+--
+-- Name: idx_ticket_status; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_ticket_status ON public.ticket USING btree (status);
+
+
+--
+-- Name: idx_ticket_type; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_ticket_type ON public.ticket USING btree (type);
+
+
+--
 -- Name: idx_waitlist_discord_message_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1118,11 +1333,11 @@ ALTER TABLE ONLY public.admin_log_action
 
 
 --
--- Name: player_balance player_balance_player_uuid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: player_balance player_balance_minecraft_uuid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.player_balance
-    ADD CONSTRAINT player_balance_player_uuid_fkey FOREIGN KEY (player_uuid) REFERENCES public.player(minecraft_uuid) ON UPDATE CASCADE ON DELETE CASCADE;
+    ADD CONSTRAINT player_balance_minecraft_uuid_fkey FOREIGN KEY (minecraft_uuid) REFERENCES public.player(minecraft_uuid) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
@@ -1195,6 +1410,14 @@ ALTER TABLE ONLY public.player_session
 
 ALTER TABLE ONLY public.player_session
     ADD CONSTRAINT player_session_server_id_fkey FOREIGN KEY (server_id) REFERENCES public.server(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: ticket_action ticket_action_ticket_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ticket_action
+    ADD CONSTRAINT ticket_action_ticket_id_fkey FOREIGN KEY (ticket_id) REFERENCES public.ticket(id) ON DELETE CASCADE;
 
 
 --

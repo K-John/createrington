@@ -3,7 +3,7 @@ import "./logger.global";
 import http from "node:http";
 import { createApp } from "./app";
 import mainBot from "./discord/bots/main";
-import webBot, { messageCacheService } from "./discord/bots/web";
+import webBot from "./discord/bots/web";
 import pool from "@/db";
 import {
   initializePlaytimeService,
@@ -11,6 +11,10 @@ import {
   isPlaytimeServiceInitialized,
 } from "@/services/playtime/playtime.manager";
 import { minecraftRcon } from "./utils/rcon";
+import { WebSocketService } from "./services/websocket";
+import config from "./config";
+import { serviceManager } from "./services/service.manager";
+import { MESSAGE_CACHE_CONFIG } from "./services/discord/message/cache";
 
 const PORT = env.PORT;
 
@@ -33,6 +37,9 @@ async function shutdown(httpServer: http.Server): Promise<void> {
       await new Promise((resolve) => setTimeout(resolve, 500));
       logger.info("PlaytimeService stopped");
     }
+
+    // Close WebSocket service
+    await serviceManager.shutdown();
 
     await minecraftRcon.shutdown();
     logger.info("RCON connections closed");
@@ -127,14 +134,16 @@ function setupProcessHandlers(httpServer: http.Server): void {
 }
 
 /**
- * Initializes and starts the HTTP server
+ * Initializes and starts the HTTP server with WebSocket support
  *
  * This function:
  * 1. Creates the Express application
  * 2. Creates an HTTP server instance
- * 3. Sets up process handlers for graceful shutdown
- * 4. Starts listening on the configured PORT
- * 5. Initializes PlaytimeService for Minecraft session tracking
+ * 3. Initializes WebSocket service
+ * 4. Sets up process handlers for graceful shutdown
+ * 5. Starts listening on the configured PORT
+ * 6. Initializes PlaytimeService for Minecraft session tracking
+ * 7. Connects WebSocket to MessageCacheService
  */
 function start(): void {
   const app = createApp();
@@ -144,6 +153,7 @@ function start(): void {
 
   httpServer.listen(PORT, () => {
     logger.info(`Server started at http://localhost:${PORT}`);
+    logger.info(`WebSocket server ready at ws://localhost:${PORT}`);
   });
 
   // Initialize PlaytimeService (runs independently of Discord bot)
@@ -157,6 +167,31 @@ function start(): void {
     logger.error("Failed to initialize PlaytimeService:", error);
     logger.warn("Bot will continue running without playtime tracking");
   }
+
+  // Connect WebSocket to MessageCache once the web bot is ready
+  webBot.once("clientReady", async () => {
+    try {
+      await serviceManager.initialize(
+        httpServer,
+        webBot,
+        MESSAGE_CACHE_CONFIG,
+        {
+          cors: {
+            origin: config.envMode.isDev
+              ? [`http://localhost:${PORT}`, "http://localhost:5173"]
+              : [config.meta.links.website],
+            credentials: true,
+          },
+        },
+      );
+
+      const stats = await serviceManager.getStats();
+      logger.info("Service statistics:", stats);
+    } catch (error) {
+      logger.error("Failed to initialize services:", error);
+      logger.warn("Server will continue running with limited functionality");
+    }
+  });
 }
 
 start();

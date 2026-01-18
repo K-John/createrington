@@ -1,23 +1,50 @@
-import { Client, Message, TextChannel } from "discord.js";
+import { EventEmitter } from "node:events";
 import {
   CachedMessage,
   MessageCacheServiceConfig,
   MessageQueryOptions,
   ServerCacheConfig,
 } from "./types";
+import { Client, Message, PartialMessage, TextChannel } from "discord.js";
 import { isSendableChannel } from "@/discord/utils/channel-guard";
+
+/**
+ * Events emitted by MessageCacheService
+ */
+export interface MessageCacheEvents {
+  /** New message added to the cache */
+  messageCreate: (serverId: number, message: CachedMessage) => void;
+  /** Message updated in cache */
+  messageUpdate: (serverId: number, message: CachedMessage) => void;
+  /** Message deleted from cache */
+  messageDelete: (serverId: number, messageId: string) => void;
+  /** Cache initialization complete */
+  cacheReady: () => void;
+}
+
+export declare interface MessageCacheService {
+  on<K extends keyof MessageCacheEvents>(
+    event: K,
+    listener: MessageCacheEvents[K],
+  ): this;
+  emit<K extends keyof MessageCacheEvents>(
+    event: K,
+    ...args: Parameters<MessageCacheEvents[K]>
+  ): boolean;
+}
 
 /**
  * Service for caching Discord messages from configured channels
  *
  * Features:
- * - Caches messages in memory whith configurable size limits
+ * - Caches messages in memory with configurable size limits
  * - Supports multiple servers/channels
  * - Provides query methods for retrieving cached messages
  * - Automatically loads historical messages on startup
  * - Handles message updates and deletions
+ * - Emits events for real-time integration (WebSocket, etc.)
  */
-export class MessageCacheService {
+export class MessageCacheService extends EventEmitter {
   private cache: Map<number, CachedMessage[]> = new Map();
   private serverConfig: Map<number, ServerCacheConfig> = new Map();
   private isInitialized = false;
@@ -26,6 +53,7 @@ export class MessageCacheService {
     private readonly bot: Client,
     private readonly config: MessageCacheServiceConfig,
   ) {
+    super();
     for (const server of config.servers) {
       this.cache.set(server.serverId, []);
       this.serverConfig.set(server.serverId, {
@@ -53,6 +81,7 @@ export class MessageCacheService {
     }
 
     this.isInitialized = true;
+    this.emit("cacheReady");
     logger.info(
       `MessageCacheService initialized for ${this.config.servers.length} server(s)`,
     );
@@ -68,28 +97,31 @@ export class MessageCacheService {
       this.handleMessageCreate(message);
     });
 
-    // this.bot.on("messageUpdate", (oldMessage: Message, newMessage: Message) => {
-    //   this.handleMessageUpdate(newMessage);
-    // });
+    this.bot.on(
+      "messageUpdate",
+      (_oldMessage: Message | PartialMessage, newMessage: Message) => {
+        this.handleMessageUpdate(newMessage);
+      },
+    );
 
-    // this.bot.on("messageDelete", (message: Message) => {
-    //   this.handleMessageDelete(message);
-    // });
+    this.bot.on("messageDelete", (message: Message | PartialMessage) => {
+      this.handleMessageDelete(message);
+    });
 
     logger.debug("Message cache event listeners registered");
   }
 
   /**
-   * Loads historical message from all configured channels
+   * Loads historical message from all configured servers
    *
    * @private
    */
   private async loadHistoricalMessages(): Promise<void> {
     logger.info("Loading historical messages...");
 
-    const loadPromises = this.config.servers.map((serverConfig) =>
-      this.loadChannelHistory(serverConfig),
-    );
+    const loadPromises = this.config.servers.map((serverConfig) => {
+      this.loadChannelHistory(serverConfig);
+    });
 
     await Promise.all(loadPromises);
 
@@ -159,8 +191,10 @@ export class MessageCacheService {
     const cachedMessage = this.convertToCachedMessage(message, serverId);
     this.addToCache(serverId, cachedMessage);
 
+    this.emit("messageCreate", serverId, cachedMessage);
+
     logger.debug(
-      `Cached new message from ${message.author.username} in server ${serverId}`,
+      `Cached new mesage from ${message.author.username} in server ${serverId}`,
     );
   }
 
@@ -185,16 +219,18 @@ export class MessageCacheService {
     }
 
     const index = cache.findIndex((m) => m.messageId === message.id);
-    if (index != -1) {
-      cache[index] = this.convertToCachedMessage(message, serverId);
-      logger.debug(
-        `Updated cached message ${message.id} in server ${serverId}`,
-      );
+    if (index !== -1) {
+      const updatedMessage = this.convertToCachedMessage(message, serverId);
+      cache[index] = updatedMessage;
+
+      this.emit("messageUpdate", serverId, updatedMessage);
+
+      logger.debug(`Updated cache message ${message.id} in server ${serverId}`);
     }
   }
 
   /**
-   * Handles message deletions
+   * Handles message deletion
    *
    * @deprecated
    *
@@ -202,7 +238,7 @@ export class MessageCacheService {
    *
    * @private
    */
-  private handleMessageDelete(message: Message): void {
+  private handleMessageDelete(message: Message | PartialMessage): void {
     const serverId = this.getServerIdForChannel(message.channelId);
     if (serverId === null) {
       return;
@@ -214,8 +250,11 @@ export class MessageCacheService {
     }
 
     const index = cache.findIndex((m) => m.messageId === message.id);
-    if (index != -1) {
+    if (index !== -1) {
       cache.splice(index, 1);
+
+      this.emit("messageDelete", serverId, message.id);
+
       logger.debug(
         `Removed deleted message ${message.id} from server ${serverId}`,
       );
@@ -369,7 +408,7 @@ export class MessageCacheService {
    * Gets the most recent N messages for a server
    *
    * @param serverId - Server ID
-   * @param count - Number or messages to retrieve
+   * @param count - Number of messages to retrieve
    * @returns Array of most recent messages
    */
   getRecentMessages(serverId: number, count: number): CachedMessage[] {
@@ -377,7 +416,7 @@ export class MessageCacheService {
   }
 
   /**
-   * Gets cache statistics
+   * Gets cahce statistics
    *
    * @returns Object with cache stats per server
    */
@@ -408,6 +447,6 @@ export class MessageCacheService {
     if (cache) {
       cache.length = 0;
     }
-    logger.info("Cleared all message caches");
+    logger.info(`Cleared cache for server ${serverId}`);
   }
 }

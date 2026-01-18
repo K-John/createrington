@@ -198,6 +198,11 @@ interface ChannelConfig {
   readonly transcripts: string;
   readonly hallOfFame: string;
   readonly cogsMinecraftChat: string;
+  readonly cogsChat: string;
+  readonly botSpam: string;
+  readonly announcements: string;
+  readonly rules: string;
+  readonly support: string;
 }
 
 interface CategoriesConfig {
@@ -207,6 +212,7 @@ interface CategoriesConfig {
   readonly verification: string;
   readonly tickets: string;
   readonly cogsAndSteam: string;
+  readonly general: string;
 }
 
 interface ColorsConfig {

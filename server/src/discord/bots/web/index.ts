@@ -5,8 +5,6 @@ import {
   MessageCacheService,
 } from "@/services/discord/message/cache";
 
-let messageCacheService: MessageCacheService;
-
 /**
  * Bot initialization IIFE
  *
@@ -25,17 +23,10 @@ let messageCacheService: MessageCacheService;
 
   webBot.once("clientReady", async () => {
     logger.info("Discord bot ready");
-
-    messageCacheService = new MessageCacheService(webBot, MESSAGE_CACHE_CONFIG);
-    await messageCacheService.initialize();
-
-    const messages = messageCacheService.getMessages(1);
-    logger.info(messages);
   });
 })().catch((error) => {
   logger.error("Failed to initialize:", error);
   process.exit(1);
 });
 
-export { messageCacheService };
 export default webBot;
