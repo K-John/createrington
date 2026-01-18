@@ -1,4 +1,3 @@
-import config from "@/config";
 import { ServerStats } from "./types";
 import { Client } from "discord.js";
 import { ServerStatsConfig } from "./types";

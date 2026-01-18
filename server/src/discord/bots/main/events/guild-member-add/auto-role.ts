@@ -1,5 +1,4 @@
 import config from "@/config";
-import { EventModule } from "../../loaders/event-loader";
 import {
   ChannelType,
   Client,
@@ -8,6 +7,7 @@ import {
   PermissionFlagsBits,
   TextChannel,
 } from "discord.js";
+import { EventModule } from "@/discord/bots/common/loaders/event-loader";
 import { discord } from "@/db";
 import { RoleManager } from "@/discord/utils/roles/role-manager";
 import { Discord } from "@/discord/constants";
@@ -45,12 +45,12 @@ export const prodOnly = false;
  */
 export async function execute(
   client: Client,
-  member: GuildMember
+  member: GuildMember,
 ): Promise<void> {
   try {
     const joinNumber = await discord.guild.member.join.recordJoin(
       member.user.id,
-      member.user.username
+      member.user.username,
     );
 
     logger.info(`Member ${member.user.tag} joined - Join #${joinNumber}`);
@@ -60,7 +60,7 @@ export async function execute(
         await RoleManager.assign(
           member,
           autoRoleConfig.roleId,
-          "Auto-assigned on join"
+          "Auto-assigned on join",
         );
       } catch (error) {
         logger.error(`Error assigning auto-role to ${member.user.tag}:`, error);
@@ -111,7 +111,7 @@ export async function execute(
       });
 
       logger.info(
-        `Created verification channel ${verificationChannel.name} for ${member.user.tag}`
+        `Created verification channel ${verificationChannel.name} for ${member.user.tag}`,
       );
 
       await verificationChannel.send({
@@ -119,12 +119,12 @@ export async function execute(
       });
 
       logger.info(
-        `Verification instructions sent to ${verificationChannel.name} for ${member.user.tag}`
+        `Verification instructions sent to ${verificationChannel.name} for ${member.user.tag}`,
       );
     } catch (error) {
       logger.error(
         `Failed to create verification channel for ${member.user.tag}`,
-        error
+        error,
       );
     }
 
@@ -134,7 +134,7 @@ export async function execute(
 
         if (!channel || !isSendableChannel(channel)) {
           logger.warn(
-            `Welcome channel ${welcomeConfig.channelId} not found or is not a text channel`
+            `Welcome channel ${welcomeConfig.channelId} not found or is not a text channel`,
           );
           return;
         }
@@ -149,7 +149,7 @@ export async function execute(
           : await generateWelcomeCard(
               member,
               joinNumber,
-              welcomeConfig.imageConfig
+              welcomeConfig.imageConfig,
             );
 
         logger.debug("Generated welcome card:", {
@@ -166,12 +166,12 @@ export async function execute(
         });
 
         logger.info(
-          `Welcome image sent for ${member.user.tag} (#${joinNumber}) - Message ID: ${sentMessage.id}`
+          `Welcome image sent for ${member.user.tag} (#${joinNumber}) - Message ID: ${sentMessage.id}`,
         );
       } catch (error) {
         logger.error(
           `Failed to send welcome message for ${member.user.tag}:`,
-          error
+          error,
         );
       }
     }

@@ -6,11 +6,15 @@ import {
   Interaction,
   MessageFlags,
 } from "discord.js";
-import { CommandModule } from "../loaders/command-loader";
 import { cooldownManager } from "@/discord/utils/cooldown";
 import { EmbedPresets } from "@/discord/embeds";
-import { ButtonModule, findButtonHandler } from "../loaders/button-loader";
+
 import { requireAdmin } from "@/discord/utils/admin-guard";
+import { CommandModule } from "../../common/loaders/command-loader";
+import {
+  ButtonModule,
+  findButtonHandler,
+} from "../../common/loaders/button-loader";
 
 /**
  * Formats a cooldown duration in seconds into a human-readable string
@@ -54,7 +58,7 @@ function formatCooldown(seconds: number): string {
  */
 function canBypassCooldown(
   interaction: ChatInputCommandInteraction,
-  command: CommandModule
+  command: CommandModule,
 ): boolean {
   if (!command.cooldown) return true;
 
@@ -67,7 +71,7 @@ function canBypassCooldown(
     if (member && "roles" in member) {
       const memberRoles = member.roles as { cache: Collection<string, any> };
       const hasRole = command.cooldown.bypassRoles.some((roleId) =>
-        memberRoles.cache.has(roleId)
+        memberRoles.cache.has(roleId),
       );
       if (hasRole) return true;
     }
@@ -85,7 +89,7 @@ function canBypassCooldown(
  */
 async function checkPermission(
   interaction: ChatInputCommandInteraction,
-  command: CommandModule
+  command: CommandModule,
 ): Promise<boolean> {
   if (!command.permissions) return true;
 
@@ -105,12 +109,12 @@ async function checkPermission(
     } catch (error) {
       logger.error(
         `Error in custom permission check for ${interaction.commandName}`,
-        error
+        error,
       );
 
       const embed = EmbedPresets.error(
         "Permission Check Failed",
-        "An error ocurred while checking permissions"
+        "An error ocurred while checking permissions",
       );
 
       await interaction.reply({
@@ -142,7 +146,7 @@ async function checkPermission(
  */
 async function handleChatCommands(
   interaction: ChatInputCommandInteraction,
-  commandHandlers: Collection<string, CommandModule>
+  commandHandlers: Collection<string, CommandModule>,
 ): Promise<void> {
   const command = commandHandlers.get(interaction.commandName);
 
@@ -152,13 +156,13 @@ async function handleChatCommands(
   }
 
   logger.info(
-    `${interaction.user.tag} (${interaction.user.id}) ran /${interaction.commandName}`
+    `${interaction.user.tag} (${interaction.user.id}) ran /${interaction.commandName}`,
   );
 
   const hasPermission = await checkPermission(interaction, command);
   if (!hasPermission) {
     logger.debug(
-      `${interaction.user.tag} denied permission for /${interaction.commandName}`
+      `${interaction.user.tag} denied permission for /${interaction.commandName}`,
     );
     return;
   }
@@ -171,7 +175,7 @@ async function handleChatCommands(
         userId: interaction.user.id,
         channelId: interaction.channelId,
         guildId: interaction.guildId,
-      }
+      },
     );
 
     if (cooldownRemaining !== null) {
@@ -182,7 +186,7 @@ async function handleChatCommands(
           userId: interaction.user.id,
           channelId: interaction.channelId,
           guildId: interaction.guildId,
-        }
+        },
       );
 
       const unixExpiresAt = expiresAt ? Math.floor(expiresAt / 1000) : null;
@@ -193,14 +197,14 @@ async function handleChatCommands(
 
       const cooldownEmbed = EmbedPresets.error(
         "Command on Cooldown",
-        cooldownMessage
+        cooldownMessage,
       )
         .field(
           "Time remaining",
           unixExpiresAt
             ? `<t:${unixExpiresAt}:R>`
             : formatCooldown(cooldownRemaining),
-          true
+          true,
         )
         .noTimestamp()
         .build();
@@ -213,7 +217,7 @@ async function handleChatCommands(
       logger.debug(
         `${interaction.user.tag} tried to use /${
           interaction.commandName
-        } but it's on cooldown (${cooldownRemaining.toFixed(1)}s remaning)`
+        } but it's on cooldown (${cooldownRemaining.toFixed(1)}s remaning)`,
       );
       return;
     }
@@ -259,7 +263,7 @@ async function handleChatCommands(
  */
 async function handleButtonInteractions(
   interaction: ButtonInteraction,
-  buttonHandlers: Collection<string, ButtonModule>
+  buttonHandlers: Collection<string, ButtonModule>,
 ): Promise<void> {
   const handler = findButtonHandler(interaction.customId, buttonHandlers);
 
@@ -269,7 +273,7 @@ async function handleButtonInteractions(
   }
 
   logger.info(
-    `${interaction.user.tag} (${interaction.user.id}) clicked button: ${interaction.customId}`
+    `${interaction.user.tag} (${interaction.user.id}) clicked button: ${interaction.customId}`,
   );
 
   if (handler.checkPermission) {
@@ -287,14 +291,14 @@ async function handleButtonInteractions(
         });
 
         logger.debug(
-          `${interaction.user.tag} denied access to button: ${interaction.customId}`
+          `${interaction.user.tag} denied access to button: ${interaction.customId}`,
         );
         return;
       }
     } catch (error) {
       logger.error(
         `Error checking permissions for button ${interaction.customId}:`,
-        error
+        error,
       );
 
       await interaction.reply({
@@ -310,7 +314,7 @@ async function handleButtonInteractions(
   } catch (error) {
     logger.error(
       `Error executing button handler ${interaction.customId}:`,
-      error
+      error,
     );
 
     try {
@@ -342,7 +346,7 @@ async function handleButtonInteractions(
 export function registerInteractionHandler(
   discordClient: Client,
   commandHandlers: Collection<string, CommandModule>,
-  buttonHandlers: Collection<string, ButtonModule>
+  buttonHandlers: Collection<string, ButtonModule>,
 ): void {
   discordClient.on("interactionCreate", async (interaction: Interaction) => {
     if (interaction.isChatInputCommand()) {

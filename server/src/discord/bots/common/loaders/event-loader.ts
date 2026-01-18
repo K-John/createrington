@@ -1,8 +1,8 @@
 import config from "@/config";
-import { Client, ClientEvents } from "discord.js";
-import path from "node:path";
 import fs from "node:fs";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import path from "node:path";
+import { Client, ClientEvents } from "discord.js";
+import { pathToFileURL } from "node:url";
 
 const isDev = config.envMode.isDev;
 
@@ -10,7 +10,7 @@ const isDev = config.envMode.isDev;
  * Discord event module structure
  */
 export interface EventModule<
-  K extends keyof ClientEvents = keyof ClientEvents
+  K extends keyof ClientEvents = keyof ClientEvents,
 > {
   /** The Discord event name */
   eventName: K;
@@ -37,7 +37,7 @@ function isEventModule(module: unknown): module is EventModule {
 }
 
 /**
- * Loads Discord event handlers from discord/bots/main/events folder
+ * Loads Discord event handlers from a folder
  *
  * Recursively scans the events directory and registers all event handlers
  * Supports both one-time (once) and recurring (on) event listeners
@@ -45,12 +45,12 @@ function isEventModule(module: unknown): module is EventModule {
  * @param client - The Discord client instance
  * @returns Promise resolving to the number of loaded events
  */
-export async function loadEventHandlers(client: Client): Promise<number> {
-  const __dirname = path.dirname(fileURLToPath(import.meta.url));
-  const eventsPath = path.join(__dirname, "..", "events");
-
+export async function loadEventHandlers(
+  client: Client,
+  eventsPath: string,
+): Promise<number> {
   if (!fs.existsSync(eventsPath)) {
-    logger.warn("Events directory not found");
+    logger.warn(`Events directory not found: ${eventsPath}`);
     return 0;
   }
 
@@ -61,29 +61,27 @@ export async function loadEventHandlers(client: Client): Promise<number> {
     try {
       const eventModule = await import(pathToFileURL(filePath).href);
 
-      // Support both default export and named exports
       const event: EventModule | undefined =
         "default" in eventModule && isEventModule(eventModule.default)
           ? eventModule.default
           : isEventModule(eventModule)
-          ? eventModule
-          : undefined;
+            ? eventModule
+            : undefined;
 
       if (!event) {
         logger.warn(
-          `Skipped ${filePath}: not a valid EventModule (missing eventName or execute)`
+          `Skipped ${filePath}: not a valid EventModule (missing eventName or execute)`,
         );
         continue;
       }
 
       if (isDev && event.prodOnly) {
         logger.warn(
-          `Skipped loading production-only event: ${path.basename(filePath)}`
+          `Skipped loading production-only event: ${path.basename(filePath)}`,
         );
         continue;
       }
 
-      // Type-safe event registration
       if (event.once) {
         client.once(event.eventName, async (...args) => {
           try {
@@ -106,22 +104,26 @@ export async function loadEventHandlers(client: Client): Promise<number> {
       logger.debug(
         `Registered ${event.once ? "once" : "on"} event: ${
           event.eventName
-        } (${path.basename(filePath)})`
+        } (${path.basename(filePath)})`,
       );
     } catch (error) {
       logger.error(`Failed to load event ${filePath}:`, error);
     }
   }
 
-  logger.info(`Loaded ${loadedCount} Discord event(s)`);
+  logger.info(`Loaded ${loadedCount} Discord event(s) from ${eventsPath}`);
   return loadedCount;
 }
 
 /**
- * Recursively gets all event files from a directory
+ * Recursively scans a directory and collects all valid event files
  *
- * @param dir - Directory path to scan
- * @returns Array of absolute file paths
+ * This function walks through the directory tree starting from the given path,
+ * collecting all TypeScript (.ts) or JavaScript (.js) files depending on the
+ * environment mode. It ignores non-file items and only returns actual event files.
+ *
+ * @param dir - The absolute path to the directory to scan
+ * @returns An array of absolute file paths to all discovered event files
  */
 function getAllEventFiles(dir: string): string[] {
   const files: string[] = [];

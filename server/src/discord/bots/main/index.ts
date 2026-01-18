@@ -1,9 +1,6 @@
 import config from "@/config";
 import { mainBot } from "./client";
-import { loadCommandHandlers } from "./loaders/command-loader";
 import { registerInteractionHandler } from "./handlers/interaction-handler";
-import { loadEventHandlers } from "./loaders/event-loader";
-import { loadButtonHandlers } from "./loaders/button-loader";
 import { createDiscordMessageService } from "@/services/discord/message/message.service";
 import { Discord } from "@/discord/constants";
 import { TicketService } from "@/services/discord/tickets";
@@ -13,6 +10,13 @@ import {
   RealtimeRoleHandler,
 } from "@/services/discord/role";
 import { getPlaytimeService } from "@/services/playtime";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { loadEventHandlers } from "../common/loaders/event-loader";
+import { loadCommandHandlers } from "../common/loaders/command-loader";
+import { loadButtonHandlers } from "../common/loaders/button-loader";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 let realtimeRoleHandler: RealtimeRoleHandler;
 let dailyRoleScheduler: DailyRoleScheduler;
@@ -39,17 +43,21 @@ export const ticketService = new TicketService(mainBot);
 (async () => {
   Discord._setMessageService(createDiscordMessageService(mainBot));
 
-  const commandHandlers = await loadCommandHandlers();
-  const buttonHandlers = await loadButtonHandlers();
+  const commandsPath = path.join(__dirname, "interactions", "slash-commands");
+  const buttonsPath = path.join(__dirname, "interactions", "buttons");
+  const eventsPath = path.join(__dirname, "events");
+
+  const commandHandlers = await loadCommandHandlers(commandsPath);
+  const buttonHandlers = await loadButtonHandlers(buttonsPath);
 
   registerInteractionHandler(mainBot, commandHandlers, buttonHandlers);
 
-  await loadEventHandlers(mainBot);
+  await loadEventHandlers(mainBot, eventsPath);
 
   await mainBot.login(config.discord.bots.main.token);
 
   mainBot.once("clientReady", () => {
-    logger.info("Discord bot ready and ticket service initialized");
+    logger.info("Discord bot ready");
 
     startLeaderboardScheduler();
 

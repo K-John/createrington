@@ -1,13 +1,13 @@
 import config from "@/config";
-import { CooldownType } from "@/discord/utils/cooldown/cooldown-manager";
+import fs from "node:fs";
+import { CooldownType } from "@/discord/utils/cooldown";
 import {
   ChatInputCommandInteraction,
   Collection,
   SlashCommandBuilder,
 } from "discord.js";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
-import fs from "node:fs";
+import { pathToFileURL } from "node:url";
 
 const isDev = config.envMode.isDev;
 
@@ -19,13 +19,13 @@ export interface CommandModule {
   execute: (interaction: ChatInputCommandInteraction) => Promise<void>;
   prodOnly?: boolean;
 
-  // Permission configuration
+  // Permission configurations
   permissions?: {
     /** Requires admin role to execute */
     requireAdmin?: boolean;
     /** Custom permission check function */
     customCheck?: (
-      interaction: ChatInputCommandInteraction
+      interaction: ChatInputCommandInteraction,
     ) => Promise<boolean>;
   };
 
@@ -41,21 +41,17 @@ export interface CommandModule {
 
 /**
  * Loads Discord command handlers
- * from discord/bots/main/interactions/slash-commands folder
  *
  * @returns Promise resolving to the commandHandlers
  */
-export async function loadCommandHandlers(): Promise<
-  Collection<string, CommandModule>
-> {
-  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+export async function loadCommandHandlers(
+  commandsPath: string,
+): Promise<Collection<string, CommandModule>> {
+  if (!fs.existsSync(commandsPath)) {
+    logger.warn(`Commands directory not found: ${commandsPath}`);
+    return new Collection();
+  }
 
-  const commandsPath = path.join(
-    __dirname,
-    "..",
-    "interactions",
-    "slash-commands"
-  );
   const commandFiles = fs
     .readdirSync(commandsPath)
     .filter((file) => (isDev ? file.endsWith(".ts") : file.endsWith(".js")));
@@ -87,7 +83,7 @@ export async function loadCommandHandlers(): Promise<
       const isProdOnly = commandModule.prodOnly === true;
 
       if (isDev && isProdOnly) {
-        logger.warn(`Skipped loading production only command: ${file}`);
+        logger.warn(`Skipped loading production-only command: ${file}`);
         continue;
       }
 
@@ -99,7 +95,7 @@ export async function loadCommandHandlers(): Promise<
 
       if (commandModule.cooldown) {
         logger.debug(
-          `Command ${commandModule.data.name} has ${commandModule.cooldown.type} cooldown: ${commandModule.cooldown.duration}s`
+          `Command ${commandModule.data.name} has ${commandModule.cooldown.type} cooldown: ${commandModule.cooldown.duration}`,
         );
       }
     } catch (error) {
@@ -107,6 +103,8 @@ export async function loadCommandHandlers(): Promise<
     }
   }
 
-  logger.info(`Loaded ${commandHandlers.size} Discord command(s)`);
+  logger.info(
+    `Loaded ${commandHandlers.size} Discord command(s) from ${commandsPath}`,
+  );
   return commandHandlers;
 }

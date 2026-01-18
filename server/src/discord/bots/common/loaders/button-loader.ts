@@ -1,8 +1,8 @@
 import config from "@/config";
-import { ButtonInteraction, Collection } from "discord.js";
 import fs from "node:fs";
+import { ButtonInteraction, Collection } from "discord.js";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { pathToFileURL } from "node:url";
 
 const isDev = config.envMode.isDev;
 
@@ -12,7 +12,7 @@ const isDev = config.envMode.isDev;
  * Defines the signature for functions that handle Discord button interactions
  *
  * @param interaction - The button interaction from Discord
- * @returns Promise that resolves when the interaction is handled
+ * @returns Promise resolving when the interaction is handled
  */
 export type ButtonHandler = (interaction: ButtonInteraction) => Promise<void>;
 
@@ -20,7 +20,7 @@ export type ButtonHandler = (interaction: ButtonInteraction) => Promise<void>;
  * Button module structure with pattern matching support
  *
  * Defines the structure of button handler modules. Supports exact matches,
- * widlcard patterns, and regex patterns for flexible customId matching
+ * wildcard patterns, and regex patterns for flexible customId matching
  */
 export interface ButtonModule {
   /**
@@ -44,7 +44,7 @@ export interface ButtonModule {
    *
    * @default false
    */
-  prodOnly?: boolean;
+  prodOnly: boolean;
   /**
    * Permission check
    *
@@ -92,7 +92,7 @@ function matchesPattern(customId: string, pattern: string | RegExp): boolean {
 }
 
 /**
- * Loads button handlers from discord/bots/main/interaction/buttons
+ * Loads button handlers
  *
  * Scans the buttons directory, imports all button handler modules, validates them,
  * and returns a collection of loaded handlers. Automatically filters out production
@@ -107,15 +107,11 @@ function matchesPattern(customId: string, pattern: string | RegExp): boolean {
  * - Skips production-only buttons when running in development
  * - Logs warnings for invalid or skipped button files
  */
-export async function loadButtonHandlers(): Promise<
-  Collection<string, ButtonModule>
-> {
-  const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-  const buttonsPath = path.join(__dirname, "..", "interactions", "buttons");
-
+export async function loadButtonHandlers(
+  buttonsPath: string,
+): Promise<Collection<string, ButtonModule>> {
   if (!fs.existsSync(buttonsPath)) {
-    logger.warn("Buttons directory not found, skipping button loading");
+    logger.warn(`Buttons directory not found: ${buttonsPath}`);
     return new Collection();
   }
 
@@ -153,30 +149,32 @@ export async function loadButtonHandlers(): Promise<
       buttonHandlers.set(handlerKey, buttonModule);
 
       logger.debug(
-        `Loaded button handler: ${handlerKey} (pattern: ${buttonModule.pattern})`
+        `Loaded button handler: ${handlerKey} (pattern: ${buttonModule.pattern})`,
       );
     } catch (error) {
       logger.error(`Failed to load button handler ${file}:`, error);
     }
   }
 
-  logger.info(`Loaded ${buttonHandlers.size} button handler(s)`);
+  logger.info(
+    `Loaded ${buttonHandlers.size} button handler(s) from ${buttonsPath}`,
+  );
   return buttonHandlers;
 }
 
 /**
  * Finds a matching button handler for a given customId
- * 
+ *
  * Interates through all registered button handlers and returns the first one
  * whose pattern matches the provided customId. Returns null if no match is found
- * 
+ *
  * @param customId - The button's customId from the interaction
  * @param handlers - Collection of registered button handlers
  * @returns The matching ButtomModule, or null if no handler matches
  */
 export function findButtonHandler(
   customId: string,
-  handlers: Collection<string, ButtonModule>
+  handlers: Collection<string, ButtonModule>,
 ): ButtonModule | null {
   for (const handler of handlers.values()) {
     if (matchesPattern(customId, handler.pattern)) {

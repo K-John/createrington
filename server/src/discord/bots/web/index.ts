@@ -5,6 +5,11 @@ import {
   SERVER_STATS_CONFIG,
   ServerStatsService,
 } from "@/services/discord/stats";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { loadEventHandlers } from "../common/loaders/event-loader";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /**
  * Rotating status service instance
@@ -31,6 +36,10 @@ let serverStatsService: ServerStatsService;
  */
 (async () => {
   await webBot.login(config.discord.bots.web.token);
+
+  const eventsPath = path.join(__dirname, "events");
+
+  await loadEventHandlers(webBot, eventsPath);
 
   webBot.once("clientReady", async () => {
     logger.info("Discord bot ready");

@@ -8,7 +8,7 @@ import {
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { CommandModule } from "../bots/main/loaders/command-loader";
+import { CommandModule } from "../bots/common/loaders/command-loader";
 
 const BOT_TOKEN = config.discord.bots.main.token;
 const BOT_ID = config.discord.bots.main.id;
@@ -39,7 +39,7 @@ async function loadCommandData(): Promise<
     "bots",
     "main",
     "interactions",
-    "slash-commands"
+    "slash-commands",
   );
 
   if (!fs.existsSync(commandsPath)) {
@@ -94,14 +94,14 @@ async function registerCommands(): Promise<void> {
     const commands = await loadCommandData();
 
     logger.info(
-      `Registering ${commands.length} slash command(s) in GUILD: ${GUILD_ID}`
+      `Registering ${commands.length} slash command(s) in GUILD: ${GUILD_ID}`,
     );
 
     const data = (await rest.put(
       Routes.applicationGuildCommands(BOT_ID, GUILD_ID),
       {
         body: commands,
-      }
+      },
     )) as Array<{ name: string }>;
 
     logger.info("Commands registered successfully:");
