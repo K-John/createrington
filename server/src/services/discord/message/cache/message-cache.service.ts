@@ -1,11 +1,23 @@
-import { EventEmitter } from "node:events";
+import EventEmitter from "node:events";
 import {
   CachedMessage,
   MessageCacheServiceConfig,
   MessageQueryOptions,
+  MessageSource,
+  MinecraftMessageData,
+  ParsedAttachment,
+  ParsedEmbed,
   ServerCacheConfig,
+  SystemMessageData,
+  WebMessageData,
 } from "./types";
-import { Client, Message, PartialMessage, TextChannel } from "discord.js";
+import {
+  Client,
+  Embed,
+  Message,
+  PartialMessage,
+  TextChannel,
+} from "discord.js";
 import { isSendableChannel } from "@/discord/utils/channel-guard";
 
 /**
@@ -43,6 +55,7 @@ export declare interface MessageCacheService {
  * - Automatically loads historical messages on startup
  * - Handles message updates and deletions
  * - Emits events for real-time integration (WebSocket, etc.)
+ * - Parses messages to detect source (System, Discord, Minecraft, Web)
  */
 export class MessageCacheService extends EventEmitter {
   private cache: Map<number, CachedMessage[]> = new Map();
@@ -112,21 +125,21 @@ export class MessageCacheService extends EventEmitter {
   }
 
   /**
-   * Loads historical message from all configured servers
+   * Loads historical messages from all configured servers
    *
    * @private
    */
   private async loadHistoricalMessages(): Promise<void> {
     logger.info("Loading historical messages...");
 
-    const loadPromises = this.config.servers.map((serverConfig) => {
-      this.loadChannelHistory(serverConfig);
-    });
+    const loadPromises = this.config.servers.map((serverConfig) =>
+      this.loadChannelHistory(serverConfig),
+    );
 
     await Promise.all(loadPromises);
 
     const totalMessages = Array.from(this.cache.values()).reduce(
-      (sum, cache) => sum * cache.length,
+      (sum, cache) => sum + cache.length,
       0,
     );
 
@@ -169,7 +182,7 @@ export class MessageCacheService extends EventEmitter {
       );
     } catch (error) {
       logger.error(
-        `Failed to load history for channel ${serverConfig.channelId}:`,
+        `Failed to load history for channel ${serverConfig.channelId}`,
         error,
       );
     }
@@ -188,13 +201,13 @@ export class MessageCacheService extends EventEmitter {
       return;
     }
 
-    const cachedMessage = this.convertToCachedMessage(message, serverId);
-    this.addToCache(serverId, cachedMessage);
+    const cachedMessages = this.convertToCachedMessage(message, serverId);
+    this.addToCache(serverId, cachedMessages);
 
-    this.emit("messageCreate", serverId, cachedMessage);
+    this.emit("messageCreate", serverId, cachedMessages);
 
     logger.debug(
-      `Cached new mesage from ${message.author.username} in server ${serverId}`,
+      `Cached new message from ${message.author.username} (${cachedMessages.source})`,
     );
   }
 
@@ -225,7 +238,9 @@ export class MessageCacheService extends EventEmitter {
 
       this.emit("messageUpdate", serverId, updatedMessage);
 
-      logger.debug(`Updated cache message ${message.id} in server ${serverId}`);
+      logger.debug(
+        `Updated cached message ${message.id} in server ${serverId}`,
+      );
     }
   }
 
@@ -279,7 +294,158 @@ export class MessageCacheService extends EventEmitter {
   }
 
   /**
-   * Converts a Discord message to a CachedMessage
+   * Detects the source of a message (System, Discord, Minecraft, Web)
+   *
+   * @param message - Discord message
+   * @returns Message source
+   *
+   * @private
+   */
+  private detectMessageSource(message: Message): MessageSource {
+    if (!message.author.bot) {
+      return MessageSource.DISCORD;
+    }
+
+    const isCreateringtonBot =
+      message.author.id === this.config.botConfig.createringtonBotId;
+    const isCreateringtonTag =
+      message.author.tag.startsWith("Createrington#") ||
+      message.author.tag === "Createrington";
+
+    if (isCreateringtonBot || isCreateringtonTag) {
+      if (message.embeds.length > 0) {
+        return MessageSource.SYSTEM;
+      }
+
+      return MessageSource.WEB;
+    }
+
+    return MessageSource.MINECRAFT;
+  }
+
+  /**
+   * Parses Minecraft-specific data from a message
+   *
+   * @param message - Discord message
+   * @returns Minecraft data or undefined
+   *
+   * @private
+   */
+  private parseMinecraftData(
+    message: Message,
+  ): MinecraftMessageData | undefined {
+    return {
+      playerName: message.author.username,
+    };
+  }
+
+  /**
+   * Parses system message data from embeds
+   *
+   * @param message - Discord message
+   * @returns System data or undefined
+   *
+   * @private
+   */
+  private parseSystemData(message: Message): SystemMessageData | undefined {
+    if (message.embeds.length === 0) {
+      return undefined;
+    }
+
+    const embed = message.embeds[0];
+    return {
+      title: embed.title || undefined,
+      description: embed.description || undefined,
+    };
+  }
+
+  /**
+   * Parses web message data
+   * TODO: Implement when web message are added
+   *
+   * @param message - Discord message
+   * @returns Web data or undefined
+   *
+   * @private
+   */
+  private parseWebData(message: Message): WebMessageData | undefined {
+    // TODO: Implement web message detection
+    return undefined;
+  }
+
+  /**
+   * Parses Discord embeds into a clean format
+   *
+   * @param embeds - Discord embeds
+   * @returns Parsed embeds
+   *
+   * @private
+   */
+  private parseEmbeds(embeds: Embed[]): ParsedEmbed[] {
+    return embeds.map((embed) => ({
+      title: embed.title || undefined,
+      description: embed.description || undefined,
+      url: embed.url || undefined,
+      color: embed.color || undefined,
+      timestamp: embed.timestamp || undefined,
+      footer: embed.footer
+        ? {
+            text: embed.footer.text,
+            iconUrl: embed.footer.iconURL || undefined,
+          }
+        : undefined,
+      author: embed.author
+        ? {
+            name: embed.author.name,
+            iconUrl: embed.author.iconURL || undefined,
+            url: embed.author.url || undefined,
+          }
+        : undefined,
+      fields: embed.fields?.map((field) => ({
+        name: field.name,
+        value: field.value,
+        inline: field.inline || undefined,
+      })),
+      image: embed.image
+        ? {
+            url: embed.image.url,
+            width: embed.image.width || undefined,
+            height: embed.image.height || undefined,
+          }
+        : undefined,
+      thumbnail: embed.thumbnail
+        ? {
+            url: embed.thumbnail.url,
+            width: embed.thumbnail.width || undefined,
+            height: embed.thumbnail.height || undefined,
+          }
+        : undefined,
+    }));
+  }
+
+  /**
+   * Parses Discord attachments into a clean format
+   *
+   * @param attachments - Discord attachments
+   * @returns Parsed attachments
+   *
+   * @private
+   */
+  private parseAttachments(
+    attachments: Message["attachments"],
+  ): ParsedAttachment[] {
+    return Array.from(attachments.values()).map((att) => ({
+      url: att.url,
+      filename: att.name,
+      contentType: att.contentType || undefined,
+      size: att.size,
+      width: att.width || undefined,
+      height: att.height || undefined,
+    }));
+  }
+
+  /**
+   * Converts a Discord message to a CachedMessage with full parsing
    *
    * @param message - Discord message
    * @param serverId - Server ID this message belongs to
@@ -291,7 +457,9 @@ export class MessageCacheService extends EventEmitter {
     message: Message,
     serverId: number,
   ): CachedMessage {
-    return {
+    const source = this.detectMessageSource(message);
+
+    const cached: CachedMessage = {
       messageId: message.id,
       channelId: message.channelId,
       serverId,
@@ -303,19 +471,26 @@ export class MessageCacheService extends EventEmitter {
       content: message.content,
       createdAt: message.createdAt,
       editedAt: message.editedAt || undefined,
-      attachments: Array.from(message.attachments.values()).map((att) => ({
-        url: att.url,
-        filename: att.name,
-        contentType: att.contentType || undefined,
-      })),
-      embeds: message.embeds.map((embed) => ({
-        title: embed.title || undefined,
-        description: embed.description || undefined,
-        url: embed.url || undefined,
-      })),
+      attachments: this.parseAttachments(message.attachments),
+      embeds: this.parseEmbeds(message.embeds),
       isBot: message.author.bot,
       referenceMessageId: message.reference?.messageId,
+      source,
     };
+
+    switch (source) {
+      case MessageSource.MINECRAFT:
+        cached.minecraftData = this.parseMinecraftData(message);
+        break;
+      case MessageSource.SYSTEM:
+        cached.systemData = this.parseSystemData(message);
+        break;
+      case MessageSource.WEB:
+        cached.webData = this.parseWebData(message);
+        break;
+    }
+
+    return cached;
   }
 
   /**
@@ -343,7 +518,7 @@ export class MessageCacheService extends EventEmitter {
   }
 
   /**
-   * Gets all cached messages for a server
+   * Adds a message to the cached message for a server
    *
    * @param serverId - Server ID
    * @param options - Optional query filters
@@ -416,21 +591,38 @@ export class MessageCacheService extends EventEmitter {
   }
 
   /**
-   * Gets cahce statistics
+   * Gets cache statistics
    *
    * @returns Object with cache stats per server
    */
   getStats(): Record<
     number,
-    { messageCount: number; oldestMessage?: Date; newestMessage?: Date }
+    {
+      messageCount: number;
+      oldestMessage?: Date;
+      newestMessage?: Date;
+      bySource: Record<MessageSource, number>;
+    }
   > {
     const stats: Record<number, any> = {};
 
     for (const [serverId, cache] of this.cache) {
+      const bySource: Record<MessageSource, number> = {
+        [MessageSource.SYSTEM]: 0,
+        [MessageSource.DISCORD]: 0,
+        [MessageSource.MINECRAFT]: 0,
+        [MessageSource.WEB]: 0,
+      };
+
+      cache.forEach((msg) => {
+        bySource[msg.source]++;
+      });
+
       stats[serverId] = {
         messageCount: cache.length,
         oldestMessage: cache[0]?.createdAt,
-        newestMessage: cache[cache.length - 1]?.createdAt,
+        newestMessage: cache[cache.length - 1].createdAt,
+        bySource,
       };
     }
 
@@ -447,6 +639,6 @@ export class MessageCacheService extends EventEmitter {
     if (cache) {
       cache.length = 0;
     }
-    logger.info(`Cleared cache for server ${serverId}`);
+    logger.info(`Cleared cached for server ${serverId}`);
   }
 }

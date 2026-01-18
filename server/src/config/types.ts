@@ -160,6 +160,10 @@ interface BotConfig {
   readonly statusMessage?: string;
   /** Discord activity type going along-side statusMessage */
   readonly activityType?: "PLAYING" | "WATCHING" | "LISTENING";
+  /** Bot webhooks */
+  readonly webbhook?: {
+    readonly id: string;
+  };
 }
 
 interface MemberRolesConfig {
@@ -203,6 +207,7 @@ interface ChannelConfig {
   readonly announcements: string;
   readonly rules: string;
   readonly support: string;
+  readonly commands: string;
 }
 
 interface CategoriesConfig {

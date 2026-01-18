@@ -1,3 +1,5 @@
+import { ColorResolvable } from "discord.js";
+
 /**
  * Cached message data with relevant metadata
  */
@@ -40,6 +42,86 @@ export interface CachedMessage {
   isBot: boolean;
   /** Referenced message ID (for replies) */
   referenceMessageId?: string;
+
+  source: MessageSource;
+  minecraftData?: MinecraftMessageData;
+  systemData?: SystemMessageData;
+  webData?: WebMessageData;
+}
+
+/**
+ * Message sources
+ */
+export enum MessageSource {
+  SYSTEM = "system",
+  DISCORD = "discord",
+  MINECRAFT = "minecraft",
+  WEB = "web",
+}
+
+/**
+ * Parsed embed for web <-> Discord
+ */
+export interface ParsedEmbed {
+  title?: string;
+  description?: string;
+  url?: string;
+  color?: ColorResolvable;
+  timestamp?: string;
+  footer?: {
+    text: string;
+    iconUrl?: string;
+  };
+  author?: {
+    name: string;
+    iconUrl?: string;
+    url?: string;
+  };
+  fields?: Array<{
+    name: string;
+    value: string;
+    inline?: boolean;
+  }>;
+  image?: {
+    url: string;
+    width?: number;
+    height?: number;
+  };
+  thumbnail?: {
+    url: string;
+    width?: number;
+    height?: number;
+  };
+}
+
+/**
+ * Parsed attachment
+ */
+export interface ParsedAttachment {
+  url: string;
+  filename: string;
+  contentType?: string;
+  size?: number;
+  width?: number;
+  height?: number;
+}
+
+export interface MinecraftMessageData {
+  playerName: string;
+}
+
+export interface SystemMessageData {
+  title?: string;
+  description?: string;
+}
+
+export interface WebMessageData {
+  originalAuthor: {
+    id: string;
+    username: string;
+    displayName: string;
+    avatarUrl: string;
+  };
 }
 
 /**
@@ -62,6 +144,11 @@ export interface MessageCacheServiceConfig {
   servers: ServerCacheConfig[];
   /** Whether to load historical data on startup */
   loadHistoryOnStartup?: boolean;
+  /** Bot data */
+  botConfig: {
+    createringtonBotId: string;
+    createringtonWebhookId?: string;
+  };
 }
 
 /**

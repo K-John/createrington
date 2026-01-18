@@ -1,5 +1,5 @@
 import config from "@/config";
-import { Client, GatewayIntentBits, Partials } from "discord.js";
+import { ActivityType, Client, GatewayIntentBits, Partials } from "discord.js";
 
 const BOT_TOKEN = config.discord.bots.web.token;
 
@@ -48,4 +48,27 @@ export async function ensureWebClientReady(): Promise<Client> {
     });
   }
   return webBot;
+}
+
+/**
+ * Sets the bot's custom status
+ *
+ * @param status - The status text to display
+ */
+export function setWebBotStatus(status: string): void {
+  if (!webBot.isReady) {
+    logger.warn("Cannot set status - bot not ready");
+    return;
+  }
+
+  webBot.user?.setPresence({
+    activities: [
+      {
+        type: ActivityType.Custom,
+        name: "custom",
+        state: status,
+      },
+    ],
+    status: "online",
+  });
 }

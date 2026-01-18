@@ -11,7 +11,6 @@ import {
   isPlaytimeServiceInitialized,
 } from "@/services/playtime/playtime.manager";
 import { minecraftRcon } from "./utils/rcon";
-import { WebSocketService } from "./services/websocket";
 import config from "./config";
 import { serviceManager } from "./services/service.manager";
 import { MESSAGE_CACHE_CONFIG } from "./services/discord/message/cache";
@@ -185,8 +184,17 @@ function start(): void {
         },
       );
 
-      const stats = await serviceManager.getStats();
-      logger.info("Service statistics:", stats);
+      // Wait for everything to initialize for 5000 ms
+      setTimeout(async () => {
+        const stats = await serviceManager.getStats();
+        logger.info("Service statistics:", stats);
+
+        // const test = serviceManager.getMessageCacheService();
+
+        // const messages = test?.getMessages(1);
+
+        // logger.info("Messages:", messages);
+      }, 5000);
     } catch (error) {
       logger.error("Failed to initialize services:", error);
       logger.warn("Server will continue running with limited functionality");

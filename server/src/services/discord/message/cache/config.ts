@@ -17,4 +17,8 @@ export const MESSAGE_CACHE_CONFIG: MessageCacheServiceConfig = {
     // Add more servers
   ],
   loadHistoryOnStartup: true,
+  botConfig: {
+    createringtonBotId: config.discord.bots.main.id,
+    createringtonWebhookId: config.discord.bots.main.webbhook?.id,
+  },
 };

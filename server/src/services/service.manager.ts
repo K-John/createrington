@@ -51,12 +51,10 @@ export class ServiceManager {
         messageCacheConfig,
       );
       await this.messageCacheService.initialize();
-      logger.info("Message CacheService initialized");
 
       logger.info("Initializing WebSocketService...");
       this.webSocketService = new WebSocketService(httpServer, webSocketConfig);
       await this.webSocketService.initialize(this.messageCacheService);
-      logger.info("WebSocketService initialized");
 
       this.isInitialized = true;
 

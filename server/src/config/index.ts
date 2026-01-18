@@ -56,6 +56,9 @@ const config: Config = {
       main: {
         id: env.DISCORD_MAIN_BOT_ID,
         token: env.DISCORD_MAIN_BOT_TOKEN,
+        webbhook: {
+          id: env.DISCORD_MAIN_BOT_WEBHOOK_ID,
+        }
       },
       web: {
         id: env.DISCORD_WEB_BOT_ID,

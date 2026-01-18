@@ -18,6 +18,7 @@ dotenv.config({ quiet: true });
  * @property {string} DISCORD_GUILD_ID - Discord server/guild ID
  * @property {string} DISCORD_MAIN_BOT_TOKEN - Discord bot authentication token
  * @property {string} DISCORD_MAIN_BOT_ID - Discord bot application/client ID
+ * @property {string} DISCORD_MAIN_BOT_WEBHOOK_ID - Discord bot webhook application/client ID
  * @property {string} DISCORD_WEB_BOT_TOKEN - Discord bot authentication token
  * @property {string} DISCORD_WEB_BOT_ID - Discord bot application/client ID
  * @property {string} DISCORD_OAUTH_CLIENT_ID - Discord auth app ID
@@ -75,6 +76,10 @@ const envSchema = z.object({
     .min(1, "Bot token is required")
     .regex(/^[\w\-\.]+$/, "Bot token must be a valid Discord token format"),
   DISCORD_MAIN_BOT_ID: z
+    .string()
+    .min(1, "Bot ID is required")
+    .regex(/^\d+$/, "Bot ID must be numeric"),
+  DISCORD_MAIN_BOT_WEBHOOK_ID: z
     .string()
     .min(1, "Bot ID is required")
     .regex(/^\d+$/, "Bot ID must be numeric"),
