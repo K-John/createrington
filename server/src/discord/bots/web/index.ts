@@ -1,11 +1,20 @@
 import config from "@/config";
 import { webBot } from "./client";
 import { RotatingStatusService } from "@/services/discord/status";
+import {
+  SERVER_STATS_CONFIG,
+  ServerStatsService,
+} from "@/services/discord/stats";
 
 /**
  * Rotating status service instance
  */
 let statusService: RotatingStatusService;
+
+/**
+ * Server stats service instance
+ */
+let serverStatsService: ServerStatsService;
 
 /**
  * Bot initialization IIFE
@@ -28,6 +37,9 @@ let statusService: RotatingStatusService;
 
     statusService = new RotatingStatusService(webBot, 60000);
     statusService.start();
+
+    serverStatsService = new ServerStatsService(webBot, SERVER_STATS_CONFIG);
+    await serverStatsService.start();
 
     const stats = statusService.getStats();
     logger.info(

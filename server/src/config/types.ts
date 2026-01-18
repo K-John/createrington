@@ -208,6 +208,9 @@ interface ChannelConfig {
   readonly rules: string;
   readonly support: string;
   readonly commands: string;
+  readonly membersStat: string;
+  readonly botsStat: string;
+  readonly allStat: string;
 }
 
 interface CategoriesConfig {
@@ -218,6 +221,7 @@ interface CategoriesConfig {
   readonly tickets: string;
   readonly cogsAndSteam: string;
   readonly general: string;
+  readonly serverStats: string;
 }
 
 interface ColorsConfig {
