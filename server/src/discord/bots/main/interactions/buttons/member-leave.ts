@@ -108,7 +108,7 @@ async function handleDeleteNow(
       { deletedAt: new Date() },
     );
 
-    const deletedEmbed = EmbedPresets.notification.deleted({
+    const deletedEmbed = EmbedPresets.departed.deleted({
       minecraftUsername: departed.minecraftUsername,
       deletedBy: interaction.user.tag,
       deletedAt: new Date(),

@@ -89,7 +89,7 @@ export class MemberCleanupService {
               });
 
               if (result.success) {
-                const autoDeleted = EmbedPresets.notification.autoDeleted({
+                const autoDeleted = EmbedPresets.departed.autoDeleted({
                   minecraftUsername: member.minecraftUsername,
                   departedAt: member.departedAt,
                   deletedAt: new Date(),

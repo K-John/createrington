@@ -9,7 +9,7 @@ interface DepartedMemberInfo {
   departedAt: Date;
 }
 
-export const NotificationEmbedPresets = {
+export const DepartedEmbedPresets = {
   /**
    * Admin notification when a registered member leaves
    */

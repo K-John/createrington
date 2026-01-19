@@ -59,7 +59,7 @@ export async function execute(
 
     logger.info("Departed entry:", leftEntry);
 
-    const embed = EmbedPresets.notification.departedMember({
+    const embed = EmbedPresets.departed.departedMember({
       discordId: member.user.id,
       discordTag: member.user.tag,
       minecraftUsername: player.minecraftUsername,
