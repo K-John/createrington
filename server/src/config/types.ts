@@ -211,6 +211,7 @@ interface ChannelConfig {
   readonly membersStat: string;
   readonly botsStat: string;
   readonly allStat: string;
+  readonly download: string;
 }
 
 interface CategoriesConfig {
