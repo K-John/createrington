@@ -61,7 +61,7 @@ export class DiscordMessageService {
    * @private
    */
   private async fetchSendableChannel(
-    channelId: string
+    channelId: string,
   ): Promise<TextChannel | null> {
     try {
       const guild = await this.client.guilds.fetch(this.guildId);
@@ -69,7 +69,7 @@ export class DiscordMessageService {
 
       if (!channel || !isSendableChannel(channel)) {
         logger.warn(
-          `Channel ${channelId} not found or not sendable in guild ${this.guildId}`
+          `Channel ${channelId} not found or not sendable in guild ${this.guildId}`,
         );
         return null;
       }
@@ -138,7 +138,7 @@ export class DiscordMessageService {
       const message = await channel.send(messageOptions);
 
       logger.info(
-        `Message sent to ${options.channelId} - Message ID: ${message.id}`
+        `Message sent to ${options.channelId} - Message ID: ${message.id}`,
       );
 
       return {
@@ -210,7 +210,7 @@ export class DiscordMessageService {
       const editedMessage = await message.edit(editOptions);
 
       logger.info(
-        `Message ${options.messageId} edited in channel ${options.channelId}`
+        `Message ${options.messageId} edited in channel ${options.channelId}`,
       );
 
       return {
@@ -240,7 +240,7 @@ export class DiscordMessageService {
    * });
    */
   async delete(
-    options: DeleteMessageOptions
+    options: DeleteMessageOptions,
   ): Promise<{ success: boolean; error?: string }> {
     try {
       const channel = await this.fetchSendableChannel(options.channelId);
@@ -264,7 +264,7 @@ export class DiscordMessageService {
       await message.delete();
 
       logger.info(
-        `Message ${options.messageId} deleted from channel ${options.channelId}`
+        `Message ${options.messageId} deleted from channel ${options.channelId}`,
       );
 
       return { success: true };
@@ -330,7 +330,7 @@ export class DiscordMessageService {
       });
 
       logger.info(
-        `Replied to message ${options.messageId} in channel ${options.channelId}`
+        `Replied to message ${options.messageId} in channel ${options.channelId}`,
       );
 
       return {
@@ -348,66 +348,76 @@ export class DiscordMessageService {
   }
 
   /**
-   * Fetch method - retrieves messages or channels
+   * Fetches a message from a channel
    *
-   * @param options - Fetch configuration
-   * @returns Promise resolving to fetch result
+   * @param options - Message fetch configuration
+   * @returns Promise resolving to fetch result with message
    *
    * @example
-   * // Fetch a message
-   * const result = await messageService.fetch({
+   * const result = await messageService.fetchMessage({
    *    channelId,
    *    messageId
    * });
+   * if (result.success) {
+   *    await result.message.edit({ content: "Updated!" });
+   * }
+   */
+  async fetchMessage(
+    options: FetchMessageOptions,
+  ): Promise<
+    { success: true; message: Message } | { success: false; error: string }
+  > {
+    try {
+      const channel = await this.fetchSendableChannel(options.channelId);
+
+      if (!channel) {
+        return {
+          success: false,
+          error: "Channel not found or not sendable",
+        };
+      }
+
+      const message = await channel.messages.fetch(options.messageId);
+
+      if (!message) {
+        return {
+          success: false,
+          error: "Message not found",
+        };
+      }
+
+      return {
+        success: true,
+        message,
+      };
+    } catch (error) {
+      logger.error("Failed to fetch message:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  }
+
+  /**
+   * Fetches a channel
+   *
+   * @param options - Channel fetch configuration
+   * @returns Promise resolving to fetch result with channel
    *
    * @example
-   * // Fetch a channel
-   * const result = await messageService.fetch({
+   * const result = await messageService.fetchChannel({
    *    channelId,
    * });
-   * if (result.success && result.channel) {
+   * if (result.success) {
    *    await result.channel.send("Hello!");
    * }
    */
-  async fetch(
-    options: FetchMessageOptions | FetchChannelOptions
+  async fetchChannel(
+    options: FetchChannelOptions,
   ): Promise<
-    | { success: boolean; message?: Message; error?: string }
-    | { success: boolean; channel?: TextChannel; error?: string }
+    { success: true; channel: TextChannel } | { success: false; error: string }
   > {
-    if ("messageId" in options && options.messageId) {
-      try {
-        const channel = await this.fetchSendableChannel(options.channelId);
-
-        if (!channel) {
-          return {
-            success: false,
-            error: "Channel not found or not sendable",
-          };
-        }
-
-        const message = await channel.messages.fetch(options.messageId);
-
-        if (!message) {
-          return {
-            success: false,
-            error: "Message not found",
-          };
-        }
-
-        return {
-          success: true,
-          message,
-        };
-      } catch (error) {
-        logger.error("Failed to fetch message:", error);
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Unknown error",
-        };
-      }
-    }
-
     try {
       const channel = await this.fetchSendableChannel(options.channelId);
 
@@ -476,7 +486,7 @@ export class DiscordMessageService {
         content?: string;
         embeds?: EmbedBuilder;
       };
-    }
+    },
   ): Promise<T> {
     const loadingResult = await this.send({
       channelId,
@@ -523,5 +533,5 @@ export class DiscordMessageService {
  * @returns DiscordMessageService singleton instance
  */
 export const createDiscordMessageService = (
-  client: Client
+  client: Client,
 ): DiscordMessageService => DiscordMessageService.getInstance(client);

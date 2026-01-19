@@ -45,7 +45,7 @@ export class TicketService {
   private readonly transcriptDir: string;
   constructor(
     private readonly bot: Client,
-    private readonly repository: TicketRepository = new TicketRepository()
+    private readonly repository: TicketRepository = new TicketRepository(),
   ) {
     this.transcriptDir = path.join(
       __dirname,
@@ -55,7 +55,7 @@ export class TicketService {
       "..",
       "..",
       "storage",
-      "transcripts"
+      "transcripts",
     );
     this.ensureTranscriptDir();
   }
@@ -81,7 +81,7 @@ export class TicketService {
    * @returns Promise resolving to the ticket
    */
   async createTicket(
-    options: CreateTicketOptions
+    options: CreateTicketOptions,
   ): Promise<CreateTicketResult> {
     const ticketNumber = await this.repository.getNext();
     const config = getTicketTypeConfig(options.type);
@@ -90,7 +90,7 @@ export class TicketService {
       ticketNumber,
       config.channelPrefix,
       options.creatorId,
-      config.allowedRoleIds
+      config.allowedRoleIds,
     );
 
     const ticket = await this.repository.create({
@@ -103,7 +103,7 @@ export class TicketService {
     await this.sendWelcomeMessage(channel, ticket, options.creatorId);
 
     logger.info(
-      `Created ticket #${ticketNumber} (ID: ${ticket.id}) for user ${options.creatorId}`
+      `Created ticket #${ticketNumber} (ID: ${ticket.id}) for user ${options.creatorId}`,
     );
 
     return { ticket, channel };
@@ -124,7 +124,7 @@ export class TicketService {
     ticketNumber: number,
     prefix: string,
     creatorId: string,
-    allowedRoleIds: string[]
+    allowedRoleIds: string[],
   ): Promise<TextChannel> {
     const guild = await this.bot.guilds.fetch(config.discord.guild.id);
 
@@ -181,7 +181,7 @@ export class TicketService {
   private async sendWelcomeMessage(
     channel: TextChannel,
     ticket: Ticket,
-    creatorId: string
+    creatorId: string,
   ): Promise<void> {
     const config = getTicketTypeConfig(ticket.type as TicketType);
 
@@ -213,7 +213,7 @@ export class TicketService {
           .setCustomId(`ticket:close:${ticketId}`)
           .setStyle(ButtonStyle.Danger)
           .setLabel("Close")
-          .setEmoji("🔒")
+          .setEmoji("🔒"),
       ),
     ];
   }
@@ -230,7 +230,7 @@ export class TicketService {
   async closeTicket(
     ticketId: number,
     closedBy: string,
-    generateTranscript: boolean = false
+    generateTranscript: boolean = false,
   ): Promise<Ticket> {
     const ticket = await Q.ticket.get({ id: ticketId });
 
@@ -249,12 +249,12 @@ export class TicketService {
       transcriptPath,
     });
 
-    await this.lockTicketChannel(ticket.channelId);
+    await this.lockTicketChannel(ticket.channelId, ticket.creatorDiscordId);
 
     const closeMessageId = await this.sendClosureMessage(
       ticket.channelId,
       updatedTicket,
-      closedBy
+      closedBy,
     );
 
     if (closeMessageId) {
@@ -270,21 +270,31 @@ export class TicketService {
    * Locks the ticket channel by removing send message permissions
    *
    * @param channelId - Discord channel ID to lock
+   * @param creatorId - Discord ID of the ticket creator to remove permissions from
    *
    * @private
    */
-  private async lockTicketChannel(channelId: string): Promise<void> {
+  private async lockTicketChannel(
+    channelId: string,
+    creatorId: string,
+  ): Promise<void> {
     try {
       const channel = await this.bot.channels.fetch(channelId);
-      if (!channel?.isTextBased()) return;
+      if (!isSendableChannel(channel)) {
+        return;
+      }
 
       const guild = await this.bot.guilds.fetch(config.discord.guild.id);
+      const textChannel = channel as TextChannel;
 
-      await (channel as TextChannel).permissionOverwrites.edit(guild.id, {
+      await textChannel.permissionOverwrites.edit(creatorId, {
+        ViewChannel: false,
         SendMessages: false,
       });
 
-      logger.debug(`Locked ticket channel ${channelId}`);
+      logger.debug(
+        `Locked ticket channel ${channelId} and removed creator ${creatorId}`,
+      );
     } catch (error) {
       logger.error(`Failed to lock ticket channel ${channelId}:`, error);
     }
@@ -303,7 +313,7 @@ export class TicketService {
   private async sendClosureMessage(
     channelId: string,
     ticket: Ticket,
-    closedBy: string
+    closedBy: string,
   ): Promise<string | null> {
     const embed = EmbedPresets.ticket.close(closedBy);
 
@@ -340,7 +350,7 @@ export class TicketService {
         new ButtonBuilder()
           .setCustomId(`ticket:delete:${ticketId}`)
           .setLabel("Delete Ticket")
-          .setStyle(ButtonStyle.Danger)
+          .setStyle(ButtonStyle.Danger),
       ),
     ];
   }
@@ -384,7 +394,7 @@ export class TicketService {
       .setTitle("🔓 Ticket Reopened")
       .setDescription(
         `This ticket has been reopened by <@${reopenedBy}>.\n\n` +
-          `<@${ticket.creatorDiscordId}> can now send messages again.`
+          `<@${ticket.creatorDiscordId}> can now send messages again.`,
       )
       .setTimestamp();
 
@@ -408,17 +418,33 @@ export class TicketService {
    */
   private async unlockTicketChannel(
     channelId: string,
-    creatorId: string
+    creatorId: string,
   ): Promise<void> {
     try {
       const channel = await this.bot.channels.fetch(channelId);
       if (!channel?.isTextBased()) return;
 
-      await (channel as TextChannel).permissionOverwrites.edit(creatorId, {
+      const guild = await this.bot.guilds.fetch(config.discord.guild.id);
+      const textChannel = channel as TextChannel;
+
+      const member = await guild.members.fetch(creatorId).catch(() => null);
+
+      if (!member) {
+        logger.warn(`Creator ${creatorId} not found in guild, skipping unlock`);
+        return;
+      }
+
+      await textChannel.permissionOverwrites.edit(member, {
+        ViewChannel: true,
         SendMessages: true,
+        ReadMessageHistory: true,
+        AttachFiles: true,
+        EmbedLinks: true,
       });
 
-      logger.debug(`Unlocked ticket channel ${channelId}`);
+      logger.debug(
+        `Unlocked ticket channel ${channelId} for creator ${creatorId}`,
+      );
     } catch (error) {
       logger.error(`Failed to unlock ticket channel ${channelId}:`, error);
     }
@@ -466,14 +492,14 @@ export class TicketService {
       await fs.writeFile(filepath, transcript);
 
       logger.info(
-        `Generated transcript for ticket #${ticket.ticketNumber}: ${filepath}`
+        `Generated transcript for ticket #${ticket.ticketNumber}: ${filepath}`,
       );
 
       return filepath;
     } catch (error) {
       logger.error(
         `Failed to generate transcript for ticket ${ticket.id}:`,
-        error
+        error,
       );
       throw new Error("Failed to generate transcript");
     }
@@ -517,7 +543,7 @@ export class TicketService {
           `**Creator:** <@${ticket.creatorDiscordId}>\n` +
           `**Closed By:** <@${ticket.closedByDiscordId}>\n` +
           `**Generated By:** <@${generatedBy}>\n` +
-          `**Channel:** <#${ticket.channelId}>`
+          `**Channel:** <#${ticket.channelId}>`,
       )
       .addFields(
         {
@@ -531,7 +557,7 @@ export class TicketService {
             ? `<t:${Math.floor(ticket.closedAt.getTime() / 1000)}:F>`
             : "N/A",
           inline: true,
-        }
+        },
       )
       .setTimestamp();
 
@@ -552,7 +578,7 @@ export class TicketService {
     });
 
     logger.info(
-      `Sent transcript for ticket #${ticket.ticketNumber} to transcript channel`
+      `Sent transcript for ticket #${ticket.ticketNumber} to transcript channel`,
     );
 
     return message.messageId!;

@@ -1,6 +1,14 @@
 import { admin } from "@/db";
-import { ChatInputCommandInteraction, MessageFlags } from "discord.js";
+import {
+  ButtonInteraction,
+  ChatInputCommandInteraction,
+  GuildMember,
+  MessageFlags,
+} from "discord.js";
 import { EmbedPresets } from "../embeds";
+import { isAdminDb } from "@/db/utils";
+import { RoleManager } from "./roles/role-manager";
+import { Discord } from "../constants";
 
 /**
  * Checks if the user is an admin
@@ -10,14 +18,14 @@ import { EmbedPresets } from "../embeds";
  * @returns True if admin, false otherwise
  */
 export async function requireAdmin(
-  interaction: ChatInputCommandInteraction
+  interaction: ChatInputCommandInteraction,
 ): Promise<boolean> {
   const isAdmin = await admin.exists({ discordId: interaction.user.id });
 
   if (!isAdmin) {
     const embed = EmbedPresets.error(
       "Permission denied",
-      "This command requires administrator privileges"
+      "This command requires administrator privileges",
     );
     await interaction.reply({
       embeds: [embed.build()],
@@ -37,11 +45,34 @@ export async function requireAdmin(
  * @throws Error if user is not an admin
  */
 export async function assertAdmin(
-  interaction: ChatInputCommandInteraction
+  interaction: ChatInputCommandInteraction,
 ): Promise<void> {
   const isAdmin = await admin.exists({ discordId: interaction.user.id });
 
   if (!isAdmin) {
     throw new Error("User is not an admin");
   }
+}
+
+/**
+ * Checks if a user is an admin
+ *
+ * - Has a role ADMIN in Discord
+ *
+ * @param member - The Discord guild member
+ * @returns Promise resolving to true if user is an admin, false otherwise
+ */
+export async function isAdminDc(member: GuildMember): Promise<boolean> {
+  return RoleManager.has(member, Discord.Roles.ADMIN);
+}
+
+/**
+ * Checks if a user is an admin in both Discord and Database
+ *
+ * @param member - The Discord guild member
+ */
+export async function isAdmin(member: GuildMember): Promise<boolean> {
+  if (!isAdminDc(member)) return false;
+
+  return await isAdminDb(member.id);
 }

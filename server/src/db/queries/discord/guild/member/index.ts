@@ -1,5 +1,6 @@
 import { Pool, PoolClient } from "pg";
 import { DiscordGuildMemberJoinQueries } from "@/db/queries/discord/guild/member/join";
+import { DiscordGuildMemberLeaveQueries } from "@/db/queries/discord/guild/member/leave";
 
 /**
  * Namespace queries for discord_guild_member
@@ -47,5 +48,17 @@ export class DiscordGuildMemberQueries {
       this._join = this.getOrCreateChild<DiscordGuildMemberJoinQueries>('join', DiscordGuildMemberJoinQueries);
     }
     return this._join;
+  }
+
+  private _leave?: DiscordGuildMemberLeaveQueries;
+
+  /**
+   * Lazy-loaded singleton accessor for discord_guild_member_leave
+   */
+  get leave(): DiscordGuildMemberLeaveQueries {
+    if (!this._leave) {
+      this._leave = this.getOrCreateChild<DiscordGuildMemberLeaveQueries>('leave', DiscordGuildMemberLeaveQueries);
+    }
+    return this._leave;
   }
 }

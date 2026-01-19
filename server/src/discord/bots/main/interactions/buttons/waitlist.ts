@@ -33,7 +33,7 @@ async function isAdmin(interaction: ButtonInteraction): Promise<boolean> {
  * Disables all non-link buttons in the message components
  */
 function disableNonLinkButtons(
-  interaction: ButtonInteraction
+  interaction: ButtonInteraction,
 ): ActionRowBuilder<ButtonBuilder>[] {
   return interaction.message.components.map((row) => {
     const newRow = new ActionRowBuilder<ButtonBuilder>();
@@ -80,7 +80,7 @@ export const prodOnly = false;
 export const permissionDeniedMessage = "You must be an admin to do that.";
 
 export async function checkPermission(
-  interaction: ButtonInteraction
+  interaction: ButtonInteraction,
 ): Promise<boolean> {
   return isAdmin(interaction);
 }
@@ -114,7 +114,7 @@ export async function execute(interaction: ButtonInteraction): Promise<void> {
       await waitlistRepo.manualInvite(parsedId, interaction.user.id);
 
       await interaction.editReply(
-        `✅ Invite sent successfully to ${entry.email}. Progress tracking is now active!`
+        `✅ Invite sent successfully to ${entry.email}. Progress tracking is now active!`,
       );
 
       logger.info(`Waitlist entry ${id} accepted by ${interaction.user.tag}`);
@@ -130,7 +130,7 @@ export async function execute(interaction: ButtonInteraction): Promise<void> {
           status: WaitlistStatus.DECLINED,
           acceptedBy: interaction.user.id,
           acceptedAt: new Date(),
-        }
+        },
       );
       await interaction.message.edit({
         components: disableNonLinkButtons(interaction),

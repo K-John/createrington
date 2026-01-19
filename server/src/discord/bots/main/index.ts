@@ -15,6 +15,7 @@ import { fileURLToPath } from "node:url";
 import { loadEventHandlers } from "../common/loaders/event-loader";
 import { loadCommandHandlers } from "../common/loaders/command-loader";
 import { loadButtonHandlers } from "../common/loaders/button-loader";
+import { memberCleanupService } from "@/services/discord/cleanup/member/member-cleanup.service";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -67,6 +68,8 @@ export const ticketService = new TicketService(mainBot);
     dailyRoleScheduler = new DailyRoleScheduler(mainBot);
     dailyRoleScheduler.start();
     dailyRoleScheduler.triggerManualCheck();
+
+    memberCleanupService.start();
   });
 })().catch((error) => {
   logger.error("Failed to initialize:", error);

@@ -141,4 +141,16 @@ export const ButtonPresets = {
         .setURL(cfg.map);
     },
   },
+
+  departedMember: {
+    /**
+     * Button to immediately delete a departed member
+     */
+    deleteNow(departedId: number): ButtonBuilder {
+      return new ButtonBuilder()
+        .setCustomId(`departed:delete-now:${departedId}`)
+        .setLabel("Yeet from Database 🚀")
+        .setStyle(ButtonStyle.Danger);
+    },
+  },
 };

@@ -373,6 +373,45 @@ ALTER SEQUENCE public.discord_guild_member_join_join_number_seq OWNED BY public.
 
 
 --
+-- Name: discord_guild_member_leave; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.discord_guild_member_leave (
+    id integer NOT NULL,
+    discord_id text NOT NULL,
+    minecraft_uuid uuid NOT NULL,
+    minecraft_username text NOT NULL,
+    departed_at timestamp with time zone DEFAULT now() NOT NULL,
+    notification_message_id text,
+    deleted_at timestamp with time zone
+);
+
+
+ALTER TABLE public.discord_guild_member_leave OWNER TO postgres;
+
+--
+-- Name: discord_guild_member_leave_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.discord_guild_member_leave_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.discord_guild_member_leave_id_seq OWNER TO postgres;
+
+--
+-- Name: discord_guild_member_leave_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.discord_guild_member_leave_id_seq OWNED BY public.discord_guild_member_leave.id;
+
+
+--
 -- Name: leaderboard_message; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -808,6 +847,13 @@ ALTER TABLE ONLY public.discord_guild_member_join ALTER COLUMN join_number SET D
 
 
 --
+-- Name: discord_guild_member_leave id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.discord_guild_member_leave ALTER COLUMN id SET DEFAULT nextval('public.discord_guild_member_leave_id_seq'::regclass);
+
+
+--
 -- Name: leaderboard_message id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -878,6 +924,22 @@ ALTER TABLE ONLY public.admin
 
 ALTER TABLE ONLY public.discord_guild_member_join
     ADD CONSTRAINT discord_guild_member_join_pkey PRIMARY KEY (join_number);
+
+
+--
+-- Name: discord_guild_member_leave discord_guild_member_leave_discord_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.discord_guild_member_leave
+    ADD CONSTRAINT discord_guild_member_leave_discord_id_key UNIQUE (discord_id);
+
+
+--
+-- Name: discord_guild_member_leave discord_guild_member_leave_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.discord_guild_member_leave
+    ADD CONSTRAINT discord_guild_member_leave_pkey PRIMARY KEY (id);
 
 
 --
@@ -1069,6 +1131,27 @@ ALTER TABLE ONLY public.waitlist_entry
 --
 
 CREATE INDEX idx_discord_guild_member_join_joined_at ON public.discord_guild_member_join USING btree (joined_at DESC);
+
+
+--
+-- Name: idx_discord_guild_member_leave_deleted_at; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_discord_guild_member_leave_deleted_at ON public.discord_guild_member_leave USING btree (departed_at) WHERE (deleted_at IS NULL);
+
+
+--
+-- Name: idx_discord_guild_member_leave_departed_at; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_discord_guild_member_leave_departed_at ON public.discord_guild_member_leave USING btree (departed_at);
+
+
+--
+-- Name: idx_discord_guild_member_leave_discord_id; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_discord_guild_member_leave_discord_id ON public.discord_guild_member_leave USING btree (discord_id);
 
 
 --
@@ -1330,6 +1413,14 @@ ALTER TABLE ONLY public.admin
 
 ALTER TABLE ONLY public.admin_log_action
     ADD CONSTRAINT admin_log_action_server_id_fkey FOREIGN KEY (server_id) REFERENCES public.server(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: discord_guild_member_leave fk_minecraft_uuid; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.discord_guild_member_leave
+    ADD CONSTRAINT fk_minecraft_uuid FOREIGN KEY (minecraft_uuid) REFERENCES public.player(minecraft_uuid) ON DELETE CASCADE;
 
 
 --

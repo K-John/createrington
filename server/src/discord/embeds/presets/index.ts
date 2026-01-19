@@ -2,6 +2,7 @@ import { CommandEmbedPresets } from "./commands";
 import { CommonEmbedPresets } from "./common";
 import { ConfirmationEmbedPresets } from "./confirmation";
 import { LeaderboardEmbedPresets } from "./leaderboard";
+import { NotificationEmbedPresets } from "./notification";
 import { ProgressEmbedPresets } from "./progress";
 import { RegistrationEmbedPresets } from "./registration";
 import { RoleAssignmentEmbedPresets } from "./role-assignment";
@@ -18,4 +19,5 @@ export const EmbedPresets = {
   ticket: TicketEmbedPresets,
   leaderboard: LeaderboardEmbedPresets,
   roleAssignment: RoleAssignmentEmbedPresets,
+  notification: NotificationEmbedPresets,
 };
