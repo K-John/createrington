@@ -115,7 +115,7 @@ export async function execute(
       );
 
       await verificationChannel.send({
-        content: `Welcome ${member}! 👋\n\nYou're member **#${joinNumber}**.\n\nTo get started, please verify your account using the \`/verify <token>\` command with the token from your email.\n\nIf you don't have a token yet, you'll need to join our waitlist first at <https://create-rington.com/apply-to-join>`,
+        content: `Welcome ${member}! 👋\n\nTo get started, please verify your account using the \`/verify <token>\` command with the token from your email.\n\nIf you don't have a token yet, you'll need to join our waitlist first at <https://create-rington.com/apply-to-join>`,
       });
 
       logger.info(
