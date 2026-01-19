@@ -20,7 +20,7 @@ export function initializePlaytimeService(): PlaytimeService {
     serverIp: config.servers.cogs.ip,
     serverPort: config.servers.cogs.port,
     serverId: config.servers.cogs.id,
-    pollIntervalMs: 30000,
+    pollIntervalMs: 10000,
     statusTimeoutMs: 5000,
     initialDelayMs: 5000,
   });
@@ -32,7 +32,7 @@ export function initializePlaytimeService(): PlaytimeService {
   playtimeService.start();
 
   logger.info(
-    `PlaytimeService started for ${config.servers.cogs.ip}:${config.servers.cogs.port}`
+    `PlaytimeService started for ${config.servers.cogs.ip}:${config.servers.cogs.port}`,
   );
 
   return playtimeService;
@@ -45,7 +45,7 @@ export function initializePlaytimeService(): PlaytimeService {
 export function getPlaytimeService(): PlaytimeService {
   if (!playtimeService) {
     throw new Error(
-      "PlaytimeService not initialized. Call initializePlaytimeService() first."
+      "PlaytimeService not initialized. Call initializePlaytimeService() first.",
     );
   }
   return playtimeService;
