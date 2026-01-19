@@ -1,5 +1,6 @@
+import { ServerStats } from "./types";
 import { Client } from "discord.js";
-import { ServerStatsConfig, ServerStats } from "./types";
+import { ServerStatsConfig } from "./types";
 
 /**
  * Service for updating Discord server statistics in channel names
@@ -14,6 +15,7 @@ import { ServerStatsConfig, ServerStats } from "./types";
 export class ServerStatsService {
   private lastStats: ServerStats | null = null;
   private isRunning = false;
+  private isInitialized = false;
 
   constructor(
     private readonly client: Client,
@@ -21,8 +23,9 @@ export class ServerStatsService {
   ) {}
 
   /**
-   * Starts the stats service
+   * Starts the stat service
    *
+   * - Performs initial member fetch to populate cache
    * - Performs initial update
    * - Sets up event listeners for member changes
    *
@@ -34,14 +37,37 @@ export class ServerStatsService {
       return;
     }
 
-    logger.info("Starting ServerStatsService...");
+    logger.info("Starting ServerStatsService");
+
+    await this.ensureMembersFetched();
 
     await this.updateStats();
 
     this.setupEventListeners();
 
     this.isRunning = true;
+    this.isInitialized = true;
     logger.info("ServerStatsService started (event-driven mode)");
+  }
+
+  /**
+   * Ensures guild members are fetched and cached
+   *
+   * @private
+   */
+  private async ensureMembersFetched(): Promise<void> {
+    try {
+      const guild = await this.client.guilds.fetch(this.config.guildId);
+
+      logger.info("Fetching all guild members for stats service...");
+      await guild.members.fetch();
+
+      const memberCount = guild.members.cache.size;
+      logger.info(`Cached ${memberCount} guild members`);
+    } catch (error) {
+      logger.error("Failed to fetch guild members:", error);
+      throw error;
+    }
   }
 
   /**
@@ -89,14 +115,15 @@ export class ServerStatsService {
   private async fetchStats(): Promise<ServerStats> {
     const guild = await this.client.guilds.fetch(this.config.guildId);
 
-    if (guild.members.cache.size === 0) {
-      logger.debug("Member cache empty, fetching all members...");
-      await guild.members.fetch();
-    }
-
     const members = guild.members.cache.filter((m) => !m.user.bot).size;
     const bots = guild.members.cache.filter((m) => m.user.bot).size;
     const total = members + bots;
+
+    if (total === 0 && this.isInitialized) {
+      logger.warn(
+        "Member cache is empty despite initialization - this may indicate a caching issue",
+      );
+    }
 
     return {
       members,
@@ -173,6 +200,7 @@ export class ServerStatsService {
         );
         if (totalChannel) {
           await totalChannel.setName(`All Members: ${stats.total}`);
+          logger.debug(`Updated total channel: ${stats.total}`);
         } else {
           logger.warn(
             `All Members channel ${this.config.totalMembersChannelId} not found`,
@@ -182,7 +210,7 @@ export class ServerStatsService {
 
       this.lastStats = stats;
       logger.info(
-        `Server stats updated - Members: ${stats.members}, Bots: ${stats.bots}, Total ${stats.total}`,
+        `Server stats updated - Members: ${stats.members}, Bots: ${stats.bots}, Total: ${stats.total}`,
       );
     } catch (error) {
       logger.error("Failed to update server stats:", error);
@@ -201,9 +229,9 @@ export class ServerStatsService {
   }
 
   /**
-   * Gets the current cached stats
+   * Get the current cached stats
    *
-   * @returns Current stats or null if not yet fetched
+   * @returns Current cached stats or null if not yet fetched
    */
   public getCurrentStats(): ServerStats | null {
     return this.lastStats;
