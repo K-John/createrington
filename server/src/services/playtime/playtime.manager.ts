@@ -2,6 +2,7 @@ import config from "@/config";
 import { playtimeRepo } from "@/db";
 import { PlaytimeService } from "@/services/playtime";
 import { MessageCacheService } from "@/services/discord/message/cache";
+import { MINECRAFT_SERVERS } from "./config"; // ✅ Import the correct config
 
 // Map of serverId -> PlaytimeService instance
 const playtimeServices: Map<number, PlaytimeService> = new Map();
@@ -27,47 +28,72 @@ export async function initializePlaytimeService(
 
   logger.info("Initializing PlaytimeServices (HTTP mode) for all servers...");
 
-  // Get all configured servers - FIX: Use Object.values() to iterate properly
-  const servers = config.servers || {};
-  const serverConfigs = Object.values(servers);
+  // ✅ Use MINECRAFT_SERVERS instead of config.servers
+  const serverConfigs = Object.values(MINECRAFT_SERVERS);
 
   if (serverConfigs.length === 0) {
     logger.warn("No Minecraft servers configured. Playtime tracking disabled.");
     return;
   }
 
-  // Initialize a service for each server
+  logger.info(
+    `Found ${serverConfigs.length} server configuration(s) to initialize`,
+  );
+
+  // Validate and initialize services
   const initPromises = serverConfigs.map(async (serverConfig) => {
-    const serverId = serverConfig.id; // Get serverId from the config object itself
+    const serverId = serverConfig.id;
 
-    logger.info(
-      `Initializing PlaytimeService for server ${serverId} (${serverConfig.name || "unnamed"})...`,
-    );
+    try {
+      // Validate required fields
+      if (!serverConfig.ip) {
+        throw new Error(`Server ${serverId} missing 'ip' field`);
+      }
+      if (!serverConfig.port) {
+        throw new Error(`Server ${serverId} missing 'port' field`);
+      }
 
-    // Create service instance
-    const service = new PlaytimeService({
-      serverIp: serverConfig.ip,
-      serverPort: serverConfig.port,
-      serverId: serverId,
-      pollIntervalMs: 10000, // Only used for recovery sync
-      statusTimeoutMs: 5000,
-      initialDelayMs: 5000,
-      maxSyncRetries: 3,
-    });
+      logger.info(
+        `Initializing PlaytimeService for server ${serverId} (${serverConfig.name})...`,
+      );
+      logger.debug(`  IP: ${serverConfig.ip}, Port: ${serverConfig.port}`);
 
-    // Connect repository to handle database operations
-    playtimeRepo.connectToService(service, serverId);
+      // Create service instance
+      const service = new PlaytimeService({
+        serverIp: serverConfig.ip,
+        serverPort: serverConfig.port,
+        serverId: serverId,
+        pollIntervalMs: 10000,
+        statusTimeoutMs: 5000,
+        initialDelayMs: 5000,
+        maxSyncRetries: 3,
+      });
 
-    // Initialize and perform recovery sync
-    await service.initialize();
+      // Connect repository to handle database operations
+      playtimeRepo.connectToService(service, serverId);
 
-    // Store service instance
-    playtimeServices.set(serverId, service);
+      // Initialize and perform recovery sync
+      await service.initialize();
 
-    logger.info(`PlaytimeService initialized for server ${serverId}`);
+      // Store service instance
+      playtimeServices.set(serverId, service);
+
+      logger.info(`PlaytimeService initialized for server ${serverId}`);
+    } catch (error) {
+      logger.error(
+        `Failed to initialize PlaytimeService for server ${serverId}:`,
+        error,
+      );
+      // Don't throw - allow other servers to initialize
+    }
   });
 
   await Promise.all(initPromises);
+
+  if (playtimeServices.size === 0) {
+    logger.error("No PlaytimeServices successfully initialized");
+    return;
+  }
 
   // Integrate with message cache service if provided
   if (messageCacheService) {
@@ -80,7 +106,7 @@ export async function initializePlaytimeService(
   }
 
   logger.info(
-    `PlaytimeServices initialization complete for ${serverConfigs.length} server(s)`,
+    `PlaytimeServices initialization complete for ${playtimeServices.size}/${serverConfigs.length} server(s)`,
   );
 }
 
@@ -143,7 +169,7 @@ export function getPlaytimeService(serverId: number): PlaytimeService {
   if (!service) {
     if (playtimeServices.size === 0) {
       throw new Error(
-        `PlaytimeService not initialized. Call initializePlaytimeServices() first.`,
+        `PlaytimeService not initialized. Call initializePlaytimeService() first.`,
       );
     } else {
       throw new Error(

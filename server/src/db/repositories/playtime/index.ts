@@ -499,6 +499,20 @@ export class PlaytimeRepository {
       }
     });
 
+    service.on("serverShutdown", async (serverId: number) => {
+      try {
+        const count = await this.endAllActiveSessions(serverId);
+        logger.info(
+          `Fallback: Closed ${count} orphaned database sessions for server ${serverId}`,
+        );
+      } catch (error) {
+        logger.error(
+          `Failed to clean up database sessions for server ${serverId}:`,
+          error,
+        );
+      }
+    });
+
     logger.info(
       `PlaytimeRepository connected to PlaytimeService for server ${serverId}`,
     );

@@ -16,6 +16,7 @@ export interface PlaytimeServiceEvents {
   sessionEnd: (event: SessionEndEvent) => void;
   statusUpdate: (snapshot: ServerStatusSnapshot) => void;
   error: (error: Error) => void;
+  serverShutdown: (serverId: number) => void;
   serverOffline: () => void;
   serverOnline: () => void;
   syncComplete: () => void;
@@ -313,6 +314,7 @@ export class PlaytimeService extends EventEmitter {
     );
 
     this.endAllSessions();
+    this.emit("serverShutdown", this.config.serverId);
     this.emit("serverOffline");
   }
 
@@ -448,7 +450,7 @@ export class PlaytimeService extends EventEmitter {
       return;
     }
 
-    logger.info(`Ending ${this.activeSessions} active session(s)`);
+    logger.info(`Ending ${this.activeSessions.size} active session(s)`);
 
     for (const session of this.activeSessions.values()) {
       this.handlePlayerLeave(session);
