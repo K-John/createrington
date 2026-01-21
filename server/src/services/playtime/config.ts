@@ -27,7 +27,13 @@ export const MINECRAFT_SERVER_MAPPING: Record<string, ServerInfo> = {
     port: config.servers.cogs.port,
   },
 
-  // Add more servers here as needed:
+  // [config.servers.test.ip]: {
+  //   serverId: config.servers.test.id,
+  //   serverName: config.servers.test.name,
+  //   ip: config.servers.test.ip,
+  //   port: config.servers.test.port,
+  // },
+
   // "192.168.1.101": {
   //   serverId: 2,
   //   serverName: "Creative Server",
@@ -54,12 +60,18 @@ export interface ServerConfig {
 export const MINECRAFT_SERVERS: Record<number, ServerConfig> = {
   [config.servers.cogs.id]: {
     id: config.servers.cogs.id,
-    name: config.servers.cogs.name || "COGS Server",
+    name: config.servers.cogs.name,
     ip: config.servers.cogs.ip,
     port: config.servers.cogs.port,
   },
 
-  // Add more servers here:
+  // [config.servers.test.id]: {
+  //   id: config.servers.test.id,
+  //   name: config.servers.test.name,
+  //   ip: config.servers.test.ip,
+  //   port: config.servers.test.port,
+  // },
+
   // 2: {
   //   id: 2,
   //   name: "Creative Server",

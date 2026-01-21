@@ -185,6 +185,7 @@ interface MemberRolesConfig {
 
   /** Server roles */
   readonly cogsAndSteam: string;
+  readonly tester: string;
 
   /** Joined roles in order */
   readonly newcomer: string;
@@ -216,6 +217,8 @@ interface ChannelConfig {
   readonly allStat: string;
   readonly download: string;
   readonly roles: string;
+  readonly testChat: string;
+  readonly testMinecraftChat: string;
 }
 
 interface CategoriesConfig {
@@ -227,6 +230,7 @@ interface CategoriesConfig {
   readonly cogsAndSteam: string;
   readonly general: string;
   readonly serverStats: string;
+  readonly testServer: string;
 }
 
 interface ColorsConfig {

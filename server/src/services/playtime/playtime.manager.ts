@@ -1,8 +1,8 @@
-import config from "@/config";
 import { playtimeRepo } from "@/db";
 import { PlaytimeService } from "@/services/playtime";
 import { MessageCacheService } from "@/services/discord/message/cache";
-import { MINECRAFT_SERVERS } from "./config"; // ✅ Import the correct config
+import { MINECRAFT_SERVERS } from "./config";
+import { onPlaytimeServicesReady } from "@/discord/bots/main";
 
 // Map of serverId -> PlaytimeService instance
 const playtimeServices: Map<number, PlaytimeService> = new Map();
@@ -28,7 +28,6 @@ export async function initializePlaytimeService(
 
   logger.info("Initializing PlaytimeServices (HTTP mode) for all servers...");
 
-  // ✅ Use MINECRAFT_SERVERS instead of config.servers
   const serverConfigs = Object.values(MINECRAFT_SERVERS);
 
   if (serverConfigs.length === 0) {
@@ -45,7 +44,6 @@ export async function initializePlaytimeService(
     const serverId = serverConfig.id;
 
     try {
-      // Validate required fields
       if (!serverConfig.ip) {
         throw new Error(`Server ${serverId} missing 'ip' field`);
       }
@@ -58,7 +56,6 @@ export async function initializePlaytimeService(
       );
       logger.debug(`  IP: ${serverConfig.ip}, Port: ${serverConfig.port}`);
 
-      // Create service instance
       const service = new PlaytimeService({
         serverIp: serverConfig.ip,
         serverPort: serverConfig.port,
@@ -69,13 +66,10 @@ export async function initializePlaytimeService(
         maxSyncRetries: 3,
       });
 
-      // Connect repository to handle database operations
       playtimeRepo.connectToService(service, serverId);
 
-      // Initialize and perform recovery sync
       await service.initialize();
 
-      // Store service instance
       playtimeServices.set(serverId, service);
 
       logger.info(`PlaytimeService initialized for server ${serverId}`);
@@ -84,7 +78,6 @@ export async function initializePlaytimeService(
         `Failed to initialize PlaytimeService for server ${serverId}:`,
         error,
       );
-      // Don't throw - allow other servers to initialize
     }
   });
 
@@ -98,6 +91,7 @@ export async function initializePlaytimeService(
   // Integrate with message cache service if provided
   if (messageCacheService) {
     setupMessageCacheIntegration(messageCacheService);
+    logger.info("PlaytimeServices initialized with message cache integration");
   } else {
     logger.warn(
       "PlaytimeServices initialized without message cache integration. " +
@@ -108,6 +102,16 @@ export async function initializePlaytimeService(
   logger.info(
     `PlaytimeServices initialization complete for ${playtimeServices.size}/${serverConfigs.length} server(s)`,
   );
+
+  // Notify Discord bot that playtime services are ready
+  try {
+    onPlaytimeServicesReady();
+  } catch (error) {
+    logger.debug(
+      "Could not notify Discord bot of playtime services ready:",
+      error,
+    );
+  }
 }
 
 /**

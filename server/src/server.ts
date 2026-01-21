@@ -19,12 +19,6 @@ const PORT = env.PORT;
 
 /**
  * Gracefully shuts down the HTTP server and exits the process
- *
- * This function attempts to close all connections and stop the server gracefully
- * If successful, exits with code 0; if an error occurs, exits with code 1
- *
- * @param httpServer - The HTTP server instance to shut down
- * @returns Promise resolving when the shutdown is complete
  */
 async function shutdown(httpServer: http.Server): Promise<void> {
   logger.info("Shutting down...");
@@ -76,7 +70,6 @@ function isPlaytimeServiceError(error: any): boolean {
 
   const message = error.message.toLowerCase();
 
-  // Check for common Minecraft server connection errors
   return (
     message.includes("socket closed") ||
     message.includes("econnrefused") ||
@@ -89,21 +82,12 @@ function isPlaytimeServiceError(error: any): boolean {
 
 /**
  * Sets up process event handlers for graceful shutdown and error handling
- *
- * Registers handlers for:
- * - SIGINT: Graceful shutdown on Ctrl+C
- * - SIGTERM: Graceful shutdown on termination signal
- * - unhandledRejection: Catches unhandled promise rejections (but ignores PlaytimeService errors)
- * - uncaughtException: Catches uncaught exceptions
- *
- * @param httpServer - The HTTP server instance to manage
  */
 function setupProcessHandlers(httpServer: http.Server): void {
   process.on("SIGINT", () => shutdown(httpServer));
   process.on("SIGTERM", () => shutdown(httpServer));
 
   process.on("unhandledRejection", (reason, promise) => {
-    // Ignore PlaytimeService connection errors - they're handled internally
     if (isPlaytimeServiceError(reason)) {
       logger.debug(
         "Ignoring PlaytimeService connection error in unhandledRejection",
@@ -111,14 +95,12 @@ function setupProcessHandlers(httpServer: http.Server): void {
       return;
     }
 
-    // For other unhandled rejections, log and shutdown
     logger.error("Unhandled promise rejection:", reason);
     logger.error("Promise:", promise);
     shutdown(httpServer);
   });
 
   process.on("uncaughtException", (error) => {
-    // Ignore PlaytimeService connection errors - they're handled internally
     if (isPlaytimeServiceError(error)) {
       logger.debug(
         "Ignoring PlaytimeService connection error in uncaughtException",
@@ -126,7 +108,6 @@ function setupProcessHandlers(httpServer: http.Server): void {
       return;
     }
 
-    // For other uncaught exceptions, log and shutdown
     logger.error("Uncaught exception:", error);
     shutdown(httpServer);
   });
@@ -134,17 +115,8 @@ function setupProcessHandlers(httpServer: http.Server): void {
 
 /**
  * Initializes and starts the HTTP server with WebSocket support
- *
- * This function:
- * 1. Creates the Express application
- * 2. Creates an HTTP server instance
- * 3. Initializes WebSocket service
- * 4. Sets up process handlers for graceful shutdown
- * 5. Starts listening on the configured PORT
- * 6. Initializes PlaytimeService for Minecraft session tracking
- * 7. Connects WebSocket to MessageCacheService
  */
-function start(): void {
+async function start(): Promise<void> {
   const app = createApp();
   const httpServer = http.createServer(app);
 
@@ -155,51 +127,45 @@ function start(): void {
     logger.info(`WebSocket server ready at ws://localhost:${PORT}`);
   });
 
-  // Initialize PlaytimeService (runs independently of Discord bot)
-  // Do this AFTER server starts and process handlers are set up
-  try {
-    initializePlaytimeService();
-    logger.info(
-      "PlaytimeService initialized - will poll Minecraft server every 60s",
-    );
-  } catch (error) {
-    logger.error("Failed to initialize PlaytimeService:", error);
-    logger.warn("Bot will continue running without playtime tracking");
-  }
-
-  // Connect WebSocket to MessageCache once the web bot is ready
-  webBot.once("clientReady", async () => {
-    try {
-      await serviceManager.initialize(
-        httpServer,
-        webBot,
-        MESSAGE_CACHE_CONFIG,
-        {
-          cors: {
-            origin: config.envMode.isDev
-              ? [`http://localhost:${PORT}`, "http://localhost:5173"]
-              : [config.meta.links.website],
-            credentials: true,
-          },
-        },
-      );
-
-      // Wait for everything to initialize for 5000 ms
-      setTimeout(async () => {
-        const stats = await serviceManager.getStats();
-        logger.info("Service statistics:", stats);
-
-        // const test = serviceManager.getMessageCacheService();
-
-        // const messages = test?.getMessages(1);
-
-        // logger.info("Messages:", messages);
-      }, 5000);
-    } catch (error) {
-      logger.error("Failed to initialize services:", error);
-      logger.warn("Server will continue running with limited functionality");
-    }
+  // Wait for web bot to be ready before initializing services
+  await new Promise<void>((resolve) => {
+    webBot.once("clientReady", () => resolve());
   });
+
+  try {
+    // Initialize services WITH message cache integration
+    await serviceManager.initialize(httpServer, webBot, MESSAGE_CACHE_CONFIG, {
+      cors: {
+        origin: config.envMode.isDev
+          ? [`http://localhost:${PORT}`, "http://localhost:5173"]
+          : [config.meta.links.website],
+        credentials: true,
+      },
+    });
+
+    logger.info("Service manager initialized");
+
+    // NOW initialize PlaytimeService with message cache integration
+    const messageCacheService = serviceManager.getMessageCacheService();
+
+    if (messageCacheService) {
+      await initializePlaytimeService(messageCacheService);
+      logger.info("PlaytimeService initialized with message cache integration");
+    } else {
+      logger.error(
+        "MessageCacheService not available, playtime tracking disabled",
+      );
+    }
+
+    // Log stats after a delay
+    setTimeout(async () => {
+      const stats = await serviceManager.getStats();
+      logger.info("Service statistics:", stats);
+    }, 2000);
+  } catch (error) {
+    logger.error("Failed to initialize services:", error);
+    logger.warn("Server will continue running with limited functionality");
+  }
 }
 
 start();

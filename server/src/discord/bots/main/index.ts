@@ -25,22 +25,33 @@ let dailyRoleScheduler: DailyRoleScheduler;
 
 /**
  * Ticket service instance
- * Initialized immediately with the bot client
  */
 export const ticketService = new TicketService(mainBot);
 
 /**
+ * Initialize realtime role handlers once playtime services are ready
+ */
+function initializeRealtimeRoleHandlers(): void {
+  const allPlaytimeServices = getAllPlaytimeServices();
+
+  if (allPlaytimeServices.size === 0) {
+    logger.debug(
+      "No playtime services available yet for RealtimeRoleHandlers - will initialize later",
+    );
+    return;
+  }
+
+  for (const [serverId, playtimeService] of allPlaytimeServices) {
+    if (!realtimeRoleHandlers.has(serverId)) {
+      const handler = new RealtimeRoleHandler(mainBot, playtimeService);
+      realtimeRoleHandlers.set(serverId, handler);
+      logger.info(`RealtimeRoleHandler initialized for server ${serverId}`);
+    }
+  }
+}
+
+/**
  * Bot initialization IIFE
- *
- * Performs the following startup sequence:
- * 1. Sets up Discord message service
- * 2. Loads all command handlers from the commands directory
- * 3. Loads all button handlers from the buttons directory
- * 4. Registers the interaction handlers to route commands
- * 5. Loads all event handlers from the events directory
- * 6. Authenticates and connects to Discord gateway
- *
- * If any step fails, logs the error and exits the process
  */
 (async () => {
   Discord._setMessageService(createDiscordMessageService(mainBot));
@@ -63,24 +74,16 @@ export const ticketService = new TicketService(mainBot);
 
     startLeaderboardScheduler();
 
-    // Initialize realtime role handlers for all playtime services
-    const allPlaytimeServices = getAllPlaytimeServices();
+    // Try to initialize realtime role handlers
+    // If playtime services aren't ready yet, this will be called again later
+    initializeRealtimeRoleHandlers();
 
-    for (const [serverId, playtimeService] of allPlaytimeServices) {
-      const handler = new RealtimeRoleHandler(mainBot, playtimeService);
-      realtimeRoleHandlers.set(serverId, handler);
-      logger.info(`RealtimeRoleHandler initialized for server ${serverId}`);
-    }
-
-    if (realtimeRoleHandlers.size === 0) {
-      logger.warn(
-        "No RealtimeRoleHandlers initialized - no playtime services available",
-      );
-    }
-
+    // Initialize daily role scheduler
     dailyRoleScheduler = new DailyRoleScheduler(mainBot);
     dailyRoleScheduler.start();
-    dailyRoleScheduler.triggerManualCheck();
+
+    // Only trigger manual check if we want to run it immediately on startup
+    // dailyRoleScheduler.triggerManualCheck();
 
     memberCleanupService.start();
   });
@@ -88,5 +91,10 @@ export const ticketService = new TicketService(mainBot);
   logger.error("Failed to initialize:", error);
   process.exit(1);
 });
+
+// Export function to allow playtime service to trigger role handler initialization
+export function onPlaytimeServicesReady(): void {
+  initializeRealtimeRoleHandlers();
+}
 
 export default mainBot;
