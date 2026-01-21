@@ -3,12 +3,30 @@ export interface MinecraftPlayer {
   username: string;
 }
 
+/**
+ * Session metadata collected from mod
+ */
+export interface SessionMetadata {
+  displayName?: string;
+  gamemode?: string;
+  dimension?: string;
+  position?: {
+    x: number;
+    y: number;
+    z: number;
+  };
+  health?: number;
+  experienceLevel?: number;
+  ipAddress?: string;
+}
+
 export interface ActiveSession {
   uuid: string;
   username: string;
   serverId: number;
   sessionStart: Date;
   sessionId?: number;
+  metadata?: SessionMetadata;
 }
 
 export interface SessionEndEvent {
@@ -26,6 +44,7 @@ export interface SessionStartEvent {
   username: string;
   serverId: number;
   sessionStart: Date;
+  metadata?: SessionMetadata;
 }
 
 export interface PlaytimeServiceConfig {
@@ -35,6 +54,7 @@ export interface PlaytimeServiceConfig {
   pollIntervalMs?: number;
   statusTimeoutMs?: number;
   initialDelayMs?: number;
+  maxSyncRetries?: number;
 }
 
 export interface ServerStatusSnapshot {
@@ -42,4 +62,33 @@ export interface ServerStatusSnapshot {
   playerCount: number;
   maxPlayers: number;
   timestamp: Date;
+}
+
+/**
+ * Player join data from PresenceAPI
+ */
+export interface ModPlayerJoinData {
+  uuid: string;
+  username: string;
+  timestamp?: Date;
+  displayName?: string;
+  gamemode?: string;
+  dimension?: string;
+  position?: {
+    x: number;
+    y: number;
+    z: number;
+  };
+  health?: number;
+  experienceLevel?: number;
+  ipAddress?: string;
+}
+
+/**
+ * Player leave data from PresenceAPI
+ */
+export interface ModPlayerLeaveData {
+  uuid: string;
+  username: string;
+  timestamp?: Date;
 }

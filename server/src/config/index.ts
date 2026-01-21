@@ -58,7 +58,7 @@ const config: Config = {
         token: env.DISCORD_MAIN_BOT_TOKEN,
         webbhook: {
           id: env.DISCORD_MAIN_BOT_WEBHOOK_ID,
-        }
+        },
       },
       web: {
         id: env.DISCORD_WEB_BOT_ID,
@@ -131,6 +131,7 @@ const config: Config = {
     cogs: {
       ip: env.COGS_AND_STEAM_SERVER_IP,
       port: env.COGS_AND_STEAM_SERVER_PORT,
+      name: "Cogs & Steam",
       id: 1,
       rcon: {
         host: env.COGS_AND_STEAM_SERVER_IP,
@@ -141,6 +142,7 @@ const config: Config = {
     test: {
       ip: env.TEST_SERVER_IP,
       port: env.TEST_SERVER_PORT,
+      name: "Test Server",
       id: 2,
       rcon: {
         host: env.TEST_SERVER_IP,

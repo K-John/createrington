@@ -9,7 +9,7 @@ import {
   DailyRoleScheduler,
   RealtimeRoleHandler,
 } from "@/services/discord/role";
-import { getPlaytimeService } from "@/services/playtime";
+import { getAllPlaytimeServices } from "@/services/playtime";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadEventHandlers } from "../common/loaders/event-loader";
@@ -19,7 +19,8 @@ import { memberCleanupService } from "@/services/discord/cleanup/member/member-c
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-let realtimeRoleHandler: RealtimeRoleHandler;
+// Store all realtime role handlers (one per server)
+const realtimeRoleHandlers: Map<number, RealtimeRoleHandler> = new Map();
 let dailyRoleScheduler: DailyRoleScheduler;
 
 /**
@@ -62,8 +63,20 @@ export const ticketService = new TicketService(mainBot);
 
     startLeaderboardScheduler();
 
-    const playtimeService = getPlaytimeService();
-    realtimeRoleHandler = new RealtimeRoleHandler(mainBot, playtimeService);
+    // Initialize realtime role handlers for all playtime services
+    const allPlaytimeServices = getAllPlaytimeServices();
+
+    for (const [serverId, playtimeService] of allPlaytimeServices) {
+      const handler = new RealtimeRoleHandler(mainBot, playtimeService);
+      realtimeRoleHandlers.set(serverId, handler);
+      logger.info(`RealtimeRoleHandler initialized for server ${serverId}`);
+    }
+
+    if (realtimeRoleHandlers.size === 0) {
+      logger.warn(
+        "No RealtimeRoleHandlers initialized - no playtime services available",
+      );
+    }
 
     dailyRoleScheduler = new DailyRoleScheduler(mainBot);
     dailyRoleScheduler.start();

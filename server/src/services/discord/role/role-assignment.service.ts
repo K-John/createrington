@@ -12,7 +12,6 @@ import config from "@/config";
 import { RoleManager } from "@/discord/utils/roles/role-manager";
 import { roleNotificationService } from "./role-notification.service";
 import { getAllRoleRules } from "./config";
-import { success } from "zod";
 import { Q } from "@/db";
 
 /**

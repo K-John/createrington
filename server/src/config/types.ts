@@ -293,6 +293,7 @@ interface MinecraftServerConfig {
   readonly ip: string;
   readonly port: number;
   readonly id: number;
+  readonly name: string;
   readonly rcon?: {
     readonly host: string;
     readonly password: string;

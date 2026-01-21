@@ -53,7 +53,7 @@ export class PlaytimeRepository {
 
       if (!player) {
         logger.debug(
-          `Ignoring session start for unregistered player: ${event.username} (${event.uuid})`
+          `Ignoring session start for unregistered player: ${event.username} (${event.uuid})`,
         );
         return null;
       }
@@ -61,7 +61,7 @@ export class PlaytimeRepository {
         logger.debug(
           `Username for user ${event.username} does not check out with database entry` +
             `Database: ${player.minecraftUsername} (${player.minecraftUuid})` +
-            `Event: ${event.username} (${event.uuid})`
+            `Event: ${event.username} (${event.uuid})`,
         );
         return null;
       }
@@ -73,7 +73,7 @@ export class PlaytimeRepository {
       });
 
       logger.info(
-        `Session started: ${event.username} (${event.uuid}) - ID: ${session.id}`
+        `Session started: ${event.username} (${event.uuid}) - ID: ${session.id}`,
       );
 
       return session.id;
@@ -94,11 +94,11 @@ export class PlaytimeRepository {
     try {
       await Q.player.session.update(
         { id: event.sessionId },
-        { sessionEnd: event.sessionEnd }
+        { sessionEnd: event.sessionEnd },
       );
 
       logger.info(
-        `Session ended: ${event.username} (${event.uuid}) - ${event.secondsPlayed}s`
+        `Session ended: ${event.username} (${event.uuid}) - ${event.secondsPlayed}s`,
       );
     } catch (error) {
       logger.error("Failed to end session:", error);
@@ -114,7 +114,7 @@ export class PlaytimeRepository {
    */
   async getActiveSession(
     playerMinecraftUuid: string,
-    serverId: number
+    serverId: number,
   ): Promise<PlayerSession | null> {
     try {
       const sessions = await Q.player.session.findAll({
@@ -159,7 +159,7 @@ export class PlaytimeRepository {
         {
           ...(serverId && { serverId }),
           sessionEnd: null,
-        }
+        },
       );
 
       logger.info(`Ended ${count} active session(s)`);
@@ -184,7 +184,7 @@ export class PlaytimeRepository {
    */
   async getPlayerStats(
     playerMinecraftUuid: string,
-    serverId: number
+    serverId: number,
   ): Promise<{
     summary: PlayerPlaytimeSummary | null;
     dailyLast30: PlayerPlaytimeDaily[];
@@ -202,11 +202,11 @@ export class PlaytimeRepository {
             serverId,
             playDate: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
           },
-          { orderBy: "playDate", orderDirection: "ASC" }
+          { orderBy: "playDate", orderDirection: "ASC" },
         ),
         Q.player.playtime.hourly.getPlayerHourlyPattern(
           playerMinecraftUuid,
-          serverId
+          serverId,
         ),
       ]);
 
@@ -234,7 +234,7 @@ export class PlaytimeRepository {
     playerMinecraftUuid: string,
     serverId: number,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
   ): Promise<PlayerPlaytimeDaily[]> {
     try {
       return await Q.player.playtime.daily.findAll(
@@ -243,7 +243,7 @@ export class PlaytimeRepository {
           serverId,
           playDate: { $between: [startDate, endDate] },
         },
-        { orderBy: "playDate", orderDirection: "ASC" }
+        { orderBy: "playDate", orderDirection: "ASC" },
       );
     } catch (error) {
       logger.error("Failed to get player daily range:", error);
@@ -264,7 +264,7 @@ export class PlaytimeRepository {
     playerMinecraftUuid: string,
     serverId: number,
     startTime: Date,
-    endTime: Date
+    endTime: Date,
   ): Promise<PlayerPlaytimeHourly[]> {
     try {
       return await Q.player.playtime.hourly.findAll(
@@ -273,7 +273,7 @@ export class PlaytimeRepository {
           serverId,
           playHour: { $gte: startTime, $lt: endTime },
         },
-        { orderBy: "playHour", orderDirection: "ASC" }
+        { orderBy: "playHour", orderDirection: "ASC" },
       );
     } catch (error) {
       logger.error("Failed to get player hourly range:", error);
@@ -293,7 +293,7 @@ export class PlaytimeRepository {
     playerMinecraftUuid: string,
     serverId: number,
     limit: number = 50,
-    includeActive: boolean = false
+    includeActive: boolean = false,
   ): Promise<PlayerSession[]> {
     try {
       return await Q.player.session.findAll(
@@ -302,7 +302,7 @@ export class PlaytimeRepository {
           serverId,
           ...(includeActive ? {} : { sessionEnd: { $ne: null } }),
         },
-        { limit, orderBy: "sessionStart", orderDirection: "DESC" }
+        { limit, orderBy: "sessionStart", orderDirection: "DESC" },
       );
     } catch (error) {
       logger.error("Failed to get player session history:", error);
@@ -321,7 +321,7 @@ export class PlaytimeRepository {
   async getLongSessions(
     playerMinecraftUuid: string,
     serverId: number,
-    minSeconds: number
+    minSeconds: number,
   ): Promise<PlayerSession[]> {
     try {
       return await Q.player.session.findAll(
@@ -330,7 +330,7 @@ export class PlaytimeRepository {
           serverId,
           secondsPlayed: { $gte: minSeconds },
         },
-        { orderBy: "secondsPlayed", orderDirection: "DESC" }
+        { orderBy: "secondsPlayed", orderDirection: "DESC" },
       );
     } catch (error) {
       logger.error("Failed to get long sessions:", error);
@@ -375,7 +375,7 @@ export class PlaytimeRepository {
    */
   async getServerActivity(
     serverId: number,
-    days: number = 30
+    days: number = 30,
   ): Promise<ServerActivity[]> {
     try {
       const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
@@ -384,7 +384,7 @@ export class PlaytimeRepository {
       return await Q.player.playtime.daily.getServerActivity(
         serverId,
         startDate,
-        endDate
+        endDate,
       );
     } catch (error) {
       logger.error("Failed to get server activity:", error);
@@ -400,7 +400,7 @@ export class PlaytimeRepository {
    */
   async getServerHeatmap(
     serverId: number,
-    days: number = 30
+    days: number = 30,
   ): Promise<ServerHeatMap[]> {
     try {
       return await Q.player.playtime.hourly.getServerHeatmap(serverId, days);
@@ -423,7 +423,7 @@ export class PlaytimeRepository {
     serverId: number,
     startDate: Date,
     endDate: Date,
-    limit: number = 10
+    limit: number = 10,
   ) {
     try {
       const dailyRecords = await Q.player.playtime.daily.findAll({
@@ -437,7 +437,7 @@ export class PlaytimeRepository {
         const current = playerTotals.get(record.playerMinecraftUuid) || 0;
         playerTotals.set(
           record.playerMinecraftUuid,
-          current + record.secondsPlayed
+          current + record.secondsPlayed,
         );
       }
 
@@ -453,7 +453,7 @@ export class PlaytimeRepository {
             totalSeconds: seconds,
             totalHours: seconds / 3600,
           };
-        })
+        }),
       );
     } catch (error) {
       logger.error("Failed to get top players by date range:", error);
@@ -470,8 +470,9 @@ export class PlaytimeRepository {
    * Sets up event listeners for automatic session tracking
    *
    * @param service - PlaytimeService instance
+   * @param serverId - Server ID this service belongs to
    */
-  connectToService(service: PlaytimeService): void {
+  connectToService(service: PlaytimeService, serverId: number): void {
     service.on("sessionStart", async (event) => {
       try {
         const sessionId = await this.startSession(event);
@@ -480,7 +481,10 @@ export class PlaytimeRepository {
           service.setSessionId(event.uuid, sessionId);
         }
       } catch (error) {
-        logger.error("Failed to handle sessionStart event:", error);
+        logger.error(
+          `Failed to handle sessionStart event for server ${serverId}:`,
+          error,
+        );
       }
     });
 
@@ -488,10 +492,15 @@ export class PlaytimeRepository {
       try {
         await this.endSession(event);
       } catch (error) {
-        logger.error("Failed to handle sessionEnd event:", error);
+        logger.error(
+          `Failed to handle sessionEnd event for server ${serverId}:`,
+          error,
+        );
       }
     });
 
-    logger.info("PlaytimeRepository connected to PlaytimeService");
+    logger.info(
+      `PlaytimeRepository connected to PlaytimeService for server ${serverId}`,
+    );
   }
 }
