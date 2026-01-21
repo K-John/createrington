@@ -23,6 +23,8 @@ export interface CommandModule {
   permissions?: {
     /** Requires admin role to execute */
     requireAdmin?: boolean;
+    /** Requires owner role to execute */
+    requireOwner?: boolean;
     /** Custom permission check function */
     customCheck?: (
       interaction: ChatInputCommandInteraction,
@@ -91,6 +93,10 @@ export async function loadCommandHandlers(
 
       if (commandModule.permissions?.requireAdmin) {
         logger.debug(`Command ${commandModule.data.name} requires admin`);
+      }
+
+      if (commandModule.permissions?.requireOwner) {
+        logger.debug(`Command ${commandModule.data.name} requires owner`);
       }
 
       if (commandModule.cooldown) {

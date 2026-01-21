@@ -32,6 +32,10 @@ export interface MessageCacheEvents {
   messageDelete: (serverId: number, messageId: string) => void;
   /** Cache initialization complete */
   cacheReady: () => void;
+  /** Server started (detected from relay bot) */
+  serverStarted: (serverId: number) => void;
+  /** Server stopped (detected from relay bot) */
+  serverClosed: (serverId: number) => void;
 }
 
 export declare interface MessageCacheService {
@@ -206,9 +210,45 @@ export class MessageCacheService extends EventEmitter {
 
     this.emit("messageCreate", serverId, cachedMessages);
 
+    this.detectServerStatus(message, serverId);
+
     logger.debug(
       `Cached new message from ${message.author.username} (${cachedMessages.source})`,
     );
+  }
+
+  /**
+   * Detects server start/stop events from relay bot messages
+   *
+   * @param message - Discord message
+   * @param serverId - Server ID
+   *
+   * @private
+   */
+  private detectServerStatus(message: Message, serverId: number): void {
+    if (!message.author.bot) {
+      return;
+    }
+
+    if (message.embeds.length === 0) {
+      return;
+    }
+
+    const embed = message.embeds[0];
+    const description = embed.description?.toLowerCase() || "";
+    const title = embed.title?.toLowerCase() || "";
+    const combinedText = `${title} ${description}`;
+
+    if (combinedText.includes("server started")) {
+      logger.info(`Server ${serverId} started (detected from Discord)`);
+      this.emit("serverStarted", serverId);
+      return;
+    }
+
+    if (combinedText.includes("server closed")) {
+      logger.info(`Server ${serverId} closed (detected from Discord)`);
+      this.emit("serverClosed", serverId);
+    }
   }
 
   /**

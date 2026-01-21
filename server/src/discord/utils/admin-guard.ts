@@ -38,6 +38,45 @@ export async function requireAdmin(
 }
 
 /**
+ * Checks if the user is owner
+ * Replies with error if not and returns false
+ *
+ * @param interaction - The command interaction
+ * @returns True if owner, false otherwise
+ */
+export async function requireOwner(
+  interaction: ChatInputCommandInteraction,
+): Promise<boolean> {
+  const isAdmin = await admin.exists({ discordId: interaction.user.id });
+
+  if (!isAdmin) {
+    const embed = EmbedPresets.error(
+      "Permission denied",
+      "This command requires administrator privileges",
+    );
+    await interaction.reply({
+      embeds: [embed.build()],
+      flags: MessageFlags.Ephemeral,
+    });
+    return false;
+  }
+
+  const member = interaction.member as GuildMember;
+
+  if (
+    !member ||
+    typeof member.roles === "string" ||
+    Array.isArray(member.roles)
+  ) {
+    return false;
+  }
+
+  const isOwner = RoleManager.has(member, Discord.Roles.OWNER);
+
+  return isOwner;
+}
+
+/**
  * Throws an error if user is not an admin
  * Used for error handling to catch it
  *

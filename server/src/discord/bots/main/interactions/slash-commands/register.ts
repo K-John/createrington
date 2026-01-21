@@ -23,7 +23,7 @@ export const data = new SlashCommandBuilder()
     option
       .setName("mc_name")
       .setDescription("Your exact Minecraft username (case doesn't matter)")
-      .setRequired(true)
+      .setRequired(true),
   );
 
 /**
@@ -79,7 +79,7 @@ const STEPS: RegistrationStep[] = [
  * @returns Promise resolving when the command execution is completed
  */
 export async function execute(
-  interaction: ChatInputCommandInteraction
+  interaction: ChatInputCommandInteraction,
 ): Promise<void> {
   const mcName = interaction.options.getString("mc_name", true);
   const discordId = interaction.user.id;
@@ -95,7 +95,7 @@ export async function execute(
   ) {
     const embed = EmbedPresets.errorWithAdmin(
       "Registration Failed",
-      "Could not verify your roles. Please try again."
+      "Could not verify your roles. Please try again.",
     );
 
     await interaction.reply({
@@ -109,7 +109,7 @@ export async function execute(
   if (!hasUnverified) {
     const embed = EmbedPresets.error(
       "Already Registered",
-      "You are already verified or not eligible to register"
+      "You are already verified or not eligible to register",
     );
 
     await interaction.reply({
@@ -122,7 +122,7 @@ export async function execute(
   const progressEmbed = EmbedPresets.registration.userProgress(
     mcName,
     steps,
-    currentStep
+    currentStep,
   );
 
   await interaction.reply({
@@ -136,7 +136,7 @@ export async function execute(
     if (!entry || !entry.verified) {
       steps[currentStep].error = "No verified waitlist entry found";
       throw new Error(
-        "You haven't verified your token yet. Run `/verify <token>` first."
+        "You haven't verified your token yet. Run `/verify <token>` first.",
       );
     }
 
@@ -154,7 +154,7 @@ export async function execute(
     await randomDelay();
 
     const response = await fetch(
-      `https://playerdb.co/api/player/minecraft/${mcName}`
+      `https://playerdb.co/api/player/minecraft/${mcName}`,
     );
     const result = (await response.json()) as any;
 
@@ -183,7 +183,7 @@ export async function execute(
     if (exists) {
       steps[currentStep].error = "Account already registered";
       throw new Error(
-        `This Minecraft account (\`${correctName}\`) is already registered`
+        `This Minecraft account (\`${correctName}\`) is already registered`,
       );
     }
 
@@ -204,7 +204,7 @@ export async function execute(
       await minecraftRcon.whitelist(
         ServerId.COGS,
         WhitelistAction.ADD,
-        correctName
+        correctName,
       );
     } catch (error) {
       steps[currentStep].error = "Failed to add to whitelist";
@@ -248,7 +248,7 @@ export async function execute(
 
     await randomDelay();
     await RoleManager.remove(member, Discord.Roles.UNVERIFIED);
-    await RoleManager.assign(member, Discord.Roles.PLAYER);
+    await RoleManager.assign(member, Discord.Roles.VERIFIED);
 
     steps[currentStep].completed = true;
 
@@ -264,11 +264,11 @@ export async function execute(
 
     const { embed, closeButton } = EmbedPresets.registration.userSuccess(
       correctName,
-      uuid
+      uuid,
     );
 
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-      closeButton
+      closeButton,
     );
 
     await interaction.editReply({
@@ -277,7 +277,7 @@ export async function execute(
     });
 
     logger.info(
-      `User ${interaction.user.tag} (${discordId}) registered as ${correctName} (${uuid})`
+      `User ${interaction.user.tag} (${discordId}) registered as ${correctName} (${uuid})`,
     );
   } catch (error) {
     logger.error("/register failed:", error);
@@ -287,7 +287,7 @@ export async function execute(
       interaction.user.tag,
       discordId,
       error instanceof Error ? error.message : String(error),
-      steps[currentStep]?.name || "Unknown step"
+      steps[currentStep]?.name || "Unknown step",
     );
 
     await Discord.Messages.send({
@@ -299,7 +299,7 @@ export async function execute(
     const userErrorEmbed = EmbedPresets.registration.userError(
       mcName,
       error instanceof Error ? error.message : String(error),
-      steps[currentStep]?.name || "Unknown step"
+      steps[currentStep]?.name || "Unknown step",
     );
 
     await interaction.editReply({

@@ -170,7 +170,7 @@ interface MemberRolesConfig {
   readonly admin: string;
   readonly owner: string;
   readonly unverified: string;
-  readonly player: string;
+  readonly verified: string;
 
   /** Playtime roles in order */
   readonly shaftScraper: string;
@@ -182,6 +182,9 @@ interface MemberRolesConfig {
   readonly factoryOverseer: string;
   readonly masterAutomaton: string;
   readonly clockworkArchitect: string;
+
+  /** Server roles */
+  readonly cogsAndSteam: string;
 
   /** Joined roles in order */
   readonly newcomer: string;
@@ -212,6 +215,7 @@ interface ChannelConfig {
   readonly botsStat: string;
   readonly allStat: string;
   readonly download: string;
+  readonly roles: string;
 }
 
 interface CategoriesConfig {
