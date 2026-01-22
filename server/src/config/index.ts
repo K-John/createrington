@@ -29,6 +29,9 @@ const config: Config = {
         secret: env.JWT_SECRET,
         expiresIn: env.JWT_EXPIRES_IN,
       },
+      allowedServerIps: {
+        local: env.LOCAL_SERVER_IP_ADDRESS,
+      },
     },
   },
 

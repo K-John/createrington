@@ -24,6 +24,9 @@ interface AppConfig {
   port: number;
   auth: {
     jwt: JWTConfig;
+    allowedServerIps: {
+      local: string;
+    };
   };
 }
 
