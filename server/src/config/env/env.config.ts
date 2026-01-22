@@ -30,6 +30,7 @@ dotenv.config({ quiet: true });
  * @property {number} COGS_AND_STEAM_SERVER_PORT - Cogs and Steam server port
  * @property {string} TEST_SERVER_IP_ADDRESS - Test server IP address
  * @property {number} TEST_SERVER_PORT - Test server port
+ * @property {string} LOCAL_SERVER_IP_ADDRESS - Dev env IP address
  * @property {number} PLAYER_LIMIT - Player limit shared on all servers
  * // RCON (Minecraft server)
  * @property {number} COGS_AND_STEAM_RCON_PORT - RCON server port
@@ -169,6 +170,22 @@ const envSchema = z.object({
     .refine((port) => port >= 1 && port <= 65535, {
       message: "Cogs and Steam server port must be between 1 and 65535",
     }),
+  LOCAL_SERVER_IP_ADDRESS: z
+    .string()
+    .min(1, "Dev IP address is required")
+    .refine(
+      (ip) => {
+        const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
+        if (!ipv4Regex.test(ip)) return false;
+
+        const octets = ip.split(".");
+        return octets.every((octet) => {
+          const num = parseInt(octet, 10);
+          return num >= 0 && num <= 255;
+        });
+      },
+      { message: "Dev server IP must be a valid IPv4 address" },
+    ),
   PLAYER_LIMIT: z.coerce
     .number()
     .int()
