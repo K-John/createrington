@@ -1,12 +1,12 @@
 import config from "@/config";
-import { NextFunction, Request } from "express";
+import { NextFunction, Request, Response } from "express";
 import { ForbiddenError } from "./error-handler";
 
 /**
  * Allowed Minecraft server IPs
  */
 const ALLOWED_IPS = {
-  development: [config.app.auth.allowedServerIps.local],
+  development: ["127.0.0.1", "::1", "localhost"],
   production: [config.app.auth.allowedServerIps.local],
 };
 

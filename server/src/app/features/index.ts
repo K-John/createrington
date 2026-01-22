@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import waitlistRoutes from "./waitlist/waitlist.routes";
 import authRoutes from "./auth/auth.routes";
+import presenceRoutes from "./presence/presence.routes";
 
 /**
  * Register all API routes
@@ -14,6 +15,7 @@ export function registerRoutes(app: Express): void {
   // Register route modules
   app.use(`${API_PREFIX}/waitlist`, waitlistRoutes);
   app.use(`${API_PREFIX}/auth`, authRoutes);
+  app.use(`${API_PREFIX}/presence`, presenceRoutes);
 
   logger.info("API routes registered");
 }
