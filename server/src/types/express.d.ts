@@ -7,6 +7,20 @@ declare global {
       user?: JWTPayload;
       modAuth?: ServerInfo;
       clientIp?: string;
+      /**
+       * Mod JWT payload
+       * Set by verifyModJwt middleware
+       */
+      modAuth?: {
+        iat: number;
+        exp: number;
+        [key: string]: any;
+      };
+      /**
+       * Verified server IP address
+       * Set by verifyServerIp middleware
+       */
+      serverIp?: string;
     }
   }
 }
