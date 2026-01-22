@@ -120,7 +120,7 @@ export function formatNumber(value: number, decimals: number = 0): string {
 export function formatPercentage(
   value: number,
   decimals: number = 1,
-  isDecimal: boolean = false
+  isDecimal: boolean = false,
 ): string {
   const percentage = isDecimal ? value * 100 : value;
   return `${percentage.toFixed(decimals)}%`;
@@ -150,7 +150,7 @@ export function formatPercentage(
  */
 export function formatDiscordTimestamp(
   date: Date | number,
-  style: "t" | "T" | "d" | "D" | "f" | "F" | "R" = "f"
+  style: "t" | "T" | "d" | "D" | "f" | "F" | "R" = "f",
 ): string {
   const timestamp = date instanceof Date ? date.getTime() : date;
   const unixTimestamp = Math.floor(timestamp / 1000);
@@ -220,7 +220,7 @@ export function formatDuration(start: Date, end: Date = new Date()): string {
 export function truncate(
   text: string,
   maxLength: number = 100,
-  ellipsis: string = "..."
+  ellipsis: string = "...",
 ): string {
   if (text.length <= maxLength) {
     return text;
@@ -269,7 +269,7 @@ export function formatFileSize(bytes: number, decimals: number = 2): string {
 export function pluralize(
   count: number,
   singular: string,
-  plural?: string
+  plural?: string,
 ): string {
   if (count === 1) {
     return singular;
@@ -293,7 +293,7 @@ export function pluralize(
 export function formatCount(
   count: number,
   singular: string,
-  plural?: string
+  plural?: string,
 ): string {
   return `${count} ${pluralize(count, singular, plural)}`;
 }

@@ -9,7 +9,7 @@ export function pgTypeToTsType(
   udtName: string,
   isNullable: boolean,
   numericPrecision: number | null,
-  numericScale: number | null
+  numericScale: number | null,
 ): string {
   const baseType = getBaseType(udtName, numericPrecision, numericScale);
   return isNullable ? `${baseType} | null` : baseType;
@@ -21,7 +21,7 @@ export function pgTypeToTsType(
 function getBaseType(
   udtName: string,
   numericPrecision: number | null,
-  numericScale: number | null
+  numericScale: number | null,
 ): string {
   if (udtName === "numeric") {
     return getNumericType(numericPrecision, numericScale);
@@ -30,7 +30,7 @@ function getBaseType(
   const typeMap: Record<string, string> = {
     int2: "number",
     int4: "number",
-    int8: "number",
+    int8: "bigint",
     float4: "number",
     float8: "number",
     text: "string",
@@ -53,7 +53,7 @@ function getBaseType(
  */
 function getNumericType(
   precision: number | null,
-  scale: number | null
+  scale: number | null,
 ): string {
   // If has decimal places, use string to avoid precision loss
   if (scale !== null && scale > 0) {
@@ -74,7 +74,7 @@ function getNumericType(
 export function getNumericComment(
   udtName: string,
   precision: number | null,
-  scale: number | null
+  scale: number | null,
 ): string {
   if (udtName === "numeric" && precision !== null && scale !== null) {
     return ` // numeric(${precision}, ${scale})`;

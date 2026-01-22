@@ -1,4 +1,5 @@
 import { Q } from "@/db";
+import { BalanceUtils } from "@/db/repositories/balance/utils";
 import { EmbedPresets } from "@/discord/embeds";
 import { CooldownType } from "@/discord/utils/cooldown";
 import { formatBalance } from "@/utils/format";
@@ -49,7 +50,7 @@ export const prodOnly = false;
  * @returns Promise resolving when the command execution is completed
  */
 export async function execute(
-  interaction: ChatInputCommandInteraction
+  interaction: ChatInputCommandInteraction,
 ): Promise<void> {
   const discordId = interaction.user.id;
 
@@ -59,7 +60,7 @@ export async function execute(
 
     const embed = EmbedPresets.plain({
       title: "💰 Your Balance",
-      description: formatBalance(balance.balance),
+      description: `${BalanceUtils.formatWithCommas(balance.balance)}`,
     });
 
     await interaction.reply({
@@ -71,7 +72,7 @@ export async function execute(
 
     const embed = EmbedPresets.error(
       "Balance Error",
-      "Something went wrong while fetching your balance. Please try again."
+      "Something went wrong while fetching your balance. Please try again.",
     );
 
     await interaction.reply({

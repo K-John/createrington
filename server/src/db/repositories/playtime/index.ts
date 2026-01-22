@@ -321,7 +321,7 @@ export class PlaytimeRepository {
   async getLongSessions(
     playerMinecraftUuid: string,
     serverId: number,
-    minSeconds: number,
+    minSeconds: bigint,
   ): Promise<PlayerSession[]> {
     try {
       return await Q.player.session.findAll(
@@ -431,10 +431,10 @@ export class PlaytimeRepository {
         playDate: { $between: [startDate, endDate] },
       });
 
-      const playerTotals = new Map<string, number>();
+      const playerTotals = new Map<string, bigint>();
 
       for (const record of dailyRecords) {
-        const current = playerTotals.get(record.playerMinecraftUuid) || 0;
+        const current = playerTotals.get(record.playerMinecraftUuid) || 0n;
         playerTotals.set(
           record.playerMinecraftUuid,
           current + record.secondsPlayed,
@@ -442,7 +442,7 @@ export class PlaytimeRepository {
       }
 
       const sorted = Array.from(playerTotals.entries())
-        .sort((a, b) => b[1] - a[1])
+        .sort((a, b) => Number(b[1] - a[1]))
         .slice(0, limit);
 
       return await Promise.all(
@@ -450,8 +450,8 @@ export class PlaytimeRepository {
           const player = await Q.player.get({ minecraftUuid: uuid });
           return {
             minecraftUsername: player.minecraftUsername,
-            totalSeconds: seconds,
-            totalHours: seconds / 3600,
+            totalSeconds: Number(seconds),
+            totalHours: Number(seconds) / 3600,
           };
         }),
       );

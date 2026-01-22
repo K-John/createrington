@@ -24,7 +24,7 @@ export const data = new SlashCommandBuilder()
     option
       .setName("user")
       .setDescription("Discord user to edit")
-      .setRequired(true)
+      .setRequired(true),
   )
   .addStringOption((option) =>
     option
@@ -35,22 +35,22 @@ export const data = new SlashCommandBuilder()
         { name: "Minecraft Username", value: "username" },
         { name: "Minecraft UUID", value: "uuid" },
         { name: "Full Account (re-fetch from PlayerDB)", value: "account" },
-        { name: "Balance", value: "balance" }
-      )
+        { name: "Balance", value: "balance" },
+      ),
   )
   .addStringOption((option) =>
     option
       .setName("reason")
       .setDescription("Reason for this change")
-      .setRequired(true)
+      .setRequired(true),
   )
   .addStringOption((option) =>
     option
       .setName("value")
       .setDescription(
-        "New value (not needed for 'Full Account' - will auto-fetch)"
+        "New value (not needed for 'Full Account' - will auto-fetch)",
       )
-      .setRequired(false)
+      .setRequired(false),
   );
 
 /**
@@ -87,7 +87,7 @@ export const permissions = {
  * @returns Promise resolving when the command execution is completed
  */
 export async function execute(
-  interaction: ChatInputCommandInteraction
+  interaction: ChatInputCommandInteraction,
 ): Promise<void> {
   const targetUser = interaction.options.getUser("user", true);
   const action = interaction.options.getString("action", true) as
@@ -101,7 +101,7 @@ export async function execute(
   if (action !== "account" && !value) {
     const embed = EmbedPresets.error(
       "Missing Value",
-      "You must provide a value for this action"
+      "You must provide a value for this action",
     );
     await interaction.reply({
       embeds: [embed.build()],
@@ -117,8 +117,8 @@ export async function execute(
       const embed = EmbedPresets.error(
         "Player Not Found",
         `${Discord.Users.mention(
-          targetUser.id
-        )} is not registered in the system`
+          targetUser.id,
+        )} is not registered in the system`,
       );
       await interaction.reply({
         embeds: [embed.build()],
@@ -133,7 +133,7 @@ export async function execute(
         player,
         value!,
         reason,
-        targetUser.id
+        targetUser.id,
       );
     } else if (action === "uuid") {
       await handleUuidUpdate(
@@ -141,7 +141,7 @@ export async function execute(
         player,
         value!,
         reason,
-        targetUser.id
+        targetUser.id,
       );
     } else if (action === "account") {
       await handleFullAccountUpdate(interaction, player, reason, targetUser.id);
@@ -151,7 +151,7 @@ export async function execute(
         player,
         value!,
         reason,
-        targetUser.id
+        targetUser.id,
       );
     }
   } catch (error) {
@@ -159,7 +159,7 @@ export async function execute(
 
     const embed = EmbedPresets.error(
       "Command Error",
-      error instanceof Error ? error.message : "An unknown error occurred"
+      error instanceof Error ? error.message : "An unknown error occurred",
     );
 
     if (!interaction.replied && !interaction.deferred) {
@@ -198,7 +198,7 @@ async function handleUsernameUpdate(
   player: Player,
   newUsername: string,
   reason: string,
-  targetDiscordId: string
+  targetDiscordId: string,
 ): Promise<void> {
   const oldUsername = player.minecraftUsername;
 
@@ -213,7 +213,7 @@ async function handleUsernameUpdate(
     interaction,
     title: "Update Minecraft Username",
     description: `You are about to change the Minecraft username for **${oldUsername}** (${Discord.Users.mention(
-      targetDiscordId
+      targetDiscordId,
     )})`,
     changes: [
       {
@@ -253,13 +253,13 @@ async function handleUsernameUpdate(
         await minecraftRcon.whitelist(
           ServerId.COGS,
           WhitelistAction.REMOVE,
-          oldUsername
+          oldUsername,
         );
 
         await minecraftRcon.whitelist(
           ServerId.COGS,
           WhitelistAction.ADD,
-          newUsername
+          newUsername,
         );
 
         const successEmbed = EmbedPresets.success(
@@ -267,7 +267,7 @@ async function handleUsernameUpdate(
           `Successfully updated Minecraft username\n\n` +
             `**Old Username:** \`${oldUsername}\`\n` +
             `**New Username:** \`${newUsername}\`\n` +
-            `**Reason:** ${reason}`
+            `**Reason:** ${reason}`,
         );
 
         await interaction.editReply({
@@ -276,7 +276,7 @@ async function handleUsernameUpdate(
         });
 
         logger.info(
-          `Admin ${interaction.user.tag} updated username for ${player.minecraftUuid}: ${oldUsername} -> ${newUsername}`
+          `Admin ${interaction.user.tag} updated username for ${player.minecraftUuid}: ${oldUsername} -> ${newUsername}`,
         );
       } catch (error) {
         throw error;
@@ -308,14 +308,14 @@ async function handleUuidUpdate(
   player: Player,
   newUuid: string,
   reason: string,
-  targetDiscordId: string
+  targetDiscordId: string,
 ): Promise<void> {
   const uuidRegex =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!uuidRegex.test(newUuid)) {
     const embed = EmbedPresets.error(
       "Invalid UUID",
-      "The provided UUID is not in valid format (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)"
+      "The provided UUID is not in valid format (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)",
     );
     await interaction.reply({
       embeds: [embed.build()],
@@ -387,7 +387,7 @@ async function handleUuidUpdate(
             `**Old UUID:** \`${oldUuid}\`\n` +
             `**New UUID:** \`${newUuid}\`\n` +
             `**Reason:** ${reason}\n\n` +
-            `✅ All related records updated automatically via CASCADE`
+            `✅ All related records updated automatically via CASCADE`,
         );
 
         await interaction.editReply({
@@ -396,7 +396,7 @@ async function handleUuidUpdate(
         });
 
         logger.info(
-          `Admin ${interaction.user.tag} updated UUID for ${player.minecraftUsername}: ${oldUuid} -> ${newUuid}`
+          `Admin ${interaction.user.tag} updated UUID for ${player.minecraftUsername}: ${oldUuid} -> ${newUuid}`,
         );
       } catch (error) {
         throw error;
@@ -429,20 +429,20 @@ async function handleFullAccountUpdate(
   interaction: ChatInputCommandInteraction,
   player: Player,
   reason: string,
-  targetDiscordId: string
+  targetDiscordId: string,
 ): Promise<void> {
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   try {
     const response = await fetch(
-      `https://playerdb.co/api/player/minecraft/${player.minecraftUsername}`
+      `https://playerdb.co/api/player/minecraft/${player.minecraftUsername}`,
     );
     const result = (await response.json()) as any;
 
     if (!response.ok || !result.success || !result.data.player?.id) {
       const embed = EmbedPresets.error(
         "PlayerDB Fetch Failed",
-        `Could not fetch data for \`${player.minecraftUsername}\` from PlayerDB`
+        `Could not fetch data for \`${player.minecraftUsername}\` from PlayerDB`,
       );
       await interaction.editReply({
         embeds: [embed.build()],
@@ -461,7 +461,7 @@ async function handleFullAccountUpdate(
         "No Changes Detected",
         `Player data is already up to date with PlayerDB\n\n` +
           `**Username:** \`${newUsername}\`\n` +
-          `**UUID:** \`${newUuid}\``
+          `**UUID:** \`${newUuid}\``,
       );
       await interaction.editReply({
         embeds: [embed.build()],
@@ -499,7 +499,7 @@ async function handleFullAccountUpdate(
       interaction,
       title: "Update Full Account",
       description: `You are about to update the Minecraft account for **${oldUsername}** (${Discord.Users.mention(
-        targetDiscordId
+        targetDiscordId,
       )}) based on PlayerDB data`,
       changes,
       warnings,
@@ -553,13 +553,13 @@ async function handleFullAccountUpdate(
           minecraftRcon.whitelist(
             ServerId.COGS,
             WhitelistAction.REMOVE,
-            oldUsername
+            oldUsername,
           );
 
           minecraftRcon.whitelist(
             ServerId.COGS,
             WhitelistAction.ADD,
-            newUsername
+            newUsername,
           );
 
           const successEmbed = EmbedPresets.success(
@@ -569,7 +569,7 @@ async function handleFullAccountUpdate(
               `**New Username:** \`${newUsername}\`\n` +
               `**Old UUID:** \`${oldUuid}\`\n` +
               `**New UUID:** \`${newUuid}\`\n` +
-              `**Reason:** ${reason}`
+              `**Reason:** ${reason}`,
           );
 
           await interaction.editReply({
@@ -578,7 +578,7 @@ async function handleFullAccountUpdate(
           });
 
           logger.info(
-            `Admin ${interaction.user.tag} updated full account for ${targetDiscordId}: ${oldUsername}/${oldUuid} → ${newUsername}/${newUuid}`
+            `Admin ${interaction.user.tag} updated full account for ${targetDiscordId}: ${oldUsername}/${oldUuid} → ${newUsername}/${newUuid}`,
           );
         } catch (error) {
           throw error;
@@ -591,21 +591,25 @@ async function handleFullAccountUpdate(
   }
 }
 
+// At the top of the file, add the import
+import { balanceRepo } from "@/db";
+import { BalanceUtils } from "@/db/repositories/balance/utils";
+import { BalanceTransactionType } from "@/db/repositories/balance";
+
 /**
  * Handles updating a player's balance
  *
  * Process:
- * 1. Parse and validate the new balance value (must be numeric and non-negative)
- * 2. Fetch current balance from database
- * 3. Calculate difference and add warnings for large changes (>$10,000)
+ * 1. Parse and validate the new balance value (must be numeric, non-negative, max 3 decimals)
+ * 2. Fetch current balance from repository
+ * 3. Calculate difference and add warnings for large changes (>10.000)
  * 4. Display confirmation dialog with old/new balance and difference
- * 5. On confirmation, update balance in transaction
- * 6. Log the action to admin audit log with difference metadata
- * 7. Reply with success message showing balance change details
+ * 5. On confirmation, use repository to set balance (logs transaction automatically)
+ * 6. Reply with success message showing balance change details
  *
  * @param interaction - The chat input command interaction
  * @param player - The player record being updated
- * @param newValue - The new balance value as a string
+ * @param newValue - The new balance value as a string (e.g., "10.500", "0.200")
  * @param reason - Admin-provided reason for the change
  * @param targetDiscordId - Discord ID of the target player
  * @returns Promise resolving when the update is completed
@@ -615,13 +619,14 @@ async function handleBalanceUpdate(
   player: Player,
   newValue: string,
   reason: string,
-  targetDiscordId: string
+  targetDiscordId: string,
 ): Promise<void> {
+  // Parse and validate the new balance value
   const numericValue = parseFloat(newValue);
   if (isNaN(numericValue)) {
     const embed = EmbedPresets.error(
       "Invalid Value",
-      "Balance must be a valid number"
+      "Balance must be a valid number",
     );
     await interaction.reply({
       embeds: [embed.build()],
@@ -633,7 +638,7 @@ async function handleBalanceUpdate(
   if (numericValue < 0) {
     const embed = EmbedPresets.error(
       "Invalid Value",
-      "Balance cannot be negative (database constraint)"
+      "Balance cannot be negative",
     );
     await interaction.reply({
       embeds: [embed.build()],
@@ -642,14 +647,35 @@ async function handleBalanceUpdate(
     return;
   }
 
-  const balance = await db.player.balance.get(player);
-  const oldValue = parseFloat(balance.balance);
+  // Validate max 3 decimal places
+  try {
+    BalanceUtils.validate(numericValue);
+  } catch (error) {
+    const embed = EmbedPresets.error(
+      "Invalid Value",
+      error instanceof Error ? error.message : "Invalid balance value",
+    );
+    await interaction.reply({
+      embeds: [embed.build()],
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  // Get current balance using repository
+  const oldBalance = await balanceRepo.getAmount(player);
+  const difference = numericValue - oldBalance;
+
+  // Build warnings for large changes
   const warnings = [];
-  const difference = numericValue - oldValue;
-  if (difference > 10000) {
-    warnings.push(`⚠️ Large balance increase: +$${difference.toFixed(2)}`);
-  } else if (difference < -10000) {
-    warnings.push(`⚠️ Large balance decrease: $${difference.toFixed(2)}`);
+  if (difference > 10) {
+    warnings.push(
+      `⚠️ Large balance increase: +${BalanceUtils.format(BalanceUtils.toStorage(difference))}`,
+    );
+  } else if (difference < -10) {
+    warnings.push(
+      `⚠️ Large balance decrease: ${BalanceUtils.format(BalanceUtils.toStorage(difference))}`,
+    );
   }
 
   await confirmAdminChange({
@@ -661,48 +687,61 @@ async function handleBalanceUpdate(
     changes: [
       {
         name: "Balance",
-        oldValue: `$${oldValue.toFixed(2)}`,
-        newValue: `$${numericValue.toFixed(2)}`,
+        oldValue: BalanceUtils.format(BalanceUtils.toStorage(oldBalance)),
+        newValue: BalanceUtils.format(BalanceUtils.toStorage(numericValue)),
       },
     ],
     warnings,
     reason,
     onConfirm: async () => {
       try {
-        await db.inTransaction(async (tx) => {
-          await tx.player.balance.update(player, {
-            balance: String(numericValue),
-          });
-
-          await tx.admin.log.action.logAction({
+        // Use repository to set balance
+        // This automatically handles:
+        // - Transaction safety
+        // - Balance transaction logging
+        // - Validation
+        const newBalance = await balanceRepo.set(
+          player,
+          numericValue,
+          reason,
+          BalanceTransactionType.ADMIN_GRANT,
+          {
+            commandUsed: "/admin-edit",
+            action: "balance",
+            targetDiscordId,
             adminDiscordId: interaction.user.id,
             adminDiscordUsername: interaction.user.tag,
-            actionType: AdminEdit.UPDATE_BALANCE,
-            targetPlayerUuid: player.minecraftUuid,
-            targetPlayerName: player.minecraftUsername,
-            tableName: DatabaseTable.PLAYER_BALANCE.TABLE,
-            fieldName: DatabaseTable.PLAYER_BALANCE.FIELDS.BALANCE,
-            oldValue: String(oldValue),
-            newValue: String(numericValue),
-            reason,
-            metadata: {
-              commandUsed: "/edit-player",
-              action: "balance",
-              targetDiscordId,
-              difference,
-            },
-          });
+            difference,
+          },
+        );
+
+        // Also log to admin audit log for admin actions tracking
+        await db.admin.log.action.logAction({
+          adminDiscordId: interaction.user.id,
+          adminDiscordUsername: interaction.user.tag,
+          actionType: AdminEdit.UPDATE_BALANCE,
+          targetPlayerUuid: player.minecraftUuid,
+          targetPlayerName: player.minecraftUsername,
+          tableName: DatabaseTable.PLAYER_BALANCE.TABLE,
+          fieldName: DatabaseTable.PLAYER_BALANCE.FIELDS.BALANCE,
+          oldValue: String(oldBalance),
+          newValue: String(numericValue),
+          reason,
+          metadata: {
+            commandUsed: "/admin-edit",
+            action: "balance",
+            targetDiscordId,
+            difference,
+          },
         });
 
         const successEmbed = EmbedPresets.success(
           "Balance Updated",
           `Successfully updated balance for **${player.minecraftUsername}**\n\n` +
-            `**Old Balance:** \`$${oldValue.toFixed(2)}\n` +
-            `**New Balance:** \`$${numericValue.toFixed(2)}\n` +
-            `**Difference:** \`$${
-              difference > 0 ? "+" : ""
-            }${difference.toFixed(2)}\`\n` +
-            `**Reason:** ${reason}`
+            `**Old Balance:** \`${BalanceUtils.format(BalanceUtils.toStorage(oldBalance))}\`\n` +
+            `**New Balance:** \`${BalanceUtils.format(BalanceUtils.toStorage(newBalance))}\`\n` +
+            `**Difference:** \`${difference > 0 ? "+" : ""}${BalanceUtils.format(BalanceUtils.toStorage(difference))}\`\n` +
+            `**Reason:** ${reason}`,
         );
 
         await interaction.editReply({
@@ -711,7 +750,7 @@ async function handleBalanceUpdate(
         });
 
         logger.info(
-          `Admin ${interaction.user.tag} updated balance for ${player.minecraftUsername}: ${oldValue} → ${numericValue}`
+          `Admin ${interaction.user.tag} updated balance for ${player.minecraftUsername}: ${oldBalance} → ${numericValue} (diff: ${difference})`,
         );
       } catch (error) {
         throw error;

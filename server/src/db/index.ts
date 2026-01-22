@@ -81,7 +81,9 @@ export const waitlistRepo = new repositories.WaitlistRepository();
 
 export const playtimeRepo = new repositories.PlaytimeRepository();
 
-export const R = { waitlistRepo, playtimeRepo };
+export const balanceRepo = new repositories.BalanceRepository();
+
+export const R = { waitlistRepo, playtimeRepo, balanceRepo };
 
 // ============================================================================
 // EXPORTS

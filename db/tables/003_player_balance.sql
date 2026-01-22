@@ -41,18 +41,7 @@ CREATE TABLE player_balance_transaction (
     CONSTRAINT fk_related_player FOREIGN KEY (related_player_uuid) 
         REFERENCES player(minecraft_uuid) 
         ON DELETE SET NULL 
-        ON UPDATE CASCADE,
-    CONSTRAINT chk_transaction_type CHECK (transaction_type = ANY (ARRAY[
-        'transfer_send'::text,
-        'transfer_receive'::text,
-        'admin_grant'::text,
-        'admin_deduct'::text,
-        'purchase'::text,
-        'sale'::text,
-        'reward'::text,
-        'refund'::text,
-        'other'::text
-    ]))
+        ON UPDATE CASCADE
 );
 
 COMMENT ON TABLE player_balance_transaction IS 'Complete audit trail of all balance changes with 3 decimal precision';

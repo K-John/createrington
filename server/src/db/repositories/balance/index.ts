@@ -1,4 +1,11 @@
-import { Player } from "@/generated/db";
+import { db } from "@/db";
+import {
+  DatabaseTable,
+  Player,
+  PlayerBalance,
+  PlayerBalanceTransaction,
+} from "@/generated/db";
+import { BalanceUtils } from "./utils";
 
 export type PlayerIdentifier =
   | { minecraftUuid: string }
@@ -6,3 +13,514 @@ export type PlayerIdentifier =
   | { discordId: string }
   | Player
   | string;
+
+export enum BalanceTransactionType {
+  TRANSFER_SEND = "transfer_send",
+  TRANSFER_RECEIVE = "transfer_receive",
+  ADMIN_GRANT = "admin_grant",
+  ADMIN_DEDUCT = "admin_deduct",
+  PURCHASE = "purchase",
+  SALE = "sale",
+  REWARD = "reward",
+  REFUND = "refund",
+  OTHER = "other",
+}
+
+/**
+ * Repository for player balance management
+ * Uses 3 decimal precision (e.g., 1.500, 0.200)
+ *
+ * Handles:
+ * - Balance queries and updates
+ * - Transaction logging
+ * - Balance transfers
+ */
+export class BalanceRepository {
+  constructor() {}
+
+  // ============================================================================
+  // PRIVATE HELPERS
+  // ============================================================================
+
+  private async resolvePlayerUuid(
+    identifier: PlayerIdentifier,
+  ): Promise<string> {
+    if (typeof identifier === "string") return identifier;
+    if ("minecraftUuid" in identifier && identifier.minecraftUuid) {
+      return identifier.minecraftUuid;
+    }
+    const player = await db.player.get(identifier);
+    return player.minecraftUuid;
+  }
+
+  private async logTransaction(data: {
+    playerMinecraftUuid: string;
+    amount: bigint;
+    balanceBefore: bigint;
+    balanceAfter: bigint;
+    transactionType: string;
+    description?: string;
+    relatedPlayerUuid?: string;
+    metadata?: Record<string, any>;
+  }): Promise<void> {
+    await db.player.balance.transaction.create({
+      playerMinecraftUuid: data.playerMinecraftUuid,
+      amount: data.amount,
+      balanceBefore: data.balanceBefore,
+      balanceAfter: data.balanceAfter,
+      transactionType: data.transactionType,
+      description: data.description,
+      relatedPlayerUuid: data.relatedPlayerUuid,
+      metadata: data.metadata || {},
+    });
+
+    logger.info(
+      `Balance transaction: ${data.transactionType} - ${BalanceUtils.format(data.amount)} for ${data.playerMinecraftUuid}`,
+    );
+  }
+
+  // ============================================================================
+  // QUERY METHODS
+  // ============================================================================
+
+  /**
+   * Gets player balance record
+   */
+  async get(identifier: PlayerIdentifier): Promise<PlayerBalance> {
+    const uuid = await this.resolvePlayerUuid(identifier);
+    return await db.player.balance.get({ minecraftUuid: uuid });
+  }
+
+  /**
+   * Gets balance amount as decimal
+   *
+   * @example
+   * const amount = await balanceRepo.getAmount(player) // 1.5
+   */
+  async getAmount(identifier: PlayerIdentifier): Promise<number> {
+    const uuid = await this.resolvePlayerUuid(identifier);
+    const balanceBigInt = await db.player.balance.select.balance({
+      minecraftUuid: uuid,
+    });
+    return BalanceUtils.fromStorage(balanceBigInt);
+  }
+
+  /**
+   * Gets formatted balance string (3 decimals)
+   *
+   * @example
+   * await balanceRepo.getFormatted(player) // "1.500"
+   */
+  async getFormatted(
+    identifier: PlayerIdentifier,
+    decimals: number = 3,
+  ): Promise<string> {
+    const uuid = await this.resolvePlayerUuid(identifier);
+    const balanceBigInt = await db.player.balance.select.balance({
+      minecraftUuid: uuid,
+    });
+    return BalanceUtils.format(balanceBigInt, decimals);
+  }
+
+  /**
+   * Gets formatted balance with auto-trimmed zeros
+   *
+   * @example
+   * await balanceRepo.getFormattedTrimmed(player) // "1.5" (instead of "1.500")
+   */
+  async getFormattedTrimmed(identifier: PlayerIdentifier): Promise<string> {
+    const uuid = await this.resolvePlayerUuid(identifier);
+    const balanceBigInt = await db.player.balance.select.balance({
+      minecraftUuid: uuid,
+    });
+    return BalanceUtils.formatTrimmed(balanceBigInt);
+  }
+
+  /**
+   * Gets raw balance as bigint
+   */
+  async getRaw(identifier: PlayerIdentifier): Promise<bigint> {
+    const uuid = await this.resolvePlayerUuid(identifier);
+    return await db.player.balance.select.balance({
+      minecraftUuid: uuid,
+    });
+  }
+
+  /**
+   * Checks if player has sufficient balance
+   *
+   * @example
+   * if (await balanceRepo.hasSufficient(player, 0.200)) {
+   *    // Player has at least 0.200
+   * }
+   */
+  async hasSufficient(
+    identifier: PlayerIdentifier,
+    amount: number,
+  ): Promise<boolean> {
+    const uuid = await this.resolvePlayerUuid(identifier);
+    const balance = await db.player.balance.select.balance({
+      minecraftUuid: uuid,
+    });
+    const required = BalanceUtils.toStorage(amount);
+    return balance >= required;
+  }
+
+  /**
+   * Creates initial balance record for a new player
+   */
+  async create(
+    playerMinecraftUuid: string,
+    initialBalance: number = 0,
+  ): Promise<PlayerBalance> {
+    const balanceBigInt = BalanceUtils.toStorage(initialBalance);
+
+    const created = await db.player.balance.createAndReturn({
+      minecraftUuid: playerMinecraftUuid,
+      balance: balanceBigInt,
+    });
+
+    if (initialBalance > 0) {
+      await this.logTransaction({
+        playerMinecraftUuid,
+        amount: balanceBigInt,
+        balanceBefore: 0n,
+        balanceAfter: balanceBigInt,
+        transactionType: BalanceTransactionType.ADMIN_GRANT,
+        description: "Initial balance",
+      });
+    }
+
+    logger.info(
+      `Created balance for ${playerMinecraftUuid} with $${BalanceUtils.format(balanceBigInt)}`,
+    );
+
+    return created;
+  }
+
+  // ============================================================================
+  // TRANSACTION METHODS
+  // ============================================================================
+
+  /**
+   * Adds balance to player's account
+   *
+   * @param identifier - Player identifier
+   * @param amount - Amount to add (e.g. 1.500, 0.200)
+   * @param reason - Transaction reason
+   * @param type - Type of transaction
+   * @param metadata - Additional context
+   * @returns Promise resolving to the new balance
+   *
+   * @example
+   * const newBalance = await balanceRepo.add(player, 0.200, "Buy token") // 1.700
+   */
+  async add(
+    identifier: PlayerIdentifier,
+    amount: number,
+    reason: string,
+    type: BalanceTransactionType,
+    metadata?: Record<string, any>,
+  ): Promise<number> {
+    if (amount <= 0) {
+      throw new Error("Amount must be positive");
+    }
+
+    BalanceUtils.validate(amount);
+    const uuid = await this.resolvePlayerUuid(identifier);
+    const amountBigInt = BalanceUtils.toStorage(amount);
+
+    return await db.inTransaction(async (tx) => {
+      const current = await tx.player.balance.get({ minecraftUuid: uuid });
+
+      if (BalanceUtils.wouldOverflow(current.balance, amount)) {
+        throw new Error(`Cannot add ${amount}: would exceed maximum balance`);
+      }
+
+      const newBalance = BalanceUtils.add(current.balance, amountBigInt);
+
+      await tx.player.balance.update(
+        { minecraftUuid: uuid },
+        { balance: newBalance },
+      );
+
+      await this.logTransaction({
+        playerMinecraftUuid: uuid,
+        amount: amountBigInt,
+        balanceBefore: current.balance,
+        balanceAfter: newBalance,
+        transactionType: type,
+        description: reason,
+        metadata,
+      });
+
+      return BalanceUtils.fromStorage(newBalance);
+    });
+  }
+
+  /**
+   * Deducts balance from a player's account
+   *
+   * @param identifier - Player identifier
+   * @param amount - Amount to deduct (must be positive)
+   * @param reason - Transaction reason
+   * @param type - Type of transaction
+   * @param metadata - Additional context
+   * @returns Promise resolving to new balance
+   * @throws Error if insufficient balance
+   *
+   * @example
+   * const newBalance = await balanceRepo.deduct(player, 0.200, "Buy item");
+   */
+  async deduct(
+    identifier: PlayerIdentifier,
+    amount: number,
+    reason: string,
+    type: BalanceTransactionType,
+    metadata?: Record<string, any>,
+  ): Promise<number> {
+    if (amount <= 0) {
+      throw new Error("Amount must be positive");
+    }
+
+    BalanceUtils.validate(amount);
+    const uuid = await this.resolvePlayerUuid(identifier);
+    const amountBigInt = BalanceUtils.toStorage(amount);
+
+    return await db.inTransaction(async (tx) => {
+      const current = await tx.player.balance.get({ minecraftUuid: uuid });
+
+      if (current.balance < amountBigInt) {
+        throw new Error(
+          `Insufficient balance: has ${BalanceUtils.format(current.balance)}, needs ${BalanceUtils.format(amountBigInt)}`,
+        );
+      }
+
+      const newBalance = BalanceUtils.subtract(current.balance, amountBigInt);
+
+      await tx.player.balance.update(
+        { minecraftUuid: uuid },
+        { balance: newBalance },
+      );
+
+      await this.logTransaction({
+        playerMinecraftUuid: uuid,
+        amount: -amountBigInt,
+        balanceBefore: current.balance,
+        balanceAfter: newBalance,
+        transactionType: type,
+        description: reason,
+        metadata,
+      });
+
+      return BalanceUtils.fromStorage(newBalance);
+    });
+  }
+
+  /**
+   * Sets player balance to a specific amount
+   *
+   * @param identifier - Player identifier
+   * @param amount - New balance amount
+   * @param reason - Transaction reason
+   * @param type - Transaction type
+   * @param metadata - Additional context
+   * @returns Promise resolving to new balance
+   */
+  async set(
+    identifier: PlayerIdentifier,
+    amount: number,
+    reason: string,
+    type: BalanceTransactionType,
+    metadata?: Record<string, any>,
+  ): Promise<number> {
+    if (amount < 0) {
+      throw new Error("Balance cannot be negative");
+    }
+
+    BalanceUtils.validate(amount);
+    const uuid = await this.resolvePlayerUuid(identifier);
+    const amountBigInt = BalanceUtils.toStorage(amount);
+
+    return await db.inTransaction(async (tx) => {
+      const current = await tx.player.balance.get({
+        minecraftUuid: uuid,
+      });
+      const difference = amountBigInt - current.balance;
+
+      await tx.player.balance.update(
+        {
+          minecraftUuid: uuid,
+        },
+        { balance: amountBigInt },
+      );
+
+      await this.logTransaction({
+        playerMinecraftUuid: uuid,
+        amount: difference,
+        balanceBefore: current.balance,
+        balanceAfter: amountBigInt,
+        transactionType: type,
+        description: reason,
+        metadata,
+      });
+
+      return BalanceUtils.fromStorage(amountBigInt);
+    });
+  }
+
+  /**
+   * Transfers balance between two players
+   *
+   * @param from - Sender identifier
+   * @param to - Recipient identifier
+   * @param amount - Amount to transfer
+   * @param description - Optional transfer description
+   * @returns Promise resolving to both new balances
+   *
+   * @example
+   * const result = await balanceRepo.transfer(
+   *   { minecraftUsername: "Steve" },
+   *   { minecraftUsername: "Alex" },
+   *   0.500,
+   *   "Payment"
+   * );
+   */
+  async transfer(
+    from: PlayerIdentifier,
+    to: PlayerIdentifier,
+    amount: number,
+    description?: string,
+  ): Promise<{
+    senderBalance: number;
+    recipientBalance: number;
+  }> {
+    if (amount <= 0) {
+      throw new Error("Transfer amount must be positive");
+    }
+
+    BalanceUtils.validate(amount);
+    const senderUuid = await this.resolvePlayerUuid(from);
+    const recipientUuid = await this.resolvePlayerUuid(to);
+    const amountBigInt = BalanceUtils.toStorage(amount);
+
+    if (senderUuid === recipientUuid) {
+      throw new Error("Cannot transfer to self");
+    }
+
+    return await db.inTransaction(async (tx) => {
+      const senderBalance = await tx.player.balance.get({
+        minecraftUuid: senderUuid,
+      });
+      const recipientBalance = await tx.player.balance.get({
+        minecraftUuid: recipientUuid,
+      });
+
+      if (senderBalance.balance < amountBigInt) {
+        throw new Error(
+          `Insufficient balance: has ${BalanceUtils.format(senderBalance.balance)}, needs ${BalanceUtils.format(amountBigInt)}`,
+        );
+      }
+
+      const newSenderBalance = BalanceUtils.subtract(
+        senderBalance.balance,
+        amountBigInt,
+      );
+      const newRecipientBalance = BalanceUtils.add(
+        recipientBalance.balance,
+        amountBigInt,
+      );
+
+      await tx.player.balance.update(
+        { minecraftUuid: senderUuid },
+        { balance: newSenderBalance },
+      );
+
+      await tx.player.balance.update(
+        { minecraftUuid: recipientUuid },
+        { balance: newRecipientBalance },
+      );
+
+      await this.logTransaction({
+        playerMinecraftUuid: senderUuid,
+        amount: -amountBigInt,
+        balanceBefore: senderBalance.balance,
+        balanceAfter: newSenderBalance,
+        transactionType: BalanceTransactionType.TRANSFER_SEND,
+        description: description || `Transfer to ${recipientUuid}`,
+        relatedPlayerUuid: recipientUuid,
+      });
+
+      await this.logTransaction({
+        playerMinecraftUuid: recipientUuid,
+        amount: amountBigInt,
+        balanceBefore: recipientBalance.balance,
+        balanceAfter: newRecipientBalance,
+        transactionType: BalanceTransactionType.TRANSFER_RECEIVE,
+        description: description || `Transfer from ${senderUuid}`,
+        relatedPlayerUuid: senderUuid,
+      });
+
+      return {
+        senderBalance: BalanceUtils.fromStorage(newSenderBalance),
+        recipientBalance: BalanceUtils.fromStorage(newRecipientBalance),
+      };
+    });
+  }
+
+  // ============================================================================
+  // TRANSACTION HISTORY
+  // ============================================================================
+
+  /**
+   * Gets transaction history for a player
+   */
+  async getHistory(
+    identifier: PlayerIdentifier,
+    limit: number = 50,
+  ): Promise<PlayerBalanceTransaction[]> {
+    const uuid = await this.resolvePlayerUuid(identifier);
+
+    return await db.player.balance.transaction.findAll(
+      { playerMinecraftUuid: uuid },
+      {
+        limit,
+        orderBy:
+          DatabaseTable.PLAYER_BALANCE_TRANSACTION.CAMEL_FIELDS.CREATED_AT,
+        orderDirection: "DESC",
+      },
+    );
+  }
+
+  /**
+   * Gets formatted transaction history
+   */
+  async getFormattedHistory(
+    identifier: PlayerIdentifier,
+    limit: number = 50,
+  ): Promise<
+    Array<{
+      id: number;
+      amount: string;
+      balanceBefore: string;
+      balanceAfter: string;
+      transactionType: string;
+      description: string | null;
+      createdAt: Date;
+      metadata: Record<string, any>;
+    }>
+  > {
+    const history = await this.getHistory(identifier, limit);
+
+    return history.map((tx) => ({
+      id: tx.id,
+      amount: BalanceUtils.formatWithCommas(tx.amount),
+      balanceBefore: BalanceUtils.formatWithCommas(tx.balanceBefore),
+      balanceAfter: BalanceUtils.formatWithCommas(tx.balanceAfter),
+      transactionType: tx.transactionType,
+      description: tx.description,
+      createdAt: tx.createdAt,
+      metadata: tx.metadata ?? {},
+    }));
+  }
+}
