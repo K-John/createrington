@@ -475,13 +475,27 @@ ALTER TABLE public.player OWNER TO postgres;
 
 CREATE TABLE public.player_balance (
     minecraft_uuid uuid NOT NULL,
-    balance numeric(20,8) DEFAULT 0 NOT NULL,
+    balance bigint DEFAULT 0 NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT chk_balance_non_negative CHECK ((balance >= (0)::numeric))
+    CONSTRAINT chk_balance_non_negative CHECK ((balance >= 0))
 );
 
 
 ALTER TABLE public.player_balance OWNER TO postgres;
+
+--
+-- Name: TABLE player_balance; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON TABLE public.player_balance IS 'Player balance with 3 decimal precision';
+
+
+--
+-- Name: COLUMN player_balance.balance; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.player_balance.balance IS 'Balance in smallest unit (3 decimal places). Divide by 1,000 for display. Example: 1000 = 1.000, 200 = 0.200';
+
 
 --
 -- Name: player_balance_transaction; Type: TABLE; Schema: public; Owner: postgres
@@ -490,15 +504,14 @@ ALTER TABLE public.player_balance OWNER TO postgres;
 CREATE TABLE public.player_balance_transaction (
     id integer NOT NULL,
     player_minecraft_uuid uuid NOT NULL,
-    amount numeric(20,8) NOT NULL,
-    balance_before numeric(20,8) NOT NULL,
-    balance_after numeric(20,8) NOT NULL,
+    amount bigint NOT NULL,
+    balance_before bigint NOT NULL,
+    balance_after bigint NOT NULL,
     transaction_type text NOT NULL,
     description text,
     related_player_uuid uuid,
     metadata jsonb DEFAULT '{}'::jsonb,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT chk_transaction_type CHECK ((transaction_type = ANY (ARRAY['transfer_send'::text, 'transfer_receive'::text, 'admin_grant'::text, 'admin_deduct'::text, 'purchase'::text, 'sale'::text, 'reward'::text, 'refund'::text, 'other'::text])))
+    created_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 
@@ -508,14 +521,14 @@ ALTER TABLE public.player_balance_transaction OWNER TO postgres;
 -- Name: TABLE player_balance_transaction; Type: COMMENT; Schema: public; Owner: postgres
 --
 
-COMMENT ON TABLE public.player_balance_transaction IS 'Complete audit trail of all balance changes';
+COMMENT ON TABLE public.player_balance_transaction IS 'Complete audit trail of all balance changes with 3 decimal precision';
 
 
 --
 -- Name: COLUMN player_balance_transaction.amount; Type: COMMENT; Schema: public; Owner: postgres
 --
 
-COMMENT ON COLUMN public.player_balance_transaction.amount IS 'Amount changed (positive for credit, negative for debit)';
+COMMENT ON COLUMN public.player_balance_transaction.amount IS 'Amount changed (positive for credit, negative for debit) in smallest unit';
 
 
 --
@@ -1234,10 +1247,10 @@ ALTER TABLE ONLY public.waitlist_entry
 
 
 --
--- Name: idx_balance_transaction_created_at; Type: INDEX; Schema: public; Owner: postgres
+-- Name: idx_balance_transaction_created; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_balance_transaction_created_at ON public.player_balance_transaction USING btree (created_at DESC);
+CREATE INDEX idx_balance_transaction_created ON public.player_balance_transaction USING btree (created_at DESC);
 
 
 --
@@ -1248,10 +1261,10 @@ CREATE INDEX idx_balance_transaction_player ON public.player_balance_transaction
 
 
 --
--- Name: idx_balance_transaction_related_player; Type: INDEX; Schema: public; Owner: postgres
+-- Name: idx_balance_transaction_related; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_balance_transaction_related_player ON public.player_balance_transaction USING btree (related_player_uuid) WHERE (related_player_uuid IS NOT NULL);
+CREATE INDEX idx_balance_transaction_related ON public.player_balance_transaction USING btree (related_player_uuid) WHERE (related_player_uuid IS NOT NULL);
 
 
 --
@@ -1336,6 +1349,20 @@ CREATE INDEX idx_log_actions_table_name ON public.admin_log_action USING btree (
 --
 
 CREATE INDEX idx_log_actions_target ON public.admin_log_action USING btree (target_player_uuid);
+
+
+--
+-- Name: idx_player_balance_amount; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_player_balance_amount ON public.player_balance USING btree (balance DESC);
+
+
+--
+-- Name: idx_player_balance_uuid; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_player_balance_uuid ON public.player_balance USING btree (minecraft_uuid);
 
 
 --
@@ -1558,27 +1585,27 @@ ALTER TABLE ONLY public.admin_log_action
 
 
 --
--- Name: player_balance player_balance_minecraft_uuid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: player_balance fk_player; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.player_balance
-    ADD CONSTRAINT player_balance_minecraft_uuid_fkey FOREIGN KEY (minecraft_uuid) REFERENCES public.player(minecraft_uuid) ON UPDATE CASCADE ON DELETE CASCADE;
+    ADD CONSTRAINT fk_player FOREIGN KEY (minecraft_uuid) REFERENCES public.player(minecraft_uuid) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
--- Name: player_balance_transaction player_balance_transaction_player_minecraft_uuid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.player_balance_transaction
-    ADD CONSTRAINT player_balance_transaction_player_minecraft_uuid_fkey FOREIGN KEY (player_minecraft_uuid) REFERENCES public.player(minecraft_uuid) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
--- Name: player_balance_transaction player_balance_transaction_related_player_uuid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: player_balance_transaction fk_player; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.player_balance_transaction
-    ADD CONSTRAINT player_balance_transaction_related_player_uuid_fkey FOREIGN KEY (related_player_uuid) REFERENCES public.player(minecraft_uuid) ON UPDATE CASCADE ON DELETE SET NULL;
+    ADD CONSTRAINT fk_player FOREIGN KEY (player_minecraft_uuid) REFERENCES public.player(minecraft_uuid) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: player_balance_transaction fk_related_player; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.player_balance_transaction
+    ADD CONSTRAINT fk_related_player FOREIGN KEY (related_player_uuid) REFERENCES public.player(minecraft_uuid) ON UPDATE CASCADE ON DELETE SET NULL;
 
 
 --
