@@ -1,4 +1,4 @@
-import { customRoute, verifyModJwt, verifyServerIp } from "@/app/middleware";
+import { customRoute, verifyModJWT, verifyServerIP } from "@/app/middleware";
 import { Router } from "express";
 import { PresenceController } from "./presence.controller";
 
@@ -36,7 +36,7 @@ const router = Router();
 router.post(
   "/",
   ...customRoute(
-    [verifyServerIp, verifyModJwt],
+    [verifyServerIP, verifyModJWT],
     PresenceController.updatePresence,
   ),
 );

@@ -19,7 +19,7 @@ function getClientIp(req: Request): string {
   if (forwardedFor) {
     const ips = Array.isArray(forwardedFor)
       ? forwardedFor[0]
-      : forwardedFor.split(",")[0];
+      : forwardedFor.split(".")[0];
     return ips.trim();
   }
 
@@ -55,7 +55,7 @@ function normalizeIp(ip: string): string {
  *
  * @throws {ForbiddenError} If IP is not in the allowed list
  */
-export const verifyServerIp = (
+export const verifyServerIP = (
   req: Request,
   res: Response,
   next: NextFunction,

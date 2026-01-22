@@ -1,7 +1,6 @@
 import config from "@/config";
 import { UnauthorizedError } from "./error-handler";
 import { NextFunction, Request, Response } from "express";
-import jwt from "jsonwebtoken";
 import crypto from "node:crypto";
 
 /**
@@ -17,7 +16,7 @@ const JWT_SECRET = config.app.auth.jwt.secret;
  *
  * @throws {UnauthorizedError} if token is missing, invalid, or expired
  */
-export const verifyModJwt = (
+export const verifyModJWT = (
   req: Request,
   res: Response,
   next: NextFunction,
@@ -29,7 +28,7 @@ export const verifyModJwt = (
       : authHeader;
 
     if (!token) {
-      throw new UnauthorizedError("Nod authentication required");
+      throw new UnauthorizedError("Mod authentication required");
     }
 
     const parts = token.split(",");

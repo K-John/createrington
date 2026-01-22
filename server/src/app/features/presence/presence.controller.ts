@@ -49,13 +49,13 @@ export class PresenceController {
       }
     } else {
       const serverIp = req.serverIp;
-      if (!serverId) {
+      if (!serverIp) {
         throw new InternalServerError(
           "Server IP not detected - IP verification middleware may not be properly configured",
         );
       }
 
-      const serverInfo = getServerByIp(serverId);
+      const serverInfo = getServerByIp(serverIp);
       if (!serverInfo) {
         logger.warn(`Unknown server IP: ${serverId}`);
         throw new BadRequestError(
