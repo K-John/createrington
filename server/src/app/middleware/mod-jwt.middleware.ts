@@ -1,7 +1,7 @@
 import config from "@/config";
 import { UnauthorizedError } from "./error-handler";
 import { NextFunction, Request, Response } from "express";
-import crypto from "node:crypto";
+import jwt from "jsonwebtoken";
 
 /**
  * JWT secret shared with PresenceAPI and Createrington Currency
@@ -31,42 +31,28 @@ export const verifyModJWT = (
       throw new UnauthorizedError("Mod authentication required");
     }
 
-    const parts = token.split(",");
-    if (parts.length !== 3) {
-      throw new UnauthorizedError("Invalid token format");
-    }
-
-    const [encodedHeader, encodedPayload, signature] = parts;
-
-    const dataToVerify = `${encodedHeader}.${encodedPayload}`;
-    const expectedSignature = crypto
-      .createHmac("sha256", JWT_SECRET)
-      .update(dataToVerify)
-      .digest("base64url");
-
-    if (signature !== expectedSignature) {
-      throw new UnauthorizedError("Invalid token signature");
-    }
-
-    const payload = JSON.parse(
-      Buffer.from(encodedPayload, "base64url").toString(),
-    );
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
 
     const now = Math.floor(Date.now() / 1000);
-    if (payload.exp && payload.exp < now) {
+    if (decoded.exp && decoded.exp < now) {
       throw new UnauthorizedError("Token has expired");
     }
 
-    if (payload.iat && payload.iat > now + 60) {
+    if (decoded.iat && decoded.iat > now + 60) {
       throw new UnauthorizedError("Token issued in the future");
     }
 
-    req.modAuth = payload;
+    req.modAuth = decoded;
 
     next();
   } catch (error) {
     if (error instanceof UnauthorizedError) {
       next(error);
+    } else if (error instanceof jwt.JsonWebTokenError) {
+      logger.error("JWT verification failed:", error.message);
+      next(new UnauthorizedError("Invalid token"));
+    } else if (error instanceof jwt.TokenExpiredError) {
+      next(new UnauthorizedError("Token has expired"));
     } else {
       logger.error("Mod JWT verification failed:", error);
       next(new UnauthorizedError("Invalid or expired mod token"));

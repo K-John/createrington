@@ -29,7 +29,7 @@ export const authMiddleware: Record<AuthLevel, RequestHandler[]> = {
  */
 export function route(
   auth: AuthLevel,
-  handler: RequestHandler
+  handler: RequestHandler,
 ): RequestHandler[] {
   return [...authMiddleware[auth], asyncHandler(handler)];
 }
@@ -39,7 +39,7 @@ export function route(
  */
 export function customRoute(
   middleware: RequestHandler[],
-  handler: RequestHandler
+  handler: RequestHandler,
 ): RequestHandler[] {
-  return [...middleware, asyncHandler(handler)];
+  return [...middleware.map((m) => asyncHandler(m)), asyncHandler(handler)];
 }

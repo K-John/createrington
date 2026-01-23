@@ -1,9 +1,6 @@
 import { AuthController } from "./auth.controller";
 import {
-  asyncHandler,
-  authenticate,
   AuthLevel,
-  optionalAuth,
   route,
 } from "@/app/middleware";
 import { Router } from "express";
