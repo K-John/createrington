@@ -31,6 +31,25 @@ export function formatPlaytime(seconds: number): string {
 }
 
 /**
+ * Calculates the number of days between two dates
+ *
+ * @param start - Start date
+ * @param end - End date (defaults to now)
+ * @returns Formatted string with day count
+ *
+ * @example
+ * formatDays(pastDate, now) // "5 days"
+ * formatDays(yesterday) // "1 day"
+ * formatDays(today) // "0 days"
+ */
+export function formatDays(start: Date, end: Date = new Date()): string {
+  const diffMs = end.getTime() - start.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  return `${diffDays} ${pluralize(diffDays, "day")}`;
+}
+
+/**
  * Formats a balance/currency value in American format
  *
  * Always floors the value (no decimals) and formats with commas
