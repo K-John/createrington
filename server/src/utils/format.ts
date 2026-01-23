@@ -122,6 +122,21 @@ export function formatPercentage(
 }
 
 /**
+ * Formats a number of days with proper pluralization
+ *
+ * @param days - Number of days
+ * @returns Formatted string with day count
+ *
+ * @example
+ * formatDaysCount(0)     // "0 days"
+ * formatDaysCount(1)     // "1 day"
+ * formatDaysCount(5)     // "5 days"
+ */
+export function formatDaysCount(days: number): string {
+  return `${days} ${pluralize(days, "day")}`;
+}
+
+/**
  * Formats a Discord timestamp for relative or absolute display
  *
  * Uses Discord's timestamp formatting syntax for client-side rendering

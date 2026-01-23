@@ -6,7 +6,7 @@ import {
 import { createEmbed } from "../../embed-builder";
 import { EmbedColors } from "../../colors";
 import { Discord } from "@/discord/constants";
-import { formatBalance, formatPlaytime } from "@/utils/format";
+import { formatBalance, formatDaysCount, formatPlaytime } from "@/utils/format";
 
 /**
  * Formats a value based on condition type
@@ -22,7 +22,7 @@ function formatValue(value: number, conditionType: RoleConditionType): string {
     case RoleConditionType.BALANCE:
       return `${formatBalance(value)}`;
     case RoleConditionType.SERVER_AGE:
-      return formatPlaytime(value);
+      return `${formatDaysCount(value)} ${value > 0 ? "ago" : ""}`;
     default:
       return value.toString();
   }
