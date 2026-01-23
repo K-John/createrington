@@ -124,7 +124,6 @@ async function start(): Promise<void> {
 
   httpServer.listen(PORT, () => {
     logger.info(`Server started at http://localhost:${PORT}`);
-    logger.info(`WebSocket server ready at ws://localhost:${PORT}`);
   });
 
   // Wait for web bot to be ready before initializing services
@@ -133,15 +132,27 @@ async function start(): Promise<void> {
   });
 
   try {
-    // Initialize services WITH message cache integration
-    await serviceManager.initialize(httpServer, webBot, MESSAGE_CACHE_CONFIG, {
-      cors: {
-        origin: config.envMode.isDev
-          ? [`http://localhost:${PORT}`, "http://localhost:5173"]
-          : [config.meta.links.website],
-        credentials: true,
-      },
+    const wsPort = PORT + 1;
+    const wsHttpServer = http.createServer();
+
+    wsHttpServer.listen(wsPort, () => {
+      logger.info(`WebSocket server ready at ws://localhost:${wsPort}`);
     });
+
+    // Initialize services WITH message cache integration
+    await serviceManager.initialize(
+      wsHttpServer,
+      webBot,
+      MESSAGE_CACHE_CONFIG,
+      {
+        cors: {
+          origin: config.envMode.isDev
+            ? [`http://localhost:${PORT}`, "http://localhost:5173"]
+            : [config.meta.links.website],
+          credentials: true,
+        },
+      },
+    );
 
     logger.info("Service manager initialized");
 
