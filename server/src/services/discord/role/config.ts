@@ -1,9 +1,11 @@
 import { Discord } from "@/discord/constants";
 import {
+  AnyRoleRule,
   PlaytimeRoleRule,
   RoleCheckInterval,
   RoleConditionType,
   RoleNotificationConfig,
+  ServerAgeRoleRule,
 } from "./types";
 
 /**
@@ -97,12 +99,69 @@ export const PLAYTIME_ROLE_HIERARCHY: PlaytimeRoleRule[] = [
 ];
 
 /**
+ * Server age-based role hierarchy configuration
+ *
+ * Roles are assigned based on how long a member has been in the Discord server
+ * When a player qualifies for a higher role, lower roles are automatically removed
+ */
+export const SERVER_AGE_ROLE_HIERARCHY: ServerAgeRoleRule[] = [
+  {
+    roleId: Discord.Roles.NEWCOMER,
+    requiredDays: 0,
+    checkInterval: RoleCheckInterval.DAILY,
+    label: "Newcomer",
+    conditionType: RoleConditionType.SERVER_AGE,
+    removesRoles: [],
+    enabled: true,
+  },
+  {
+    roleId: Discord.Roles.ADVENTURER,
+    requiredDays: 30,
+    checkInterval: RoleCheckInterval.DAILY,
+    label: "Adventurer",
+    conditionType: RoleConditionType.SERVER_AGE,
+    removesRoles: [Discord.Roles.NEWCOMER],
+    enabled: true,
+  },
+  {
+    roleId: Discord.Roles.REGULAR,
+    requiredDays: 90,
+    checkInterval: RoleCheckInterval.DAILY,
+    label: "Regular",
+    conditionType: RoleConditionType.SERVER_AGE,
+    removesRoles: [Discord.Roles.ADVENTURER],
+    enabled: true,
+  },
+  {
+    roleId: Discord.Roles.VETERAN,
+    requiredDays: 180,
+    checkInterval: RoleCheckInterval.DAILY,
+    label: "Veteran",
+    conditionType: RoleConditionType.SERVER_AGE,
+    removesRoles: [Discord.Roles.REGULAR],
+    enabled: true,
+  },
+  {
+    roleId: Discord.Roles.LEGEND,
+    requiredDays: 365,
+    checkInterval: RoleCheckInterval.DAILY,
+    label: "Legend",
+    conditionType: RoleConditionType.SERVER_AGE,
+    removesRoles: [Discord.Roles.VETERAN],
+    enabled: true,
+  },
+];
+
+/**
  * Gets all role assignment rules
  *
  * @returns Array of all configured role rules
  */
-export function getAllRoleRules(): PlaytimeRoleRule[] {
-  return PLAYTIME_ROLE_HIERARCHY.filter((rule) => rule.enabled !== false);
+export function getAllRoleRules(): (PlaytimeRoleRule | ServerAgeRoleRule)[] {
+  return [
+    ...PLAYTIME_ROLE_HIERARCHY.filter((rule) => rule.enabled !== false),
+    ...SERVER_AGE_ROLE_HIERARCHY.filter((rule) => rule.enabled !== false),
+  ];
 }
 
 /**
@@ -110,9 +169,9 @@ export function getAllRoleRules(): PlaytimeRoleRule[] {
  *
  * @returns Array of realtime role rules
  */
-export function getRealtimeRoleRules(): PlaytimeRoleRule[] {
+export function getRealtimeRoleRules(): AnyRoleRule[] {
   return getAllRoleRules().filter(
-    (rule) => rule.checkInterval === RoleCheckInterval.REALTIME
+    (rule) => rule.checkInterval === RoleCheckInterval.REALTIME,
   );
 }
 
@@ -121,9 +180,9 @@ export function getRealtimeRoleRules(): PlaytimeRoleRule[] {
  *
  * @returns Array of daily role rules
  */
-export function getDailyRoleRules(): PlaytimeRoleRule[] {
+export function getDailyRoleRules(): AnyRoleRule[] {
   return getAllRoleRules().filter(
-    (rule) => rule.checkInterval === RoleCheckInterval.DAILY
+    (rule) => rule.checkInterval === RoleCheckInterval.DAILY,
   );
 }
 
@@ -134,6 +193,43 @@ export const DEFAULT_NOTIFICATION_CONFIG: RoleNotificationConfig = {
   enabled: true,
   channelId: Discord.Channels.HALL_OF_FAME,
   isMilestone: false,
+};
+
+/**
+ * Notification configuration for specific roles
+ * Override defaults here for special roles
+ */
+export const SERVER_AGE_NOTIFICATION_CONFIGS: Record<
+  string,
+  Partial<RoleNotificationConfig>
+> = {
+  [Discord.Roles.NEWCOMER]: {
+    enabled: true,
+    emoji: "👋",
+    isMilestone: false,
+  },
+  [Discord.Roles.ADVENTURER]: {
+    enabled: true,
+    emoji: "🗺️",
+    isMilestone: false,
+  },
+  [Discord.Roles.REGULAR]: {
+    enabled: true,
+    emoji: "🛡️",
+    isMilestone: true,
+  },
+  [Discord.Roles.VETERAN]: {
+    enabled: true,
+    emoji: "🏆",
+    isMilestone: true,
+  },
+  [Discord.Roles.LEGEND]: {
+    enabled: true,
+    emoji: "👑",
+    isMilestone: true,
+    customMessage:
+      "has become a legend of the server after a full year of membership!",
+  },
 };
 
 /**
@@ -191,6 +287,8 @@ export const ROLE_NOTIFICATION_CONFIGS: Record<
     customMessage:
       "has reached the pinnacle of automation mastery and earned the legendary title of",
   },
+
+  ...SERVER_AGE_NOTIFICATION_CONFIGS,
 };
 
 /**
@@ -204,5 +302,6 @@ export function getNotificationConfig(roleId: string): RoleNotificationConfig {
   return {
     ...DEFAULT_NOTIFICATION_CONFIG,
     ...customConfig,
+    ...SERVER_AGE_NOTIFICATION_CONFIGS,
   };
 }

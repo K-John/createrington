@@ -13,6 +13,7 @@ import { RoleManager } from "@/discord/utils/roles/role-manager";
 import { roleNotificationService } from "./role-notification.service";
 import { getAllRoleRules } from "./config";
 import { Q } from "@/db";
+import { ServerAgeCondition } from "./conditions/server-age-condition";
 
 /**
  * Service for managing automatic role assignments based on various conditions
@@ -39,6 +40,8 @@ export class RoleAssignmentService {
     switch (rule.conditionType) {
       case RoleConditionType.PLAYTIME:
         return new PlaytimeCondition(rule);
+      case RoleConditionType.SERVER_AGE:
+        return new ServerAgeCondition(rule);
       default:
         throw new Error(`Unknown condition type: ${rule.conditionType}`);
     }
@@ -53,7 +56,7 @@ export class RoleAssignmentService {
    */
   async checkEligibility(
     discordId: string,
-    rule: AnyRoleRule
+    rule: AnyRoleRule,
   ): Promise<RoleEligibilityResult> {
     const condition = this.createCondition(rule);
     return await condition.checkEligibility(discordId);
@@ -68,10 +71,10 @@ export class RoleAssignmentService {
    */
   async checkMultipleRoles(
     discordId: string,
-    rules: AnyRoleRule[]
+    rules: AnyRoleRule[],
   ): Promise<RoleEligibilityResult[]> {
     return await Promise.all(
-      rules.map((rule) => this.checkEligibility(discordId, rule))
+      rules.map((rule) => this.checkEligibility(discordId, rule)),
     );
   }
 
@@ -88,7 +91,7 @@ export class RoleAssignmentService {
    */
   async findHighestEligibleRole(
     discordId: string,
-    rules: AnyRoleRule[]
+    rules: AnyRoleRule[],
   ): Promise<{ rule: AnyRoleRule; eligibility: RoleEligibilityResult } | null> {
     const sortedRules = [...rules].sort((a, b) => {
       const aValue = this.getRequiredValue(a);
@@ -122,6 +125,8 @@ export class RoleAssignmentService {
     switch (rule.conditionType) {
       case RoleConditionType.PLAYTIME:
         return rule.requiredSeconds;
+      case RoleConditionType.SERVER_AGE:
+        return rule.requiredDays;
       default:
         return 0;
     }
@@ -143,7 +148,7 @@ export class RoleAssignmentService {
    */
   async processRoleHierarchy(
     discordId: string,
-    rules: AnyRoleRule[]
+    rules: AnyRoleRule[],
   ): Promise<RoleAssignmentResult> {
     try {
       const guild = await this.bot.guilds.fetch(config.discord.guild.id);
@@ -160,7 +165,7 @@ export class RoleAssignmentService {
             const removed = await RoleManager.remove(
               member,
               roleId,
-              "No longer qualifies for role hierarchy"
+              "No longer qualifies for role hierarchy",
             );
             if (removed) {
               removedRoles.push(roleId);
@@ -182,7 +187,7 @@ export class RoleAssignmentService {
       const hasTargetRole = RoleManager.has(member, targetRole.roleId);
       const hasOtherRoles = allRoleIds.some(
         (roleId) =>
-          roleId !== targetRole.roleId && RoleManager.has(member, roleId)
+          roleId !== targetRole.roleId && RoleManager.has(member, roleId),
       );
 
       if (hasTargetRole && !hasOtherRoles) {
@@ -196,7 +201,7 @@ export class RoleAssignmentService {
 
       let previousRole: AnyRoleRule | undefined;
       const currentRoleIds = allRoleIds.filter((roleId) =>
-        RoleManager.has(member, roleId)
+        RoleManager.has(member, roleId),
       );
       if (currentRoleIds.length > 0) {
         previousRole = rules.find((r) => r.roleId === currentRoleIds[0]);
@@ -208,7 +213,7 @@ export class RoleAssignmentService {
           const removed = await RoleManager.remove(
             member,
             roleId,
-            `Upgrading to ${targetRole.label}`
+            `Upgrading to ${targetRole.label}`,
           );
           if (removed) {
             removedRoles.push(roleId);
@@ -221,7 +226,7 @@ export class RoleAssignmentService {
         const assigned = await RoleManager.assign(
           member,
           targetRole.roleId,
-          `Qualified for ${targetRole.label} (${eligibility.currentValue}/${eligibility.requiredValue})`
+          `Qualified for ${targetRole.label} (${eligibility.currentValue}/${eligibility.requiredValue})`,
         );
 
         if (!assigned) {
@@ -292,7 +297,7 @@ export class RoleAssignmentService {
    */
   async processRoleAssignment(
     discordId: string,
-    rule: AnyRoleRule
+    rule: AnyRoleRule,
   ): Promise<RoleAssignmentResult> {
     try {
       const guild = await this.bot.guilds.fetch(config.discord.guild.id);
@@ -308,7 +313,7 @@ export class RoleAssignmentService {
     } catch (error) {
       logger.error(
         `Failed to process role assignment for ${discordId} (${rule.label}):`,
-        error
+        error,
       );
 
       return {
@@ -334,7 +339,7 @@ export class RoleAssignmentService {
   private async assignRole(
     member: GuildMember,
     rule: AnyRoleRule,
-    eligibility: RoleEligibilityResult
+    eligibility: RoleEligibilityResult,
   ): Promise<RoleAssignmentResult> {
     if (RoleManager.has(member, rule.roleId)) {
       return {
@@ -348,7 +353,7 @@ export class RoleAssignmentService {
     const assignedResult = await RoleManager.assign(
       member,
       rule.roleId,
-      `Qualified for ${rule.label} (${eligibility.currentValue}/${eligibility.requiredValue})`
+      `Qualified for ${rule.label} (${eligibility.currentValue}/${eligibility.requiredValue})`,
     );
 
     if (!assignedResult) {
@@ -372,7 +377,7 @@ export class RoleAssignmentService {
           const removeResult = await RoleManager.remove(
             member,
             roleToRemove,
-            `Upgraded to ${rule.label}`
+            `Upgraded to ${rule.label}`,
           );
 
           if (removeResult) {
@@ -420,7 +425,7 @@ export class RoleAssignmentService {
    */
   private async removeRole(
     member: GuildMember,
-    rule: AnyRoleRule
+    rule: AnyRoleRule,
   ): Promise<RoleAssignmentResult> {
     if (!RoleManager.has(member, rule.roleId)) {
       return {
@@ -434,7 +439,7 @@ export class RoleAssignmentService {
     const removeResult = await RoleManager.remove(
       member,
       rule.roleId,
-      `No longer qualifies for ${rule.label}`
+      `No longer qualifies for ${rule.label}`,
     );
 
     if (!removeResult) {
@@ -466,10 +471,10 @@ export class RoleAssignmentService {
    */
   async processMultipleRoles(
     discordId: string,
-    rules: AnyRoleRule[]
+    rules: AnyRoleRule[],
   ): Promise<RoleAssignmentResult[]> {
     return await Promise.all(
-      rules.map((rule) => this.processRoleAssignment(discordId, rule))
+      rules.map((rule) => this.processRoleAssignment(discordId, rule)),
     );
   }
 
@@ -483,7 +488,7 @@ export class RoleAssignmentService {
    * @returns Promise resolving to a map of discordId -> result
    */
   async processAllPlayers(
-    rules: AnyRoleRule[]
+    rules: AnyRoleRule[],
   ): Promise<Map<string, RoleAssignmentResult>> {
     const players = await Q.player.findAll({});
 
@@ -499,5 +504,5 @@ export class RoleAssignmentService {
 }
 
 export const createRoleAssignmentService = (
-  bot: Client
+  bot: Client,
 ): RoleAssignmentService => new RoleAssignmentService(bot);

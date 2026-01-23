@@ -18,6 +18,7 @@ export enum RoleCheckInterval {
 export enum RoleConditionType {
   PLAYTIME = "playtime",
   BALANCE = "balance",
+  SERVER_AGE = "server_age",
   CUSTOM = "custom",
 }
 
@@ -60,9 +61,23 @@ export interface BalanceRoleRule extends RoleAssignmentRule {
 }
 
 /**
+ * Server age-based role assignment rule
+ *
+ * Assigns roles based on how long a member has been in the Discord server
+ */
+export interface ServerAgeRoleRule extends RoleAssignmentRule {
+  conditionType: RoleConditionType.SERVER_AGE;
+  /** Minimum required number of days in the Discord server required */
+  requiredDays: number;
+}
+
+/**
  * Union type of all possible rule types
  */
-export type AnyRoleRule = PlaytimeRoleRule | BalanceRoleRule;
+export type AnyRoleRule =
+  | PlaytimeRoleRule
+  | BalanceRoleRule
+  | ServerAgeRoleRule;
 
 /**
  * Result of checking a player's eligibility for a role

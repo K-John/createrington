@@ -1,6 +1,7 @@
 import { Client } from "discord.js";
 import { RoleAssignmentService } from "../role-assignment.service";
 import { getDailyRoleRules } from "../config";
+import { RoleConditionType } from "../types";
 
 /**
  * Handles scheduled daily role checks
@@ -13,7 +14,10 @@ export class DailyRoleScheduler {
   private intervalId?: NodeJS.Timeout;
   private isRunning = false;
 
-  constructor(private bot: Client, private checkTimeHour: number = 0) {
+  constructor(
+    private bot: Client,
+    private checkTimeHour: number = 0,
+  ) {
     this.roleService = new RoleAssignmentService(bot);
   }
 
@@ -30,7 +34,7 @@ export class DailyRoleScheduler {
 
     this.isRunning = true;
     logger.info(
-      `Starting DailyRoleScheduler (checks at ${this.checkTimeHour}:00 UTC)`
+      `Starting DailyRoleScheduler (checks at ${this.checkTimeHour}:00 UTC)`,
     );
 
     const now = new Date();
@@ -46,8 +50,8 @@ export class DailyRoleScheduler {
 
     logger.info(
       `First daily role check in ${Math.round(
-        msUntilNextCheck / 1000 / 60
-      )} minutes`
+        msUntilNextCheck / 1000 / 60,
+      )} minutes`,
     );
 
     setTimeout(() => {
@@ -56,7 +60,7 @@ export class DailyRoleScheduler {
 
         this.intervalId = setInterval(
           () => this.runDailyCheck(),
-          24 * 60 * 60 * 1000 // 24 hours
+          24 * 60 * 60 * 1000, // 24 hours
         );
       }
     }, msUntilNextCheck);
@@ -92,26 +96,40 @@ export class DailyRoleScheduler {
       const rules = getDailyRoleRules();
 
       if (rules.length === 0) {
-        logger.info("No daily role rules configured");
+        logger.warn("No daily rules configured");
         return;
       }
 
-      const results = await this.roleService.processAllPlayers(rules);
+      const playtimeRules = rules.filter(
+        (r) => r.conditionType === RoleConditionType.PLAYTIME,
+      );
+      const serverAgeRules = rules.filter(
+        (r) => r.conditionType === RoleConditionType.SERVER_AGE,
+      );
 
       let totalAssignments = 0;
       let totalRemovals = 0;
 
-      for (const [discordId, result] of results) {
-        if (result.success && result.assigned) {
-          totalAssignments++;
+      if (playtimeRules.length > 0) {
+        const playtimeResults =
+          await this.roleService.processAllPlayers(playtimeRules);
+        for (const [discordId, result] of playtimeResults) {
+          if (result.success && result.assigned) totalAssignments++;
+          if (result.removedRoles) totalRemovals += result.removedRoles.length;
         }
-        if (result.removedRoles && result.removedRoles.length > 0) {
-          totalRemovals += result.removedRoles.length;
+      }
+
+      if (serverAgeRules.length > 0) {
+        const serverAgeResult =
+          await this.roleService.processAllPlayers(serverAgeRules);
+        for (const [discordId, result] of serverAgeResult) {
+          if (result.success && result.assigned) totalAssignments++;
+          if (result.removedRoles) totalRemovals += result.removedRoles.length;
         }
       }
 
       logger.info(
-        `Daily role check complete: ${totalAssignments} roles assigned, ${totalRemovals} roles removed across ${results.size} players`
+        `Daily role check complete: ${totalAssignments} role(s) assigned, ${totalRemovals} role(s) removed`,
       );
     } catch (error) {
       logger.error("Daily role check failed:", error);

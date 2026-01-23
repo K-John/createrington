@@ -9,49 +9,25 @@
  * Formats playtime in seconds to a human-readable string
  *
  * Converts total seconds into hours and minutes format.
- * For very long durations (1000+ hours), includes days.
+ * Always displays as hours and minutes, no matter how large.
  *
  * @param seconds - Total playtime in seconds
  * @returns Formatted string
  *
  * @example
- * formatPlaytime(0)        // "0m"
- * formatPlaytime(120)      // "2m"
+ * formatPlaytime(0)        // "0h 0m"
+ * formatPlaytime(120)      // "0h 2m"
  * formatPlaytime(3661)     // "1h 1m"
  * formatPlaytime(36000)    // "10h 0m"
  * formatPlaytime(90000)    // "25h 0m"
- * formatPlaytime(360000)   // "4d 4h"
+ * formatPlaytime(360000)   // "100h 0m"
  */
 export function formatPlaytime(seconds: number): string {
-  if (seconds < 60) {
-    return "0m";
-  }
-
   const totalMinutes = Math.floor(seconds / 60);
   const totalHours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
 
-  // For very long durations (100+ hours), show days
-  if (totalHours >= 100) {
-    const days = Math.floor(totalHours / 24);
-    const hours = totalHours % 24;
-
-    if (hours === 0) {
-      return `${days}d`;
-    }
-    return `${days}d ${hours}h`;
-  }
-
-  // Standard format: Xh Ym
-  if (totalHours > 0) {
-    if (minutes === 0) {
-      return `${totalHours}h`;
-    }
-    return `${totalHours}h ${minutes}m`;
-  }
-
-  // Less than an hour: just minutes
-  return `${minutes}m`;
+  return `${totalHours}h ${minutes}m`;
 }
 
 /**

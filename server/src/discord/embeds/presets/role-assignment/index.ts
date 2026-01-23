@@ -21,6 +21,8 @@ function formatValue(value: number, conditionType: RoleConditionType): string {
       return formatPlaytime(value);
     case RoleConditionType.BALANCE:
       return `${formatBalance(value)}`;
+    case RoleConditionType.SERVER_AGE:
+      return formatPlaytime(value);
     default:
       return value.toString();
   }
@@ -73,26 +75,33 @@ export const RoleAssignmentEmbedPresets = {
       .title(
         isMilestone
           ? `${emoji} MILESTONE ACHIEVEMENT ${emoji}`
-          : `${emoji} Rank Up!`
+          : `${emoji} Rank Up!`,
       )
       .color(isMilestone ? EmbedColors.Premium : EmbedColors.Success)
       .description(
         `${Discord.Users.mention(
-          notification.discordId
-        )} ${congratsMessage}\n\n` + `**${notification.role.label}**`
+          notification.discordId,
+        )} ${congratsMessage}\n\n` + `**${notification.role.label}**`,
       );
 
     if (notification.role.conditionType === RoleConditionType.PLAYTIME) {
       embed.field(
         "Total Playtime",
         formatValue(notification.currentValue, notification.role.conditionType),
-        true
+        true,
       );
     } else if (notification.role.conditionType === RoleConditionType.BALANCE) {
       embed.field(
         "Current Balance",
         formatValue(notification.currentValue, notification.role.conditionType),
-        true
+        true,
+      );
+    } else if (
+      notification.role.conditionType === RoleConditionType.SERVER_AGE
+    ) {
+      embed.field(
+        "Member Since",
+        formatValue(notification.currentValue, notification.role.conditionType),
       );
     }
 
@@ -114,8 +123,8 @@ export const RoleAssignmentEmbedPresets = {
       .color(EmbedColors.Success)
       .description(
         `${Discord.Users.mention(
-          firstNotification.discordId
-        )} has earned multiple new roles!`
+          firstNotification.discordId,
+        )} has earned multiple new roles!`,
       );
 
     const rolesList = notifications
@@ -148,15 +157,15 @@ export const RoleAssignmentEmbedPresets = {
     username: string,
     roleLabel: string,
     value: number,
-    conditionType: RoleConditionType
+    conditionType: RoleConditionType,
   ) {
     const embed = createEmbed()
       .title("👑 NEW #1 PLAYER 👑")
       .color(EmbedColors.Premium)
       .description(
         `${Discord.Users.mention(
-          discordId
-        )} has claimed the top spot and earned the title of **${roleLabel}**!`
+          discordId,
+        )} has claimed the top spot and earned the title of **${roleLabel}**!`,
       );
 
     if (conditionType === RoleConditionType.PLAYTIME) {
