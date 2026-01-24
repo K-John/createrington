@@ -14,6 +14,7 @@ export interface Config {
   discord: DiscordConfig;
   servers: ServersConfig;
   email: EmailConfig;
+  economy: EconomyConfig;
 }
 
 // ============================================================================
@@ -319,5 +320,15 @@ interface EmailConfig {
   readonly auth: {
     readonly user: string;
     readonly pass: string;
+  };
+}
+
+// ============================================================================
+// Economy Configuration
+// ============================================================================
+
+interface EconomyConfig {
+  readonly reward: {
+    readonly daily: number;
   };
 }

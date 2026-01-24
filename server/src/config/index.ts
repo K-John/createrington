@@ -165,6 +165,12 @@ const config: Config = {
       pass: env.EMAIL_PASS,
     },
   },
+
+  economy: {
+    reward: {
+      daily: 50,
+    },
+  },
 } as const;
 
 export default config;
