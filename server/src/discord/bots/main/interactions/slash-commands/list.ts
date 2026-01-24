@@ -1,7 +1,10 @@
 import { EmbedPresets } from "@/discord/embeds";
 import { getPlaytimeService } from "@/services/playtime";
-import { EmbedBuilder } from "@discordjs/builders";
-import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
+import {
+  ChatInputCommandInteraction,
+  MessageFlags,
+  SlashCommandBuilder,
+} from "discord.js";
 
 /**
  * Slash command definition for the list command
@@ -43,8 +46,6 @@ export async function execute(
   const serverOpt = interaction.options.getString("server", true);
   const serverId = parseInt(serverOpt, 10);
 
-  await interaction.deferReply();
-
   try {
     const playtimeService = getPlaytimeService(serverId);
 
@@ -52,15 +53,21 @@ export async function execute(
 
     const embed = EmbedPresets.commands.list(activeSessions, playtimeService);
 
-    await interaction.editReply({ embeds: [embed.build()] });
+    await interaction.reply({
+      embeds: [embed.build()],
+      flags: MessageFlags.Ephemeral,
+    });
   } catch (error) {
     logger.error("/list failed:", error);
 
-    const errorMessage =
-      error instanceof Error ? error.message : "An unknown error occurred";
+    const embed = EmbedPresets.error(
+      "List Error",
+      "Failed to fetch player list. Please try again.",
+    );
 
-    await interaction.editReply({
-      content: `❌ Failed to fetch player list: ${errorMessage}`,
+    await interaction.reply({
+      embeds: [embed.build()],
+      flags: MessageFlags.Ephemeral,
     });
   }
 }
