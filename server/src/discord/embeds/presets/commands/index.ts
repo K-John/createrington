@@ -1,6 +1,8 @@
 import { CooldownStats } from "@/discord/utils/cooldown/cooldown-manager";
 import { createEmbed, DiscordEmbedBuilder } from "../../embed-builder";
 import { EmbedColors } from "../../colors";
+import { ActiveSession, PlaytimeService } from "@/services/playtime";
+import { formatPlaytime } from "@/utils/format";
 
 export const CommandEmbedPresets = {
   cooldownStats(stats: CooldownStats): DiscordEmbedBuilder {
@@ -17,6 +19,44 @@ export const CommandEmbedPresets = {
 
       embed.field("By Command", commandList || "None");
     }
+
+    return embed;
+  },
+
+  list(
+    activeSessions: ActiveSession[],
+    playtimeService: PlaytimeService,
+  ): DiscordEmbedBuilder {
+    const onlineCount = activeSessions.length;
+
+    const embed = createEmbed()
+      .title("🟢 Online Players")
+      .color(onlineCount > 0 ? EmbedColors.Success : EmbedColors.Error)
+      .timestamp();
+
+    if (onlineCount === 0) {
+      embed.description("No players are currently online.");
+      return embed;
+    }
+
+    const sortedSessions = activeSessions.sort((a, b) =>
+      a.username.localeCompare(b.username),
+    );
+
+    const playerList = sortedSessions
+      .map((session) => {
+        const duration = playtimeService.getSessionDuration(session);
+        const durationStr = duration ? formatPlaytime(duration) : "Unknown";
+
+        const playerInfo = `**${session.username}** -${durationStr}`;
+
+        return playerInfo;
+      })
+      .join("\n");
+
+    embed.description(
+      `**${onlineCount}** player${onlineCount !== 1 ? "s" : ""}`,
+    );
 
     return embed;
   },

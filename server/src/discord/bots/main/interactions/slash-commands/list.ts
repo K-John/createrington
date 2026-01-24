@@ -1,0 +1,66 @@
+import { EmbedPresets } from "@/discord/embeds";
+import { getPlaytimeService } from "@/services/playtime";
+import { EmbedBuilder } from "@discordjs/builders";
+import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
+
+/**
+ * Slash command definition for the list command
+ *
+ * Displays a list of users currently online on the server
+ */
+export const data = new SlashCommandBuilder()
+  .setName("list")
+  .setDescription("List players on a server")
+  .addStringOption((opt) =>
+    opt
+      .setName("server")
+      .setDescription("Server to fetch players from")
+      .setRequired(true)
+      .addChoices({ name: "Cogs & Steam", value: "1" }),
+  );
+
+/**
+ * Whether this command should only be available in production
+ * Set to false to allow usage in development environments
+ */
+export const prodOnly = false;
+
+/**
+ * Executes the list command
+ *
+ * Process:
+ * - Extracts the server option
+ * - Maps the option to a server
+ * - Fetches the player list from the PlaytimeService
+ * - Displays an embed with the player list
+ *
+ * @param interaction - The chat input command interaction
+ * @returns Promise resolving when the command execution is completed
+ */
+export async function execute(
+  interaction: ChatInputCommandInteraction,
+): Promise<void> {
+  const serverOpt = interaction.options.getString("server", true);
+  const serverId = parseInt(serverOpt, 10);
+
+  await interaction.deferReply();
+
+  try {
+    const playtimeService = getPlaytimeService(serverId);
+
+    const activeSessions = playtimeService.getActiveSessions();
+
+    const embed = EmbedPresets.commands.list(activeSessions, playtimeService);
+
+    await interaction.editReply({ embeds: [embed.build()] });
+  } catch (error) {
+    logger.error("/list failed:", error);
+
+    const errorMessage =
+      error instanceof Error ? error.message : "An unknown error occurred";
+
+    await interaction.editReply({
+      content: `❌ Failed to fetch player list: ${errorMessage}`,
+    });
+  }
+}

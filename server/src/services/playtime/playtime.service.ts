@@ -522,8 +522,13 @@ export class PlaytimeService extends EventEmitter {
    * @param uuid - Minecraft player UUID
    * @returns Duration in seconds, or null if player is not online
    */
-  public getSessionDuration(uuid: string): number | null {
-    const session = this.activeSessions.get(uuid);
+  public getSessionDuration(identifier: string | ActiveSession): number | null {
+    let session: ActiveSession | undefined;
+    if (typeof identifier === "string") {
+      session = this.activeSessions.get(identifier);
+    } else {
+      session = this.activeSessions.get(identifier.uuid);
+    }
     if (!session) {
       return null;
     }

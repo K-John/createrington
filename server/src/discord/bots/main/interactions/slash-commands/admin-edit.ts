@@ -695,11 +695,6 @@ async function handleBalanceUpdate(
     reason,
     onConfirm: async () => {
       try {
-        // Use repository to set balance
-        // This automatically handles:
-        // - Transaction safety
-        // - Balance transaction logging
-        // - Validation
         const newBalance = await balanceRepo.set(
           player,
           numericValue,
