@@ -1,4 +1,3 @@
-import { BalanceUtils } from "@/db/repositories/balance/utils";
 import { EmbedPresets } from "@/discord/embeds";
 import { CooldownType } from "@/discord/utils/cooldown";
 import { rewardService } from "@/services/reward";
@@ -98,18 +97,11 @@ export async function execute(
       return;
     }
 
-    const formattedAmount = BalanceUtils.formatWithCommas(
-      BalanceUtils.toStorage(result.amount! / 100),
-    );
-    const formattedBalance = BalanceUtils.formatWithCommas(
-      BalanceUtils.toStorage(result.newBalance!),
-    );
-
     const embed = EmbedPresets.success(
       "💰 Daily Reward Claimed!",
-      `You received **$${formattedAmount}**`,
+      `You received **$${result.amount}**`,
     )
-      .field("New Balance", `$${formattedBalance}`, true)
+      .field("New Balance", `$${result.newBalance}`, true)
       .timestamp();
 
     if (result.nextClaimTime) {
