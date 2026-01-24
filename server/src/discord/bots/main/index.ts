@@ -82,8 +82,6 @@ function initializeRealtimeRoleHandlers(): void {
     dailyRoleScheduler = new DailyRoleScheduler(mainBot);
     dailyRoleScheduler.start();
 
-    dailyRoleScheduler.triggerManualCheck();
-
     // Only trigger manual check if we want to run it immediately on startup
     // dailyRoleScheduler.triggerManualCheck();
 
