@@ -1,6 +1,6 @@
 import { PlayerIdentifier } from "@/generated/db";
 import { RewardClaimResult, RewardEligibilityResult } from "../types";
-import { BaseReward } from "./base-reward";
+import { BaseReward } from "./base.reward";
 import { balanceRepo } from "@/db";
 import { BalanceTransactionType } from "@/db/repositories/balance";
 
@@ -99,7 +99,7 @@ export class DailyReward extends BaseReward {
 
       const newBalance = await balanceRepo.add(
         playerUuid,
-        this.config.amount / 100,
+        this.config.amount,
         `Daily reward claimed`,
         BalanceTransactionType.REWARD,
         {

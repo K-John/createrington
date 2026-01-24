@@ -1,5 +1,5 @@
 import { getRewardConfig } from "./config";
-import { BaseReward } from "./rewards/base-reward";
+import { BaseReward } from "./rewards/base.reward";
 import { DailyReward } from "./rewards/daily.reward";
 import { RewardType } from "./types";
 
