@@ -20,12 +20,12 @@
     "util:db-dump-schema": "tsx src/scripts/db/dump-schema.ts",
     "generate:db-query-system": "tsx src/scripts/db/generate-query-system.ts",
     "test": "vitest",
-    "test:uni": "vitest --ui",
+    "test:ui": "vitest --ui",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:unit": "vitest run --testPathPattern=unit",
-    "test:integration": "vitest runn --testPathPattern=integration",
-    "test:e2e": "vitest run --testPathPattern=e2e"
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:e2e": "vitest run tests/e2e"
   },
   "keywords": [],
   "author": "Matej Hozlar",
