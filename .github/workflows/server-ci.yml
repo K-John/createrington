@@ -10,6 +10,14 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: test_password
+      DB_DATABASE: test_db
+      DB_SSL: "false"
+
     services:
       postgres:
         image: postgres:15
@@ -40,24 +48,10 @@ jobs:
 
       - name: Setup database schema
         working-directory: ./packages/server
-        env:
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_USER: postgres
-          DB_PASSWORD: test_password
-          DB_DATABASE: test_db
-          DB_SSL: "false"
         run: |
           PGPASSWORD=test_password psql -h localhost -U postgres -d test_db -f src/db/schema/init.sql
 
       - name: Generate code (with DB access)
-        env:
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_USER: postgres
-          DB_PASSWORD: test_password
-          DB_DATABASE: test_db
-          DB_SSL: "false"
         run: npm run generate
 
       - name: Type check
@@ -70,13 +64,6 @@ jobs:
       - name: Run integration tests (optional)
         if: false
         working-directory: ./packages/server
-        env:
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_USER: postgres
-          DB_PASSWORD: test_password
-          DB_DATABASE: test_db
-          DB_SSL: "false"
         run: npm run test:integration
 
       - name: Build
