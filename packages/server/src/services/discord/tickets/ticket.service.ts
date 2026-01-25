@@ -54,6 +54,7 @@ export class TicketService {
       "..",
       "..",
       "..",
+      "..",
       "storage",
       "transcripts",
     );

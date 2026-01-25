@@ -1,6 +1,15 @@
 import type { Config } from "./types";
 import { env, envMode } from "./env/env.config";
-import discordEntities from "./discord-entities.json";
+import path from "node:path";
+import fs from "node:fs";
+import { fileURLToPath } from "node:url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+const discordEntitiesPath = path.join(__dirname, "discord-entities.json");
+const discordEntities = JSON.parse(
+  fs.readFileSync(discordEntitiesPath, "utf-8"),
+);
 
 const config: Config = {
   envMode,

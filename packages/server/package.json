@@ -5,10 +5,10 @@
   "main": "server.ts",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc && npm run post-build && npm run build:copy-assets",
-    "build:copy-assets": "copyfiles -u 1 \"src/**/*.html\" \"src/**/*.png\" \"src/**/*.jpg\" \"src/**/*.svg\" dist/",
+    "build": "tsc && tsc-alias && npm run post-build && npm run build:copy-assets",
+    "build:copy-assets": "copyfiles -u 1 \"src/**/*.html\" \"src/**/*.png\" \"src/**/*.jpg\" \"src/**/*.svg\" \"src/**/*.json\" dist/server/src",
     "post-build": "tsx src/scripts/tools/post-build.ts",
-    "start": "node dist/server.js",
+    "start": "node dist/server/src/server.js",
     "typecheck": "tsc --noEmit",
     "generate": "tsx src/scripts/generate.ts",
     "util:generate-structure": "node src/scripts/tools/generate-structure.js",

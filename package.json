@@ -5,13 +5,21 @@
   "workspaces": [
     "packages/*"
   ],
+  "overrides": {
+    "undici": "^6.23.0",
+    "discord-html-transcripts": {
+      "undici": "^6.23.0"
+    }
+  },
   "scripts": {
     "generate": "npm run generate --workspace=@createrington/server && npm run build:shared && npm run typecheck",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "dev:server": "npm run dev --workspace=@createrington/server",
     "build:server": "npm run build --workspace=@createrington/server",
     "build:shared": "npm run build --workspace=@createrington/shared",
-    "build": "npm run generate && npm run build:server"
+    "build": "npm run generate && npm run build:server",
+    "test": "npm run test --workspace=@createrington/server",
+    "test:unit": "npm run test:unit --workspace=@createrington/server"
   },
   "devDependencies": {
     "typescript": "^5.9.3"

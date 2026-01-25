@@ -9,6 +9,9 @@ export default defineConfig({
     env: {
       VALIDATION_MODE: "generation",
     },
+    cache: {
+      dir: path.resolve(__dirname, "../../node_modules/.vitest"), 
+    },
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],

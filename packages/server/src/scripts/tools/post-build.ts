@@ -48,9 +48,9 @@ function resolveAlias(fileDir: string, importPath: string): string {
 function processImport(
   importPath: string,
   fileDir: string,
-  distDir: string
+  distDir: string,
 ): string {
-  if (importPath.endsWith(".js")) {
+  if (importPath.endsWith(".js") || importPath.endsWith(".json")) {
     return importPath;
   }
 
@@ -74,7 +74,7 @@ function processImport(
   }
 
   console.warn(
-    `Could not resolve: ${importPath} in ${path.relative(distDir, fileDir)}`
+    `Could not resolve: ${importPath} in ${path.relative(distDir, fileDir)}`,
   );
   return `${normalizedImport}.js`;
 }
@@ -97,7 +97,7 @@ function fixImports(dir: string): void {
         (match: string, keyword: string, importPath: string): string => {
           const fixedPath = processImport(importPath, fileDir, distDir);
           return `${keyword} '${fixedPath}';`;
-        }
+        },
       );
 
       fs.writeFileSync(filePath, content, "utf-8");
