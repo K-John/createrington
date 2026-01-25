@@ -5,7 +5,7 @@
   "main": "server.ts",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "npm run generate && tsc && npm run post-build && npm run build:copy-assets",
+    "build": "tsc && npm run post-build && npm run build:copy-assets",
     "build:copy-assets": "copyfiles -u 1 \"src/**/*.html\" \"src/**/*.png\" \"src/**/*.jpg\" \"src/**/*.svg\" dist/",
     "post-build": "tsx src/scripts/tools/post-build.ts",
     "start": "node dist/server.js",
