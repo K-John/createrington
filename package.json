@@ -1,0 +1,19 @@
+{
+  "name": "createrington",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "generate": "npm run generate --workspace=@createrington/server && npm run build:shared && npm run typecheck",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "dev:server": "npm run dev --workspace=@createrington/server",
+    "build:server": "npm run build --workspace=@createrington/server",
+    "build:shared": "npm run build --workspace=@createrington/shared",
+    "build": "npm run generate && npm run build:server"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
