@@ -1,1 +1,2 @@
+// Command to stop PostgreSQL config if installed on WINDOWS PC, needs to be executed as an administrator
 net stop postgresql-x64-15
