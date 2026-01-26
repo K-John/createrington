@@ -57,7 +57,7 @@ export class TicketRepository {
     });
 
     logger.info(
-      `Created ticket #${ticketNumber} (ID: ${ticket.id}) for user ${data.creatorDiscordId}`
+      `Created ticket #${ticketNumber} (ID: ${ticket.id}) for user ${data.creatorDiscordId}`,
     );
 
     return ticket;
@@ -87,7 +87,7 @@ export class TicketRepository {
           ...ticket.metadata,
           transcriptUrl: data.transcriptPath,
         },
-      }
+      },
     );
 
     await this.logAction({
@@ -100,7 +100,7 @@ export class TicketRepository {
     });
 
     logger.info(
-      `Closed ticket #${ticket.ticketNumber} (ID: ${ticketId}) by user ${data.closedByDiscordId}`
+      `Closed ticket #${ticket.ticketNumber} (ID: ${ticketId}) by user ${data.closedByDiscordId}`,
     );
 
     return updatedTicket;
@@ -128,7 +128,7 @@ export class TicketRepository {
         status: TicketStatus.OPEN,
         closedAt: null,
         closedByDiscordId: null,
-      }
+      },
     );
 
     await this.logAction({
@@ -138,7 +138,7 @@ export class TicketRepository {
     });
 
     logger.info(
-      `Reopened ticket #${ticket.ticketNumber} (ID: ${ticketId}) by user ${reopenedBy}`
+      `Reopened ticket #${ticket.ticketNumber} (ID: ${ticketId}) by user ${reopenedBy}`,
     );
 
     return updatedTicket;
@@ -168,11 +168,11 @@ export class TicketRepository {
       {
         status: TicketStatus.DELETED,
         deletedAt: new Date(),
-      }
+      },
     );
 
     logger.info(
-      `Deleted ticket #${ticket.ticketNumber} (ID: ${ticketId}) by user ${deletedBy}`
+      `Deleted ticket #${ticket.ticketNumber} (ID: ${ticketId}) by user ${deletedBy}`,
     );
 
     return updatedTicket;
@@ -187,7 +187,7 @@ export class TicketRepository {
    */
   async updateMetadata(
     ticketId: number,
-    metadata: Record<string, any>
+    metadata: Record<string, any>,
   ): Promise<Ticket> {
     const ticket = await Q.ticket.get({ id: ticketId });
 
@@ -198,7 +198,7 @@ export class TicketRepository {
           ...ticket.metadata,
           ...metadata,
         },
-      }
+      },
     );
   }
 
@@ -224,7 +224,7 @@ export class TicketRepository {
       {
         orderBy: DatabaseTable.TICKET_ACTION.CAMEL_FIELDS.PERFORMED_AT,
         orderDirection: "ASC",
-      }
+      },
     );
   }
 
@@ -256,7 +256,7 @@ export class TicketRepository {
       limit?: number;
       orderBy?: "createdAt" | "ticketNumber";
       orderDirection?: "ASC" | "DESC";
-    }
+    },
   ): Promise<Ticket[]> {
     const filters: any = {
       creatorDiscordId: discordId,
@@ -316,7 +316,7 @@ export class TicketRepository {
       {
         orderBy: DatabaseTable.TICKET.CAMEL_FIELDS.CREATED_AT,
         orderDirection: "DESC",
-      }
+      },
     );
   }
 
@@ -332,7 +332,7 @@ export class TicketRepository {
       {
         orderBy: DatabaseTable.TICKET.CAMEL_FIELDS.CREATED_AT,
         orderDirection: "DESC",
-      }
+      },
     );
   }
 
@@ -348,7 +348,7 @@ export class TicketRepository {
       {
         orderBy: DatabaseTable.TICKET.CAMEL_FIELDS.CREATED_AT,
         orderDirection: "DESC",
-      }
+      },
     );
   }
 

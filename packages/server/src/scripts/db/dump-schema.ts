@@ -14,12 +14,12 @@ const DB_ROOT = path.resolve(__dirname, "../../../../../db");
 const SCHEMA_DIR = path.resolve(DB_ROOT, "schema");
 const TABLES_DIR = path.resolve(DB_ROOT, "tables");
 const FUNCTIONS_DIR = path.resolve(DB_ROOT, "functions");
+const TYPES_DIR = path.resolve(DB_ROOT, "types");
 
 /**
  * Execute a PostgreSQL query and return results
  */
 async function query(sql: string): Promise<string> {
-  // Properly escape SQL for shell - use single quotes around the SQL
   const command = `psql -h ${poolConfig.host} -U ${poolConfig.user} -d ${poolConfig.database} -t -A -c "${sql.replace(/"/g, '\\"')}"`;
 
   try {
@@ -36,6 +36,24 @@ async function query(sql: string): Promise<string> {
     console.error(error);
     throw error;
   }
+}
+
+/**
+ * Get list of all custom types (enums) - USER DEFINED ONLY
+ */
+async function getCustomTypes(): Promise<string[]> {
+  const result = await query(
+    "SELECT t.typname FROM pg_type t JOIN pg_namespace n ON t.typnamespace = n.oid WHERE t.typtype = 'e' AND n.nspname = 'public' ORDER BY t.typname",
+  );
+
+  if (!result) {
+    return [];
+  }
+
+  return result
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
 }
 
 /**
@@ -75,6 +93,40 @@ async function getFunctions(): Promise<string[]> {
 }
 
 /**
+ * Dump a custom type (enum) definition
+ */
+async function dumpCustomType(
+  typeName: string,
+  index: number,
+): Promise<string> {
+  const fileName = `${String(index).padStart(2, "0")}_${typeName}.sql`;
+  const outputFile = path.join(TYPES_DIR, fileName);
+
+  try {
+    // Get enum values
+    const result = await query(
+      `SELECT enumlabel FROM pg_enum 
+       WHERE enumtypid = '${typeName}'::regtype 
+       ORDER BY enumsortorder`,
+    );
+
+    const values = result
+      .split("\n")
+      .map((v) => `    '${v}'`)
+      .join(",\n");
+
+    const typeDef = `CREATE TYPE public.${typeName} AS ENUM (\n${values}\n);`;
+
+    await fs.writeFile(outputFile, typeDef + "\n", "utf-8");
+  } catch (error) {
+    console.error(`Failed to dump type ${typeName}`);
+    throw error;
+  }
+
+  return fileName;
+}
+
+/**
  * Dump a single table to a file
  */
 async function dumpTable(tableName: string, index: number): Promise<string> {
@@ -109,7 +161,6 @@ async function dumpFunction(
   const outputFile = path.join(FUNCTIONS_DIR, fileName);
 
   try {
-    // Get function definition
     const functionDef = await query(
       `SELECT pg_get_functiondef(p.oid) FROM pg_proc p JOIN pg_namespace n ON p.pronamespace = n.oid WHERE p.proname = '${functionName}' AND n.nspname = 'public' LIMIT 1`,
     );
@@ -144,25 +195,51 @@ async function ensureDir(dir: string): Promise<void> {
  * Generate init.sql that sources all individual files
  */
 async function generateInitFile(
+  customTypes: string[],
   tables: string[],
   functions: string[],
 ): Promise<void> {
   const lines: string[] = [
     "-- Auto-generated schema initialization file",
-    "-- This file sources all individual table and function files",
+    "-- This file sources all individual type, table and function files",
     "-- Generated at: " + new Date().toISOString(),
     "",
-    "-- ============================================================================",
-    "-- TABLES",
-    "-- ============================================================================",
-    "",
   ];
+
+  // Custom types section
+  if (customTypes.length > 0) {
+    lines.push(
+      "-- ============================================================================",
+    );
+    lines.push("-- CUSTOM TYPES (ENUMS)");
+    lines.push(
+      "-- ============================================================================",
+    );
+    lines.push("");
+
+    for (let i = 0; i < customTypes.length; i++) {
+      const fileName = `${String(i).padStart(2, "0")}_${customTypes[i]}.sql`;
+      lines.push(`\\i types/${fileName}`);
+    }
+    lines.push("");
+  }
+
+  // Tables section
+  lines.push(
+    "-- ============================================================================",
+  );
+  lines.push("-- TABLES");
+  lines.push(
+    "-- ============================================================================",
+  );
+  lines.push("");
 
   for (let i = 0; i < tables.length; i++) {
     const fileName = `${String(i).padStart(2, "0")}_${tables[i]}.sql`;
     lines.push(`\\i tables/${fileName}`);
   }
 
+  // Functions section
   if (functions.length > 0) {
     lines.push("");
     lines.push(
@@ -188,21 +265,53 @@ async function generateInitFile(
  * Generate init-docker.sql that includes all SQL directly (for Docker)
  */
 async function generateDockerInitFile(
+  customTypes: string[],
   tables: string[],
   functions: string[],
 ): Promise<void> {
   const lines: string[] = [
     "-- Auto-generated schema initialization file for Docker",
-    "-- This file contains all tables and functions inline",
+    "-- This file contains all types, tables and functions inline",
     "-- Generated at: " + new Date().toISOString(),
-    "",
-    "-- ============================================================================",
-    "-- TABLES",
-    "-- ============================================================================",
     "",
   ];
 
-  // Include table contents
+  // Include custom types
+  if (customTypes.length > 0) {
+    lines.push(
+      "-- ============================================================================",
+    );
+    lines.push("-- CUSTOM TYPES (ENUMS)");
+    lines.push(
+      "-- ============================================================================",
+    );
+    lines.push("");
+
+    for (let i = 0; i < customTypes.length; i++) {
+      const fileName = `${String(i).padStart(2, "0")}_${customTypes[i]}.sql`;
+      const filePath = path.join(TYPES_DIR, fileName);
+
+      try {
+        const content = await fs.readFile(filePath, "utf-8");
+        lines.push(`-- Type: ${customTypes[i]}`);
+        lines.push(content.trim());
+        lines.push("");
+      } catch (error) {
+        console.warn(`   ⚠ Could not read type file: ${fileName}`);
+      }
+    }
+  }
+
+  // Include tables
+  lines.push(
+    "-- ============================================================================",
+  );
+  lines.push("-- TABLES");
+  lines.push(
+    "-- ============================================================================",
+  );
+  lines.push("");
+
   for (let i = 0; i < tables.length; i++) {
     const fileName = `${String(i).padStart(2, "0")}_${tables[i]}.sql`;
     const filePath = path.join(TABLES_DIR, fileName);
@@ -217,6 +326,7 @@ async function generateDockerInitFile(
     }
   }
 
+  // Include functions
   if (functions.length > 0) {
     lines.push(
       "-- ============================================================================",
@@ -227,7 +337,6 @@ async function generateDockerInitFile(
     );
     lines.push("");
 
-    // Include function contents
     for (let i = 0; i < functions.length; i++) {
       const fileName = `${String(i).padStart(2, "0")}_${functions[i]}.sql`;
       const filePath = path.join(FUNCTIONS_DIR, fileName);
@@ -255,11 +364,15 @@ async function dumpSchema(): Promise<void> {
     console.log("🔍 Scanning database...\n");
 
     // Ensure directories exist
+    await ensureDir(TYPES_DIR);
     await ensureDir(TABLES_DIR);
     await ensureDir(FUNCTIONS_DIR);
     await ensureDir(SCHEMA_DIR);
 
-    // Get tables and functions
+    // Get custom types, tables and functions
+    console.log("Fetching custom types...");
+    const customTypes = await getCustomTypes();
+
     console.log("Fetching table list...");
     const tables = await getTables();
 
@@ -267,7 +380,7 @@ async function dumpSchema(): Promise<void> {
     const functions = await getFunctions();
 
     console.log(
-      `\nFound ${tables.length} tables and ${functions.length} functions\n`,
+      `\nFound ${customTypes.length} custom types, ${tables.length} tables and ${functions.length} functions\n`,
     );
 
     if (tables.length === 0) {
@@ -279,8 +392,17 @@ async function dumpSchema(): Promise<void> {
       process.exit(1);
     }
 
+    // Dump custom types
+    if (customTypes.length > 0) {
+      console.log("Dumping custom types:");
+      for (let i = 0; i < customTypes.length; i++) {
+        const fileName = await dumpCustomType(customTypes[i], i);
+        console.log(`   ✓ ${fileName}`);
+      }
+    }
+
     // Dump tables
-    console.log("Dumping tables:");
+    console.log("\nDumping tables:");
     for (let i = 0; i < tables.length; i++) {
       const fileName = await dumpTable(tables[i], i);
       console.log(`   ✓ ${fileName}`);
@@ -297,14 +419,17 @@ async function dumpSchema(): Promise<void> {
 
     // Generate init files
     console.log("\nGenerating initialization files...");
-    await generateInitFile(tables, functions);
+    await generateInitFile(customTypes, tables, functions);
     console.log("   ✓ init.sql (with \\i references)");
 
-    await generateDockerInitFile(tables, functions);
+    await generateDockerInitFile(customTypes, tables, functions);
     console.log("   ✓ init-docker.sql (inline for Docker)");
 
     console.log("\nSchema dump completed successfully!\n");
     console.log("Output structure:");
+    console.log(
+      `   db/types/        - ${customTypes.length} custom type files`,
+    );
     console.log(`   db/tables/       - ${tables.length} table files`);
     console.log(`   db/functions/    - ${functions.length} function files`);
     console.log(`   db/schema/       - Initialization files`);

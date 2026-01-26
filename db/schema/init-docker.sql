@@ -1,6 +1,28 @@
 -- Auto-generated schema initialization file for Docker
--- This file contains all tables and functions inline
--- Generated at: 2026-01-26T11:28:31.690Z
+-- This file contains all types, tables and functions inline
+-- Generated at: 2026-01-26T12:08:22.891Z
+
+-- ============================================================================
+-- CUSTOM TYPES (ENUMS)
+-- ============================================================================
+
+-- Type: ticket_status
+CREATE TYPE public.ticket_status AS ENUM (
+    'general',
+    'report',
+    'open',
+    'closed',
+    'deleted'
+);
+
+-- Type: ticket_type
+CREATE TYPE public.ticket_type AS ENUM (
+    'general',
+    'report',
+    'open',
+    'closed',
+    'deleted'
+);
 
 -- ============================================================================
 -- TABLES
