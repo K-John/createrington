@@ -1,0 +1,31 @@
+// ============================================================================
+// Main SCSS Entry Point
+// ============================================================================
+//
+// Import order matters!
+// 1. Variables (must come first - used by everything else)
+// 2. Mixins (uses variables, used by utilities and components)
+// 3. Reset (base styles)
+// 4. Utilities (optional helper classes)
+//
+// Your component styles should come after this file
+// ============================================================================
+
+// Base
+@import "variables";
+@import "mixins";
+@import "reset";
+
+// Utilities (optional - comment out if not needed)
+@import "utilities";
+
+// ============================================================================
+// Component imports would go below (examples):
+// ============================================================================
+// @import 'components/buttons';
+// @import 'components/forms';
+// @import 'components/cards';
+// @import 'components/navigation';
+// @import 'layout/header';
+// @import 'layout/sidebar';
+// @import 'layout/footer';
