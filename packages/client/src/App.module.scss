@@ -1,0 +1,19 @@
+@use "./styles/variables" as *;
+@use "./styles/mixins" as *;
+
+.app {
+  display: flex;
+  min-height: 100vh;
+  background-color: $bg-primary;
+}
+
+.main {
+  flex: 1;
+  min-height: 100vh;
+  margin-left: 280px;
+  transition: margin-left $transition-base $ease-out;
+
+  @include max-lg {
+    margin-left: 0;
+  }
+}

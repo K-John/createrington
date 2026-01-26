@@ -1,0 +1,451 @@
+@use "../../styles/variables" as *;
+@use "../../styles/mixins" as *;
+
+// ============================================================================
+// Mobile Toggle Button
+// ============================================================================
+
+.mobileToggle {
+  @include reset-button;
+  position: fixed;
+  top: $spacing-4;
+  left: $spacing-4;
+  z-index: $z-fixed;
+  @include flex-center;
+  width: 48px;
+  height: 48px;
+  background-color: $surface-primary;
+  border: 1px solid $border-primary;
+  border-radius: $radius-lg;
+  color: $fg-primary;
+  box-shadow: $shadow-md;
+  @include transition(all);
+
+  &:hover {
+    background-color: $surface-hover;
+    border-color: $border-tertiary;
+  }
+
+  @include lg {
+    display: none;
+  }
+}
+
+// ============================================================================
+// Mobile Overlay
+// ============================================================================
+
+.mobileOverlay {
+  @include fixed-cover;
+  background-color: $bg-overlay;
+  z-index: calc($z-fixed - 1);
+  animation: fadeIn $transition-base $ease-out;
+
+  @include lg {
+    display: none;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+// ============================================================================
+// Sidebar
+// ============================================================================
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  background-color: $bg-elevated;
+  border-right: 1px solid $border-primary;
+  @include flex-column;
+  z-index: $z-fixed;
+  transition:
+    width $transition-base $ease-out,
+    transform $transition-base $ease-out;
+  user-select: none;
+
+  // Mobile styles
+  @include max-lg {
+    width: 280px !important;
+    transform: translateX(-100%);
+    box-shadow: $shadow-xl;
+
+    &.mobileOpen {
+      transform: translateX(0);
+    }
+  }
+
+  // Collapsed state
+  &.collapsed {
+    .navLabel,
+    .subNav,
+    .expandIcon,
+    .userDetails,
+    .userActions span {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .navButton,
+    .userAction {
+      justify-content: center;
+    }
+
+    .collapseButton {
+      .rotated {
+        transform: rotate(180deg);
+      }
+    }
+  }
+}
+
+// ============================================================================
+// Header
+// ============================================================================
+
+.header {
+  @include flex-between;
+  padding: $spacing-6 $spacing-4;
+  border-bottom: 1px solid $border-primary;
+  flex-shrink: 0;
+}
+
+.logo {
+  @include flex-center;
+  gap: $spacing-2;
+}
+
+.logoText {
+  @include heading-5;
+  background: linear-gradient(135deg, $interactive-primary, $color-accent-600);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  white-space: nowrap;
+}
+
+.logoIcon {
+  @include flex-center;
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, $interactive-primary, $color-accent-600);
+  color: $color-white;
+  font-weight: $font-bold;
+  font-size: $text-lg;
+  border-radius: $radius-lg;
+}
+
+.collapseButton {
+  @include reset-button;
+  @include flex-center;
+  width: 32px;
+  height: 32px;
+  color: $fg-secondary;
+  border-radius: $radius-md;
+  @include transition(all);
+
+  &:hover {
+    background-color: $surface-hover;
+    color: $fg-primary;
+  }
+
+  svg {
+    @include transition(transform);
+  }
+
+  @include max-lg {
+    display: none;
+  }
+}
+
+// ============================================================================
+// Navigation
+// ============================================================================
+
+.nav {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: $spacing-4;
+  @include custom-scrollbar();
+}
+
+.navItem {
+  margin-bottom: $spacing-2;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.navButton {
+  @include reset-button;
+  display: flex;
+  align-items: center;
+  gap: $spacing-3;
+  width: 100%;
+  padding: $spacing-3 $spacing-4;
+  color: $fg-secondary;
+  font-size: $text-sm;
+  font-weight: $font-medium;
+  border-radius: $radius-md;
+  text-align: left;
+  @include transition(all);
+
+  &:hover {
+    background-color: $surface-hover;
+    color: $fg-primary;
+  }
+
+  &.expanded {
+    background-color: $surface-selected;
+    color: $interactive-primary;
+
+    .expandIcon {
+      transform: rotate(0deg);
+    }
+  }
+}
+
+.navIcon {
+  @include flex-center;
+  flex-shrink: 0;
+  color: inherit;
+}
+
+.navLabel {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  @include transition(opacity);
+}
+
+.expandIcon {
+  flex-shrink: 0;
+  transform: rotate(-90deg);
+  @include transition(transform);
+}
+
+// ============================================================================
+// Sub Navigation
+// ============================================================================
+
+.subNav {
+  padding-left: $spacing-4;
+  margin-top: $spacing-2;
+  animation: slideDown $transition-base $ease-out;
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      max-height: 0;
+    }
+    to {
+      opacity: 1;
+      max-height: 500px;
+    }
+  }
+}
+
+.subNavItem {
+  @include reset-button;
+  display: flex;
+  align-items: center;
+  gap: $spacing-2;
+  width: 100%;
+  padding: $spacing-2 $spacing-3;
+  color: $fg-tertiary;
+  font-size: $text-sm;
+  border-radius: $radius-md;
+  text-align: left;
+  @include transition(all);
+
+  &:hover {
+    background-color: $surface-hover;
+    color: $fg-primary;
+  }
+
+  & + & {
+    margin-top: $spacing-1;
+  }
+}
+
+.subNavIcon {
+  @include flex-center;
+  flex-shrink: 0;
+  color: inherit;
+  opacity: 0.7;
+}
+
+.subNavLabel {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// ============================================================================
+// User Section
+// ============================================================================
+
+.userSection {
+  @include flex-column;
+  gap: $spacing-3;
+  padding: $spacing-4;
+  border-top: 1px solid $border-primary;
+  flex-shrink: 0;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: $spacing-3;
+  padding: $spacing-2;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: $radius-full;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.avatarPlaceholder {
+  @include flex-center;
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, $interactive-primary, $color-accent-600);
+  color: $color-white;
+  font-weight: $font-bold;
+  font-size: $text-base;
+  border-radius: $radius-full;
+  flex-shrink: 0;
+}
+
+.userDetails {
+  @include flex-column;
+  gap: $spacing-1;
+  min-width: 0;
+  flex: 1;
+  @include transition(opacity);
+}
+
+.username {
+  @include body-small;
+  font-weight: $font-semibold;
+  color: $fg-primary;
+  @include text-truncate;
+}
+
+.minecraftName {
+  @include caption;
+  color: $fg-muted;
+  @include text-truncate;
+}
+
+.userActions {
+  @include flex-column;
+  gap: $spacing-1;
+}
+
+.userAction {
+  @include reset-button;
+  display: flex;
+  align-items: center;
+  gap: $spacing-2;
+  width: 100%;
+  padding: $spacing-2 $spacing-3;
+  color: $fg-secondary;
+  font-size: $text-sm;
+  font-weight: $font-medium;
+  border-radius: $radius-md;
+  @include transition(all);
+
+  &:hover {
+    background-color: $surface-hover;
+    color: $fg-primary;
+  }
+
+  &.logout {
+    color: $status-error;
+
+    &:hover {
+      background-color: rgba($status-error, 0.1);
+    }
+  }
+
+  span {
+    @include transition(opacity);
+  }
+}
+
+.loginButton {
+  @include button-primary;
+  @include button-size($button-height-md, $button-padding-x-md, $text-sm);
+  width: 100%;
+  justify-content: center;
+}
+
+// ============================================================================
+// Resize Handle
+// ============================================================================
+
+.resizeHandle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 4px;
+  height: 100%;
+  cursor: col-resize;
+  background-color: transparent;
+  @include transition(background-color);
+
+  &:hover {
+    background-color: $interactive-primary;
+  }
+
+  @include max-lg {
+    display: none;
+  }
+}
+
+// ============================================================================
+// Scrollbar Customization
+// ============================================================================
+
+.nav {
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: $color-neutral-700;
+    border-radius: $radius-full;
+
+    &:hover {
+      background-color: $color-neutral-600;
+    }
+  }
+}
+
+// ============================================================================
+// Utilities
+// ============================================================================
+
+.rotated {
+  transform: rotate(180deg);
+}
