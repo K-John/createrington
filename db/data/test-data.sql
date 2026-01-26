@@ -34,10 +34,15 @@ INSERT INTO server (name, identifier, created_at) VALUES
 -- ============================================================================
 
 INSERT INTO player (minecraft_uuid, minecraft_username, discord_id, online, last_seen, created_at, current_server_id) VALUES
+-- Real admins (online now)
+('091b900c-4174-478c-900c-a0fe5a31a329', 'saunhardy', '818819241666281503', true, NOW(), NOW() - INTERVAL '180 days', 1),
+('3e0db446-147a-4692-87fd-c3facc4341db', 'Agent772', '547450242090532874', true, NOW(), NOW() - INTERVAL '175 days', 1),
+('4cada83a-c012-4a31-8d80-942f3f79e8a1', 'The_Bigshot', '99318080374607872', true, NOW(), NOW() - INTERVAL '170 days', 1),
+
 -- Active players (online now)
 ('550e8400-e29b-41d4-a716-446655440001', 'Steve', '123456789012345678', true, NOW(), NOW() - INTERVAL '90 days', 1),
 ('550e8400-e29b-41d4-a716-446655440002', 'Alex', '123456789012345679', true, NOW(), NOW() - INTERVAL '85 days', 1),
-('550e8400-e29b-41d4-a716-446655440003', 'Notch', '123456789012345680', true, NOW(), NOW() - INTERVAL '80 days', 1),
+('550e8400-e29b-41d4-a716-446655440003', 'Notch', '123456789012345680', false, NOW() - INTERVAL '1 day', NOW() - INTERVAL '80 days', NULL),
 
 -- Recently active players (offline)
 ('550e8400-e29b-41d4-a716-446655440004', 'Herobrine', '123456789012345681', false, NOW() - INTERVAL '2 hours', NOW() - INTERVAL '75 days', NULL),
@@ -62,30 +67,39 @@ INSERT INTO player (minecraft_uuid, minecraft_username, discord_id, online, last
 -- PLAYER BALANCES
 -- ============================================================================
 
-INSERT INTO player_balance (player_uuid, balance, updated_at) VALUES
-('550e8400-e29b-41d4-a716-446655440001', 1250.50000000, NOW()),
-('550e8400-e29b-41d4-a716-446655440002', 3420.75000000, NOW()),
-('550e8400-e29b-41d4-a716-446655440003', 8999.99000000, NOW()),
-('550e8400-e29b-41d4-a716-446655440004', 567.25000000, NOW()),
-('550e8400-e29b-41d4-a716-446655440005', 2100.00000000, NOW()),
-('550e8400-e29b-41d4-a716-446655440006', 4567.80000000, NOW()),
-('550e8400-e29b-41d4-a716-446655440007', 6789.50000000, NOW()),
-('550e8400-e29b-41d4-a716-446655440008', 3210.25000000, NOW()),
-('550e8400-e29b-41d4-a716-446655440009', 1890.00000000, NOW()),
-('550e8400-e29b-41d4-a716-446655440010', 2345.60000000, NOW()),
-('550e8400-e29b-41d4-a716-446655440011', 890.00000000, NOW()),
-('550e8400-e29b-41d4-a716-446655440012', 450.50000000, NOW()),
-('550e8400-e29b-41d4-a716-446655440013', 100.00000000, NOW()),
-('550e8400-e29b-41d4-a716-446655440014', 50.00000000, NOW());
+INSERT INTO player_balance (minecraft_uuid, balance, updated_at) VALUES
+-- Real admins with high balances
+('091b900c-4174-478c-900c-a0fe5a31a329', 15000000, NOW()),
+('3e0db446-147a-4692-87fd-c3facc4341db', 12500000, NOW()),
+('4cada83a-c012-4a31-8d80-942f3f79e8a1', 18750000, NOW()),
+
+-- Other players
+('550e8400-e29b-41d4-a716-446655440001', 1250500, NOW()),
+('550e8400-e29b-41d4-a716-446655440002', 3420750, NOW()),
+('550e8400-e29b-41d4-a716-446655440003', 8999990, NOW()),
+('550e8400-e29b-41d4-a716-446655440004', 567250, NOW()),
+('550e8400-e29b-41d4-a716-446655440005', 2100000, NOW()),
+('550e8400-e29b-41d4-a716-446655440006', 4567800, NOW()),
+('550e8400-e29b-41d4-a716-446655440007', 6789500, NOW()),
+('550e8400-e29b-41d4-a716-446655440008', 3210250, NOW()),
+('550e8400-e29b-41d4-a716-446655440009', 1890000, NOW()),
+('550e8400-e29b-41d4-a716-446655440010', 2345600, NOW()),
+('550e8400-e29b-41d4-a716-446655440011', 890000, NOW()),
+('550e8400-e29b-41d4-a716-446655440012', 450500, NOW()),
+('550e8400-e29b-41d4-a716-446655440013', 100000, NOW()),
+('550e8400-e29b-41d4-a716-446655440014', 50000, NOW());
 
 -- ============================================================================
 -- ADMINS
 -- ============================================================================
 
 INSERT INTO admin (discord_id, created_at, vanished) VALUES
-('123456789012345678', NOW() - INTERVAL '90 days', false),  -- Steve
-('123456789012345680', NOW() - INTERVAL '80 days', false),  -- Notch
-('123456789012345684', NOW() - INTERVAL '60 days', true);   -- Technoblade (vanished)
+('818819241666281503', NOW() - INTERVAL '180 days', false),  -- saunhardy
+('547450242090532874', NOW() - INTERVAL '175 days', false),  -- Agent772
+('99318080374607872', NOW() - INTERVAL '170 days', false),   -- The_Bigshot
+('123456789012345678', NOW() - INTERVAL '90 days', false),   -- Steve
+('123456789012345680', NOW() - INTERVAL '80 days', false),   -- Notch
+('123456789012345684', NOW() - INTERVAL '60 days', true);    -- Technoblade (vanished)
 
 -- ============================================================================
 -- PLAYER SESSIONS (Historical + Current)
@@ -101,16 +115,22 @@ DECLARE
     session_start TIMESTAMP WITH TIME ZONE;
     session_duration INT;
 BEGIN
-    -- Generate sessions for active players
+    -- Generate sessions for all active players including real admins
     FOR player_uuid, player_name IN 
         SELECT minecraft_uuid, minecraft_username 
         FROM player 
-        WHERE minecraft_username IN ('Steve', 'Alex', 'Notch', 'Herobrine', 'Jeb', 'Dream')
+        WHERE minecraft_username IN ('saunhardy', 'Agent772', 'The_Bigshot', 'Steve', 'Alex', 'Notch', 'Herobrine', 'Jeb', 'Dream')
     LOOP
-        -- Generate sessions over the past 30 days
-        FOR day_offset IN 0..29 LOOP
-            -- Random number of sessions per day (0-3)
-            session_count := floor(random() * 4)::INT;
+        -- Generate sessions over the past 60 days for admins, 30 for others
+        FOR day_offset IN 0..CASE 
+            WHEN player_name IN ('saunhardy', 'Agent772', 'The_Bigshot') THEN 59 
+            ELSE 29 
+        END LOOP
+            -- More sessions for admins (2-5 per day), fewer for regular players (0-3)
+            session_count := CASE 
+                WHEN player_name IN ('saunhardy', 'Agent772', 'The_Bigshot') THEN (2 + floor(random() * 4))::INT
+                ELSE floor(random() * 4)::INT
+            END;
             
             FOR i IN 1..session_count LOOP
                 -- Random session start time during the day
@@ -118,8 +138,11 @@ BEGIN
                                 (random() * INTERVAL '20 hours') + 
                                 INTERVAL '6 hours';
                 
-                -- Random session duration (15 min to 6 hours)
-                session_duration := (900 + floor(random() * 20700))::INT;
+                -- Longer sessions for admins (1-8 hours), shorter for others (15 min to 6 hours)
+                session_duration := CASE 
+                    WHEN player_name IN ('saunhardy', 'Agent772', 'The_Bigshot') THEN (3600 + floor(random() * 25200))::INT
+                    ELSE (900 + floor(random() * 20700))::INT
+                END;
                 
                 INSERT INTO player_session (
                     player_minecraft_uuid, 
@@ -139,9 +162,14 @@ END $$;
 
 -- Add some active sessions (currently online players)
 INSERT INTO player_session (player_minecraft_uuid, server_id, session_start, session_end) VALUES
+-- Real admins currently online
+('091b900c-4174-478c-900c-a0fe5a31a329', 1, NOW() - INTERVAL '4 hours', NULL),  -- saunhardy online for 4 hours
+('3e0db446-147a-4692-87fd-c3facc4341db', 1, NOW() - INTERVAL '2.5 hours', NULL),  -- Agent772 online for 2.5 hours
+('4cada83a-c012-4a31-8d80-942f3f79e8a1', 1, NOW() - INTERVAL '6 hours', NULL),  -- The_Bigshot online for 6 hours
+
+-- Other players
 ('550e8400-e29b-41d4-a716-446655440001', 1, NOW() - INTERVAL '2 hours', NULL),  -- Steve online for 2 hours
-('550e8400-e29b-41d4-a716-446655440002', 1, NOW() - INTERVAL '45 minutes', NULL),  -- Alex online for 45 min
-('550e8400-e29b-41d4-a716-446655440003', 1, NOW() - INTERVAL '3 hours', NULL);  -- Notch online for 3 hours
+('550e8400-e29b-41d4-a716-446655440002', 1, NOW() - INTERVAL '45 minutes', NULL);  -- Alex online for 45 min
 
 -- Add a few sessions for other players
 INSERT INTO player_session (player_minecraft_uuid, server_id, session_start, session_end)
@@ -160,6 +188,9 @@ LIMIT 20;
 -- ============================================================================
 
 INSERT INTO discord_guild_member_join (user_id, username, joined_at) VALUES
+('818819241666281503', 'saunhardy', NOW() - INTERVAL '180 days'),
+('547450242090532874', 'Agent772', NOW() - INTERVAL '175 days'),
+('99318080374607872', 'The_Bigshot', NOW() - INTERVAL '170 days'),
 ('123456789012345678', 'steve_official', NOW() - INTERVAL '90 days'),
 ('123456789012345679', 'alex_plays', NOW() - INTERVAL '85 days'),
 ('123456789012345680', 'notch', NOW() - INTERVAL '80 days'),
@@ -194,13 +225,18 @@ INSERT INTO waitlist_entry (
     accepted_at,
     accepted_by
 ) VALUES
--- Completed entries
-('steve@example.com', 'steve_official', '123456789012345678', 'token_steve_001', NOW() - INTERVAL '91 days', '111111111111111111', 'completed', true, true, true, true, NOW() - INTERVAL '90 days', '123456789012345680'),
-('alex@example.com', 'alex_plays', '123456789012345679', 'token_alex_002', NOW() - INTERVAL '86 days', '111111111111111112', 'completed', true, true, true, true, NOW() - INTERVAL '85 days', '123456789012345680'),
+-- Real admins - completed entries
+('saunhardy@example.com', 'saunhardy', '818819241666281503', 'token_saun_001', NOW() - INTERVAL '181 days', '111111111111111101', 'completed', true, true, true, true, NOW() - INTERVAL '180 days', '99318080374607872'),
+('agent772@example.com', 'Agent772', '547450242090532874', 'token_agent_002', NOW() - INTERVAL '176 days', '111111111111111102', 'completed', true, true, true, true, NOW() - INTERVAL '175 days', '99318080374607872'),
+('bigshot@example.com', 'The_Bigshot', '99318080374607872', 'token_bigshot_003', NOW() - INTERVAL '171 days', '111111111111111103', 'completed', true, true, true, true, NOW() - INTERVAL '170 days', '818819241666281503'),
+
+-- Other completed entries
+('steve@example.com', 'steve_official', '123456789012345678', 'token_steve_004', NOW() - INTERVAL '91 days', '111111111111111111', 'completed', true, true, true, true, NOW() - INTERVAL '90 days', '818819241666281503'),
+('alex@example.com', 'alex_plays', '123456789012345679', 'token_alex_005', NOW() - INTERVAL '86 days', '111111111111111112', 'completed', true, true, true, true, NOW() - INTERVAL '85 days', '547450242090532874'),
 
 -- Accepted, in progress
-('newbie1@example.com', 'newplayer1', '123456789012345690', 'token_new1_013', NOW() - INTERVAL '3 days', '111111111111111113', 'accepted', true, true, true, false, NOW() - INTERVAL '2 days', '123456789012345678'),
-('newbie2@example.com', 'newplayer2', '123456789012345691', 'token_new2_014', NOW() - INTERVAL '2 days', '111111111111111114', 'accepted', true, false, false, false, NOW() - INTERVAL '1 day', '123456789012345678'),
+('newbie1@example.com', 'newplayer1', '123456789012345690', 'token_new1_013', NOW() - INTERVAL '3 days', '111111111111111113', 'accepted', true, true, true, false, NOW() - INTERVAL '2 days', '818819241666281503'),
+('newbie2@example.com', 'newplayer2', '123456789012345691', 'token_new2_014', NOW() - INTERVAL '2 days', '111111111111111114', 'accepted', true, false, false, false, NOW() - INTERVAL '1 day', '547450242090532874'),
 
 -- Pending entries
 ('pending1@example.com', 'pending_user1', NULL, 'token_pend_015', NOW() - INTERVAL '5 hours', '111111111111111115', 'pending', false, false, false, false, NULL, NULL),
@@ -229,22 +265,28 @@ INSERT INTO admin_log_action (
     performed_at,
     metadata
 ) VALUES
+-- Real admin actions
+('818819241666281503', 'saunhardy', 'waitlist_accept', '3e0db446-147a-4692-87fd-c3facc4341db', 'Agent772', 'waitlist_entry', 'status', 'pending', 'accepted', 'Excellent application - server owner', NULL, NOW() - INTERVAL '175 days', '{"application_score": 100, "role": "owner"}'),
+('818819241666281503', 'saunhardy', 'admin_grant', '3e0db446-147a-4692-87fd-c3facc4341db', 'Agent772', 'admin', 'discord_id', NULL, '547450242090532874', 'Promoted to admin - trusted member', NULL, NOW() - INTERVAL '170 days', '{"role": "admin"}'),
+('99318080374607872', 'The_Bigshot', 'waitlist_accept', '091b900c-4174-478c-900c-a0fe5a31a329', 'saunhardy', 'waitlist_entry', 'status', 'pending', 'accepted', 'Server founder', NULL, NOW() - INTERVAL '180 days', '{"application_score": 100, "role": "founder"}'),
+('547450242090532874', 'Agent772', 'balance_adjustment', '091b900c-4174-478c-900c-a0fe5a31a329', 'saunhardy', 'player_balance', 'balance', '10000000', '15000000', 'Monthly admin stipend', 1, NOW() - INTERVAL '15 days', '{"stipend_period": "January_2026"}'),
+('818819241666281503', 'saunhardy', 'balance_adjustment', '4cada83a-c012-4a31-8d80-942f3f79e8a1', 'The_Bigshot', 'player_balance', 'balance', '15000000', '18750000', 'Server event hosting bonus', 1, NOW() - INTERVAL '7 days', '{"event": "winter_festival_2026"}'),
+
 -- Player edits
-('123456789012345678', 'steve_official', 'player_edit', '550e8400-e29b-41d4-a716-446655440004', 'Herobrine', 'player', 'minecraft_username', 'Hero_Brine', 'Herobrine', 'Username format correction', 1, NOW() - INTERVAL '5 days', '{"approved_by": "admin_team"}'),
-('123456789012345680', 'notch', 'player_edit', '550e8400-e29b-41d4-a716-446655440005', 'Jeb', 'player', 'discord_id', '999999999999999999', '123456789012345682', 'Discord ID correction', 1, NOW() - INTERVAL '10 days', NULL),
+('818819241666281503', 'saunhardy', 'player_edit', '550e8400-e29b-41d4-a716-446655440004', 'Herobrine', 'player', 'minecraft_username', 'Hero_Brine', 'Herobrine', 'Username format correction', 1, NOW() - INTERVAL '5 days', '{"approved_by": "admin_team"}'),
+('99318080374607872', 'The_Bigshot', 'player_edit', '550e8400-e29b-41d4-a716-446655440005', 'Jeb', 'player', 'discord_id', '999999999999999999', '123456789012345682', 'Discord ID correction', 1, NOW() - INTERVAL '10 days', NULL),
 
 -- Balance adjustments
-('123456789012345678', 'steve_official', 'balance_adjustment', '550e8400-e29b-41d4-a716-446655440002', 'Alex', 'player_balance', 'balance', '3000.75', '3420.75', 'Competition prize', 1, NOW() - INTERVAL '3 days', '{"event": "build_competition", "prize_tier": "1st_place"}'),
-('123456789012345680', 'notch', 'balance_adjustment', '550e8400-e29b-41d4-a716-446655440007', 'Technoblade', 'player_balance', 'balance', '6500.00', '6789.50', 'Quest completion bonus', 1, NOW() - INTERVAL '7 days', '{"quest_id": "dragon_slayer"}'),
+('547450242090532874', 'Agent772', 'balance_adjustment', '550e8400-e29b-41d4-a716-446655440002', 'Alex', 'player_balance', 'balance', '3000750', '3420750', 'Competition prize', 1, NOW() - INTERVAL '3 days', '{"event": "build_competition", "prize_tier": "1st_place"}'),
+('818819241666281503', 'saunhardy', 'balance_adjustment', '550e8400-e29b-41d4-a716-446655440007', 'Technoblade', 'player_balance', 'balance', '6500000', '6789500', 'Quest completion bonus', 1, NOW() - INTERVAL '7 days', '{"quest_id": "dragon_slayer"}'),
 
 -- Waitlist actions
-('123456789012345678', 'steve_official', 'waitlist_accept', '550e8400-e29b-41d4-a716-446655440013', 'Newbie1', 'waitlist_entry', 'status', 'pending', 'accepted', 'Application approved', NULL, NOW() - INTERVAL '2 days', '{"application_score": 95}'),
-('123456789012345678', 'steve_official', 'waitlist_accept', '550e8400-e29b-41d4-a716-446655440014', 'Newbie2', 'waitlist_entry', 'status', 'pending', 'accepted', 'Good application', NULL, NOW() - INTERVAL '1 day', '{"application_score": 88}'),
+('547450242090532874', 'Agent772', 'waitlist_accept', '550e8400-e29b-41d4-a716-446655440013', 'Newbie1', 'waitlist_entry', 'status', 'pending', 'accepted', 'Application approved', NULL, NOW() - INTERVAL '2 days', '{"application_score": 95}'),
+('818819241666281503', 'saunhardy', 'waitlist_accept', '550e8400-e29b-41d4-a716-446655440014', 'Newbie2', 'waitlist_entry', 'status', 'pending', 'accepted', 'Good application', NULL, NOW() - INTERVAL '1 day', '{"application_score": 88}'),
 
 -- Administrative actions
-('123456789012345680', 'notch', 'admin_grant', '550e8400-e29b-41d4-a716-446655440001', 'Steve', 'admin', 'discord_id', NULL, '123456789012345678', 'Promoted to admin', NULL, NOW() - INTERVAL '90 days', '{"role": "moderator"}'),
-('123456789012345680', 'notch', 'player_edit', '550e8400-e29b-41d4-a716-446655440008', 'Philza', 'player', 'minecraft_username', 'Ph1lza', 'Philza', 'Name change approved', 1, NOW() - INTERVAL '15 days', NULL);
-
+('99318080374607872', 'The_Bigshot', 'admin_grant', '550e8400-e29b-41d4-a716-446655440001', 'Steve', 'admin', 'discord_id', NULL, '123456789012345678', 'Promoted to admin', NULL, NOW() - INTERVAL '90 days', '{"role": "moderator"}'),
+('547450242090532874', 'Agent772', 'player_edit', '550e8400-e29b-41d4-a716-446655440008', 'Philza', 'player', 'minecraft_username', 'Ph1lza', 'Philza', 'Name change approved', 1, NOW() - INTERVAL '15 days', NULL);
 -- ============================================================================
 -- VERIFY DATA INTEGRITY
 -- ============================================================================

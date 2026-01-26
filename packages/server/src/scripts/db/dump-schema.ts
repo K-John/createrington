@@ -261,98 +261,26 @@ async function generateInitFile(
 }
 
 /**
- * Generate init-docker.sql that includes all SQL directly (for Docker)
+ * Generate init-docker.sql using full schema dump (handles dependencies)
  */
-async function generateDockerInitFile(
-  customTypes: string[],
-  tables: string[],
-  functions: string[],
-): Promise<void> {
-  const lines: string[] = [
-    "-- Auto-generated schema initialization file for Docker",
-    "-- This file contains all types, tables and functions inline",
-    "-- Generated at: " + new Date().toISOString(),
-    "",
-  ];
-
-  // Include custom types
-  if (customTypes.length > 0) {
-    lines.push(
-      "-- ============================================================================",
-    );
-    lines.push("-- CUSTOM TYPES (ENUMS)");
-    lines.push(
-      "-- ============================================================================",
-    );
-    lines.push("");
-
-    for (let i = 0; i < customTypes.length; i++) {
-      const fileName = `${String(i).padStart(2, "0")}_${customTypes[i]}.sql`;
-      const filePath = path.join(TYPES_DIR, fileName);
-
-      try {
-        const content = await fs.readFile(filePath, "utf-8");
-        lines.push(`-- Type: ${customTypes[i]}`);
-        lines.push(content.trim());
-        lines.push("");
-      } catch (error) {
-        console.warn(`   ⚠ Could not read type file: ${fileName}`);
-      }
-    }
-  }
-
-  // Include tables
-  lines.push(
-    "-- ============================================================================",
-  );
-  lines.push("-- TABLES");
-  lines.push(
-    "-- ============================================================================",
-  );
-  lines.push("");
-
-  for (let i = 0; i < tables.length; i++) {
-    const fileName = `${String(i).padStart(2, "0")}_${tables[i]}.sql`;
-    const filePath = path.join(TABLES_DIR, fileName);
-
-    try {
-      const content = await fs.readFile(filePath, "utf-8");
-      lines.push(`-- Table: ${tables[i]}`);
-      lines.push(content.trim());
-      lines.push("");
-    } catch (error) {
-      console.warn(`   ⚠ Could not read table file: ${fileName}`);
-    }
-  }
-
-  // Include functions
-  if (functions.length > 0) {
-    lines.push(
-      "-- ============================================================================",
-    );
-    lines.push("-- FUNCTIONS");
-    lines.push(
-      "-- ============================================================================",
-    );
-    lines.push("");
-
-    for (let i = 0; i < functions.length; i++) {
-      const fileName = `${String(i).padStart(2, "0")}_${functions[i]}.sql`;
-      const filePath = path.join(FUNCTIONS_DIR, fileName);
-
-      try {
-        const content = await fs.readFile(filePath, "utf-8");
-        lines.push(`-- Function: ${functions[i]}`);
-        lines.push(content.trim());
-        lines.push("");
-      } catch (error) {
-        console.warn(`   ⚠ Could not read function file: ${fileName}`);
-      }
-    }
-  }
-
+async function generateDockerInitFile(): Promise<void> {
   const dockerInitFile = path.join(SCHEMA_DIR, "init-docker.sql");
-  await fs.writeFile(dockerInitFile, lines.join("\n") + "\n", "utf-8");
+
+  const command = `pg_dump -h ${poolConfig.host} -U ${poolConfig.user} -d ${poolConfig.database} --schema-only --no-owner --no-acl -f "${dockerInitFile}"`;
+
+  try {
+    await execAsync(command, {
+      env: {
+        ...process.env,
+        PGPASSWORD: poolConfig.password,
+      },
+    });
+
+    console.log("   ✓ init-docker.sql (full schema dump with proper ordering)");
+  } catch (error) {
+    console.error("Failed to generate init-docker.sql");
+    throw error;
+  }
 }
 
 /**
@@ -421,7 +349,7 @@ async function dumpSchema(): Promise<void> {
     await generateInitFile(customTypes, tables, functions);
     console.log("   ✓ init.sql (with \\i references)");
 
-    await generateDockerInitFile(customTypes, tables, functions);
+    await generateDockerInitFile();
     console.log("   ✓ init-docker.sql (inline for Docker)");
 
     console.log("\nSchema dump completed successfully!\n");
