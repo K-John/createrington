@@ -48,7 +48,7 @@ jobs:
 
       - name: Setup database schema
         run: |
-          PGPASSWORD=test_password psql -h localhost -U postgres -d test_db -f db/schema/init.sql
+          PGPASSWORD=test_password psql -h localhost -U postgres -d test_db -f db/schema/init-docker.sql
 
       - name: Generate code (with DB access)
         run: npm run generate
