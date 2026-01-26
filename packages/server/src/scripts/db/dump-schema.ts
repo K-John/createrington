@@ -103,15 +103,14 @@ async function dumpCustomType(
   const outputFile = path.join(TYPES_DIR, fileName);
 
   try {
-    // Get enum values
     const result = await query(
-      `SELECT enumlabel FROM pg_enum 
-       WHERE enumtypid = '${typeName}'::regtype 
-       ORDER BY enumsortorder`,
+      `SELECT enumlabel FROM pg_enum WHERE enumtypid = '${typeName}'::regtype ORDER BY enumsortorder`,
     );
 
     const values = result
       .split("\n")
+      .map((v) => v.trim())
+      .filter((v) => v.length > 0)
       .map((v) => `    '${v}'`)
       .join(",\n");
 
