@@ -1,5 +1,0 @@
-CREATE TABLE admin (
-    discord_id TEXT PRIMARY KEY REFERENCES player(discord_id) ON DELETE CASCADE ON UPDATE CASCADE,
-    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW(),
-    vanished BOOLEAN DEFAULT false
-);

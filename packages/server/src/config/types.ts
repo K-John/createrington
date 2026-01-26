@@ -1,5 +1,10 @@
 import { ColorResolvable } from "discord.js";
 import { envModeConfig } from "./env/env.config";
+import type {
+  MemberRolesConfig,
+  ChannelConfig,
+  CategoriesConfig,
+} from "@/generated/discord/discord.types";
 
 // ============================================================================
 // Main Configuration Interface
@@ -168,97 +173,6 @@ interface BotConfig {
   readonly webbhook?: {
     readonly id: string;
   };
-}
-
-interface MemberRolesConfig {
-  readonly admin: string;
-  readonly owner: string;
-  readonly unverified: string;
-  readonly verified: string;
-
-  /** Playtime roles in order */
-  readonly shaftScraper: string;
-  readonly cogCarrier: string;
-  readonly kineticOperator: string;
-  readonly mechanicalAssembler: string;
-  readonly brassTechnician: string;
-  readonly steamEngineer: string;
-  readonly factoryOverseer: string;
-  readonly masterAutomaton: string;
-  readonly clockworkArchitect: string;
-
-  /** Server roles */
-  readonly cogsAndSteam: string;
-  readonly tester: string;
-
-  /** Joined roles in order */
-  readonly newcomer: string;
-  readonly adventurer: string;
-  readonly regular: string;
-  readonly veteran: string;
-  readonly legend: string;
-
-  /** Special roles */
-  readonly theSleepless: string;
-}
-
-interface ChannelConfig {
-  readonly administration: {
-    readonly chat: string;
-    readonly notifications: string;
-    readonly test: string;
-    readonly transcript: string;
-    readonly communityUpdates: string;
-  };
-
-  readonly dev: {
-    readonly chat: string;
-    readonly createrington: string;
-  };
-
-  readonly testServer: {
-    readonly chat: string;
-    readonly minecraftChat: string;
-  };
-
-  readonly serverStats: {
-    readonly bots: string;
-    readonly members: string;
-    readonly allMembers: string;
-  };
-
-  readonly createringtonOfficial: {
-    readonly welcome: string;
-    readonly announcements: string;
-    readonly roles: string;
-    readonly support: string;
-    readonly download: string;
-    readonly rules: string;
-  };
-
-  readonly general: {
-    readonly hallOfFame: string;
-    readonly leaderboards: string;
-    readonly commands: string;
-    readonly botSpam: string;
-  };
-
-  readonly cogsAndSteam: {
-    readonly chat: string;
-    readonly minecraftChat: string;
-  };
-}
-
-interface CategoriesConfig {
-  readonly administration: string;
-  readonly dev: string;
-  readonly welcome: string;
-  readonly verification: string;
-  readonly tickets: string;
-  readonly cogsAndSteam: string;
-  readonly general: string;
-  readonly serverStats: string;
-  readonly testServer: string;
 }
 
 interface ColorsConfig {

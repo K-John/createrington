@@ -2,9 +2,9 @@ import { env } from "@/config/env/env.config";
 import "./logger.global";
 import http from "node:http";
 import { createApp } from "./app";
+import pool from "@/db";
 import mainBot from "./discord/bots/main";
 import webBot from "./discord/bots/web";
-import pool from "@/db";
 import {
   initializePlaytimeService,
   shutdownPlaytimeService,
@@ -117,28 +117,46 @@ function setupProcessHandlers(httpServer: http.Server): void {
  * Initializes and starts the HTTP server with WebSocket support
  */
 async function start(): Promise<void> {
-  const app = createApp();
-  const httpServer = http.createServer(app);
-
-  setupProcessHandlers(httpServer);
-
-  httpServer.listen(PORT, () => {
-    logger.info(`Server started at http://localhost:${PORT}`);
-  });
-
-  // Wait for web bot to be ready before initializing services
-  await new Promise<void>((resolve) => {
-    webBot.once("clientReady", () => resolve());
-  });
-
   try {
+    logger.info("Starting server initialization...");
+
+    logger.info("Creating Express app...");
+    const app = createApp();
+
+    logger.info("Creating HTTP server...");
+    const httpServer = http.createServer(app);
+
+    logger.info("Setting up process handlers...");
+    setupProcessHandlers(httpServer);
+
+    logger.info(`Starting HTTP server on port ${PORT}...`);
+    httpServer.listen(PORT, () => {
+      logger.info(`✓ HTTP server started at http://localhost:${PORT}`);
+    });
+
+    // Wait for web bot to be ready before initializing services
+    logger.info("Waiting for web bot to be ready...");
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error("Web bot failed to initialize within 30 seconds"));
+      }, 30000);
+
+      webBot.once("clientReady", () => {
+        clearTimeout(timeout);
+        logger.info("✓ Web bot is ready");
+        resolve();
+      });
+    });
+
+    logger.info("Initializing WebSocket server...");
     const wsPort = PORT + 1;
     const wsHttpServer = http.createServer();
 
     wsHttpServer.listen(wsPort, () => {
-      logger.info(`WebSocket server ready at ws://localhost:${wsPort}`);
+      logger.info(`✓ WebSocket server ready at ws://localhost:${wsPort}`);
     });
 
+    logger.info("Initializing service manager...");
     // Initialize services WITH message cache integration
     await serviceManager.initialize(
       wsHttpServer,
@@ -154,14 +172,17 @@ async function start(): Promise<void> {
       },
     );
 
-    logger.info("Service manager initialized");
+    logger.info("✓ Service manager initialized");
 
+    logger.info("Initializing PlaytimeService...");
     // NOW initialize PlaytimeService with message cache integration
     const messageCacheService = serviceManager.getMessageCacheService();
 
     if (messageCacheService) {
       await initializePlaytimeService(messageCacheService);
-      logger.info("PlaytimeService initialized with message cache integration");
+      logger.info(
+        "✓ PlaytimeService initialized with message cache integration",
+      );
     } else {
       logger.error(
         "MessageCacheService not available, playtime tracking disabled",
@@ -173,10 +194,15 @@ async function start(): Promise<void> {
       const stats = await serviceManager.getStats();
       logger.info("Service statistics:", stats);
     }, 2000);
+
+    logger.info("Server startup complete!");
   } catch (error) {
-    logger.error("Failed to initialize services:", error);
-    logger.warn("Server will continue running with limited functionality");
+    logger.error("Failed to start server:", error);
+    process.exit(1);
   }
 }
 
-start();
+start().catch((error) => {
+  logger.error("Fatal error during startup:", error);
+  process.exit(1);
+});

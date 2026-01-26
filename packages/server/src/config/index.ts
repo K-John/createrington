@@ -6,10 +6,24 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const discordEntitiesPath = path.join(__dirname, "discord-entities.json");
-const discordEntities = JSON.parse(
-  fs.readFileSync(discordEntitiesPath, "utf-8"),
+const discordEntitiesPath = path.join(
+  __dirname,
+  "../generated/discord/discord-entities.json",
 );
+
+let discordEntities;
+try {
+  discordEntities = JSON.parse(fs.readFileSync(discordEntitiesPath, "utf-8"));
+} catch (error) {
+  console.warn(
+    "Warning: discord-entities.json not found. Run 'npm run scrape-discord' to generate it.",
+  );
+  discordEntities = {
+    roles: {},
+    channels: {},
+    categories: {},
+  };
+}
 
 const config: Config = {
   envMode,

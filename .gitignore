@@ -12,6 +12,8 @@ out/
 .env.test
 .env.local
 .env*.local
+.env.development
+.env.docker
 
 # Logs
 logs/
@@ -33,6 +35,7 @@ Thumbs.db
 .vscode
 
 # Misc
+postgres_data/
 *.tgz
 *.zip
 *.rar

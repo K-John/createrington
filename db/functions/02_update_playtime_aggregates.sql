@@ -1,5 +1,7 @@
-CREATE OR REPLACE FUNCTION update_playtime_aggregates()
-RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION public.update_playtime_aggregates()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
 DECLARE
     v_play_date DATE;
     v_hour_start TIMESTAMP WITH TIME ZONE;
@@ -76,9 +78,4 @@ BEGIN
 
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trigger_update_playtime_aggregates
-AFTER INSERT OR UPDATE OF session_end ON player_session
-FOR EACH ROW
-EXECUTE FUNCTION update_playtime_aggregates();
+$function$;

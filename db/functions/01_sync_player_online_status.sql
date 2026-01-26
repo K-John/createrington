@@ -1,5 +1,7 @@
-CREATE OR REPLACE FUNCTION sync_player_online_status()
-RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION public.sync_player_online_status()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
 BEGIN
     IF TG_OP = 'INSERT' AND NEW.session_end IS NULL THEN
         -- Player started a session
@@ -27,9 +29,4 @@ BEGIN
 
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
-
-CREATE OR REPLACE TRIGGER trigger_sync_player_online
-AFTER INSERT OR UPDATE ON player_session
-FOR EACH ROW
-EXECUTE FUNCTION sync_player_online_status();
+$function$;
