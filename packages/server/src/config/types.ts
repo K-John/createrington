@@ -223,6 +223,7 @@ interface ChannelConfig {
   readonly roles: string;
   readonly testChat: string;
   readonly testMinecraftChat: string;
+  readonly devChat: string;
 }
 
 interface CategoriesConfig {
