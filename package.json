@@ -26,6 +26,7 @@
     "deploy-commands": "npm run util:deploy-commands --workspace=@createrington/server"
   },
   "devDependencies": {
+    "concurrently": "^9.2.1",
     "typescript": "^5.9.3"
   }
 }

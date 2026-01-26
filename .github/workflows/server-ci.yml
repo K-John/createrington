@@ -67,4 +67,4 @@ jobs:
         run: npm run test:integration
 
       - name: Build
-        run: npm run build
+        run: npm run build:server
