@@ -14,10 +14,13 @@
   "scripts": {
     "generate": "npm run generate --workspace=@createrington/server && npm run build:shared && npm run typecheck",
     "typecheck": "npm run typecheck --workspaces --if-present",
+    "dev:client": "npm run dev --workspace=@createrington/client",
     "dev:server": "npm run dev --workspace=@createrington/server",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "build:client": "npm run build --workspace=@createrington/client",
     "build:server": "npm run build --workspace=@createrington/server",
     "build:shared": "npm run build --workspace=@createrington/shared",
-    "build": "npm run generate && npm run build:server",
+    "build": "npm run generate && npm run build:shared && npm run build:client && npm run build:client",
     "test": "npm run test --workspace=@createrington/server",
     "test:unit": "npm run test:unit --workspace=@createrington/server",
     "deploy-commands": "npm run util:deploy-commands --workspace=@createrington/server"
