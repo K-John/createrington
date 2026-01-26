@@ -9,7 +9,9 @@
     "undici": "^6.23.0",
     "discord-html-transcripts": {
       "undici": "^6.23.0"
-    }
+    },
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "scripts": {
     "generate": "npm run generate --workspace=@createrington/server && npm run build:shared && npm run typecheck",
