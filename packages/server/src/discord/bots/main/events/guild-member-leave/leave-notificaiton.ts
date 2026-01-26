@@ -73,7 +73,7 @@ export async function execute(
     );
 
     const message = await Discord.Messages.send({
-      channelId: Discord.Channels.ADMIN_NOTIFICATIONS,
+      channelId: Discord.Channels.administration.NOTIFICATIONS,
       embeds: embed.build(),
       components: [actionRow],
       content: `${Discord.Roles.mention(Discord.Roles.ADMIN)} 👋 Member left`,

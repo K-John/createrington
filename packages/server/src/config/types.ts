@@ -203,27 +203,50 @@ interface MemberRolesConfig {
 }
 
 interface ChannelConfig {
-  readonly welcome: string;
-  readonly adminChat: string;
-  readonly adminNotifications: string;
-  readonly leaderboards: string;
-  readonly transcripts: string;
-  readonly hallOfFame: string;
-  readonly cogsMinecraftChat: string;
-  readonly cogsChat: string;
-  readonly botSpam: string;
-  readonly announcements: string;
-  readonly rules: string;
-  readonly support: string;
-  readonly commands: string;
-  readonly membersStat: string;
-  readonly botsStat: string;
-  readonly allStat: string;
-  readonly download: string;
-  readonly roles: string;
-  readonly testChat: string;
-  readonly testMinecraftChat: string;
-  readonly devChat: string;
+  readonly administration: {
+    readonly chat: string;
+    readonly notifications: string;
+    readonly test: string;
+    readonly transcript: string;
+    readonly communityUpdates: string;
+  };
+
+  readonly dev: {
+    readonly chat: string;
+    readonly createrington: string;
+  };
+
+  readonly testServer: {
+    readonly chat: string;
+    readonly minecraftChat: string;
+  };
+
+  readonly serverStats: {
+    readonly bots: string;
+    readonly members: string;
+    readonly allMembers: string;
+  };
+
+  readonly createringtonOfficial: {
+    readonly welcome: string;
+    readonly announcements: string;
+    readonly roles: string;
+    readonly support: string;
+    readonly download: string;
+    readonly rules: string;
+  };
+
+  readonly general: {
+    readonly hallOfFame: string;
+    readonly leaderboards: string;
+    readonly commands: string;
+    readonly botSpam: string;
+  };
+
+  readonly cogsAndSteam: {
+    readonly chat: string;
+    readonly minecraftChat: string;
+  };
 }
 
 interface CategoriesConfig {

@@ -291,7 +291,7 @@ export async function execute(
     );
 
     await Discord.Messages.send({
-      channelId: Discord.Channels.ADMIN_NOTIFICATIONS,
+      channelId: Discord.Channels.administration.NOTIFICATIONS,
       embeds: adminEmbed.build(),
       content: Discord.Roles.mention(Discord.Roles.ADMIN),
     });

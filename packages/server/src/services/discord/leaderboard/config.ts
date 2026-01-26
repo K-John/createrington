@@ -2,6 +2,7 @@ import config from "@/config";
 import { LeaderboardConfig, LeaderboardType } from "./types";
 import { Q } from "@/db";
 import { formatPlaytime } from "@/utils/format";
+import { Discord } from "@/discord/constants";
 
 /**
  * Configuration registry for all leaderboard types
@@ -20,7 +21,7 @@ export const LEADERBOARD_CONFIGS: Record<LeaderboardType, LeaderboardConfig> = {
     title: "Top Players by Playtime",
     description: "Players wil the most time on the server",
     emoji: "",
-    channelId: config.discord.guild.channels.leaderboards,
+    channelId: Discord.Channels.general.LEADERBOARDS,
     serverId: config.servers.cogs.id,
     /**
      * Fetches playtime leaderboard data from the database
@@ -32,7 +33,7 @@ export const LEADERBOARD_CONFIGS: Record<LeaderboardType, LeaderboardConfig> = {
     fetchData: async (serverId: number, limit: number) => {
       const leaderboard = await Q.player.playtime.summary.getLeaderboard(
         serverId,
-        limit
+        limit,
       );
 
       return leaderboard.map((entry, index) => ({

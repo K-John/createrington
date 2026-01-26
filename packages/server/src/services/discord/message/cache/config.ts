@@ -11,7 +11,7 @@ export const MESSAGE_CACHE_CONFIG: MessageCacheServiceConfig = {
   servers: [
     {
       serverId: config.servers.cogs.id,
-      channelId: Discord.Channels.COGS_MINECRAFT_CHAT,
+      channelId: Discord.Channels.cogsAndSteam.MINECRAFT_CHAT,
       maxMessages: 100,
     },
     // {

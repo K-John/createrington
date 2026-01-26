@@ -41,7 +41,7 @@ export class WaitlistRepository {
     });
 
     logger.info(
-      `New waitlist entry: ${data.email} (${data.discordName}) - ID: ${entry.id}`
+      `New waitlist entry: ${data.email} (${data.discordName}) - ID: ${entry.id}`,
     );
 
     const shouldAutoInvite = await this.checkAutoInviteEligibility();
@@ -54,7 +54,7 @@ export class WaitlistRepository {
         if (messageId) {
           await Q.waitlist.entry.update(
             { id: entry.id },
-            { discordMessageId: messageId }
+            { discordMessageId: messageId },
           );
         }
         logger.info(`Auto-invited waitlist entry #${entry.id}`);
@@ -71,7 +71,7 @@ export class WaitlistRepository {
         if (messageId) {
           await Q.waitlist.entry.update(
             { id: entry.id },
-            { discordMessageId: messageId }
+            { discordMessageId: messageId },
           );
         }
 
@@ -85,7 +85,7 @@ export class WaitlistRepository {
       if (messageId) {
         await Q.waitlist.entry.update(
           { id: entry.id },
-          { discordMessageId: messageId }
+          { discordMessageId: messageId },
         );
       }
 
@@ -94,7 +94,7 @@ export class WaitlistRepository {
         EmailTemplate.WAITLIST_CONFIRMATION,
         {
           discordName: data.discordName,
-        }
+        },
       );
 
       return {
@@ -124,7 +124,7 @@ export class WaitlistRepository {
         status: WaitlistStatus.ACCEPTED,
         acceptedAt: new Date(),
         acceptedBy: config.discord.bots.main.id,
-      }
+      },
     );
 
     await email.sendTemplate(entry.email, EmailTemplate.WAITLIST_INVITATION, {
@@ -152,7 +152,7 @@ export class WaitlistRepository {
         Number.isFinite(playerLimit) && playerLimit > currentPlayers;
 
       logger.debug(
-        `Auto-invite check: players=${currentPlayers}, limit=${playerLimit}, hasCapacity=${hasCapacity}`
+        `Auto-invite check: players=${currentPlayers}, limit=${playerLimit}, hasCapacity=${hasCapacity}`,
       );
 
       return hasCapacity;
@@ -171,7 +171,7 @@ export class WaitlistRepository {
    */
   private async notifyAdmins(
     entry: WaitlistEntry,
-    autoInvited: boolean
+    autoInvited: boolean,
   ): Promise<string | null> {
     try {
       if (autoInvited) {
@@ -185,7 +185,7 @@ export class WaitlistRepository {
           });
 
         const result = await Discord.Messages.send({
-          channelId: Discord.Channels.ADMIN_NOTIFICATIONS,
+          channelId: Discord.Channels.administration.NOTIFICATIONS,
           embeds: embed.setTimestamp(),
           components,
           content,
@@ -200,13 +200,13 @@ export class WaitlistRepository {
         });
 
         const result = await Discord.Messages.send({
-          channelId: Discord.Channels.ADMIN_NOTIFICATIONS,
+          channelId: Discord.Channels.administration.NOTIFICATIONS,
           embeds: embed.setTimestamp(),
           components,
         });
 
         logger.debug(
-          `Admin notification sent for entry #${entry.id} (autoInvited: ${autoInvited})`
+          `Admin notification sent for entry #${entry.id} (autoInvited: ${autoInvited})`,
         );
 
         return result.messageId || null;
@@ -238,7 +238,7 @@ export class WaitlistRepository {
         status: WaitlistStatus.ACCEPTED,
         acceptedAt: new Date(),
         acceptedBy: adminId,
-      }
+      },
     );
 
     await email.sendTemplate(entry.email, EmailTemplate.WAITLIST_INVITATION, {
@@ -249,7 +249,7 @@ export class WaitlistRepository {
     await this.updateProgressEmbed(entryId);
 
     logger.info(
-      `Manually invited waitlist entry #${entryId} by admin ${adminId}`
+      `Manually invited waitlist entry #${entryId} by admin ${adminId}`,
     );
 
     return Q.waitlist.entry.get({ id: entryId });
@@ -264,7 +264,7 @@ export class WaitlistRepository {
    */
   private async updateProgressStep(
     discordId: string,
-    step: ProgressStep
+    step: ProgressStep,
   ): Promise<void> {
     const entry = await Q.waitlist.entry.get({ discordId });
 
@@ -297,7 +297,7 @@ export class WaitlistRepository {
         } catch (error) {
           logger.warn(
             `Failed to fetch Discord user ${entry.discordId}:`,
-            error
+            error,
           );
         }
 
@@ -313,7 +313,7 @@ export class WaitlistRepository {
         .timestamp();
 
       await Discord.Messages.edit({
-        channelId: Discord.Channels.ADMIN_NOTIFICATIONS,
+        channelId: Discord.Channels.administration.NOTIFICATIONS,
         messageId: entry.discordMessageId,
         embeds: progressEmbed.build(),
         components: [],
@@ -323,7 +323,7 @@ export class WaitlistRepository {
     } catch (error) {
       logger.error(
         `Failed to update progress embed entry for ${entryId}:`,
-        error
+        error,
       );
     }
   }

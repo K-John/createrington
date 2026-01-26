@@ -14,7 +14,7 @@ export const TicketSystemIds = {
   /** Discord category ID where all ticket channels are created */
   TICKET_CATEGORY: cfg.discord.guild.categories.tickets,
   /** Discord channel ID where ticket transcripts are sent when closed */
-  TRANSCRIPT_CHANNEL: cfg.discord.guild.channels.transcripts,
+  TRANSCRIPT_CHANNEL: Discord.Channels.administration.TRANSCRIPT,
   /** Admin role ID with access to general tickets */
   ADMIN_ROLE: Discord.Roles.ADMIN,
   /** Owner role ID with access to all tickets */

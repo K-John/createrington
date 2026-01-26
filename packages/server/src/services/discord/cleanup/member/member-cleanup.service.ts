@@ -84,7 +84,7 @@ export class MemberCleanupService {
           if (member.notificationMessageId) {
             try {
               const result = await Discord.Messages.fetchMessage({
-                channelId: Discord.Channels.ADMIN_NOTIFICATIONS,
+                channelId: Discord.Channels.administration.NOTIFICATIONS,
                 messageId: member.notificationMessageId,
               });
 

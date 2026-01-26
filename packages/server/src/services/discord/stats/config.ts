@@ -9,7 +9,7 @@ import { Discord } from "@/discord/constants";
  */
 export const SERVER_STATS_CONFIG: ServerStatsConfig = {
   guildId: config.discord.guild.id,
-  botsChannelId: Discord.Channels.BOTS_STAT,
-  membersChannelId: Discord.Channels.MEMBERS_STAT,
-  totalMembersChannelId: Discord.Channels.ALL_STAT,
+  botsChannelId: Discord.Channels.serverStats.BOTS,
+  membersChannelId: Discord.Channels.serverStats.MEMBERS,
+  totalMembersChannelId: Discord.Channels.serverStats.ALL_MEMBERS,
 };

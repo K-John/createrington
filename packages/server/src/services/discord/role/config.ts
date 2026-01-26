@@ -191,7 +191,7 @@ export function getDailyRoleRules(): AnyRoleRule[] {
  */
 export const DEFAULT_NOTIFICATION_CONFIG: RoleNotificationConfig = {
   enabled: true,
-  channelId: Discord.Channels.HALL_OF_FAME,
+  channelId: Discord.Channels.general.HALL_OF_FAME,
   isMilestone: false,
 };
 
