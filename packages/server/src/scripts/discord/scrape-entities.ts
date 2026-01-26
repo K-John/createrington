@@ -226,7 +226,7 @@ async function scrapeDiscordEntities(): Promise<void> {
     // ========================================================================
     // WRITE FILES
     // ========================================================================
-    const outputDir = path.resolve(__dirname, "../../generated/discord");
+    const outputDir = path.resolve(__dirname, "../../config");
     await ensureDir(outputDir);
 
     // Write JSON file

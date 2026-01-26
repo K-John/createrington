@@ -4,7 +4,7 @@ import type {
   MemberRolesConfig,
   ChannelConfig,
   CategoriesConfig,
-} from "@/generated/discord/discord.types";
+} from "./discord.types";
 
 // ============================================================================
 // Main Configuration Interface

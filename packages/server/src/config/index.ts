@@ -6,10 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const discordEntitiesPath = path.join(
-  __dirname,
-  "../generated/discord/discord-entities.json",
-);
+const discordEntitiesPath = path.join(__dirname, "./discord-entities.json");
 
 let discordEntities;
 try {
