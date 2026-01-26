@@ -12,7 +12,10 @@ const execAsync = promisify(exec);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 async function dumpSchema() {
-  const outputFile = path.resolve(__dirname, "../../db/schema/init.sql");
+  const outputFile = path.resolve(
+    __dirname,
+    "../../../../../db/schema/init.sql",
+  );
 
   const command = `pg_dump -h ${poolConfig.host} -U ${poolConfig.user} -d ${poolConfig.database} --schema-only -f ${outputFile}`;
 

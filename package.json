@@ -23,7 +23,8 @@
     "build": "npm run generate && npm run build:shared && npm run build:client && npm run build:client",
     "test": "npm run test --workspace=@createrington/server",
     "test:unit": "npm run test:unit --workspace=@createrington/server",
-    "deploy-commands": "npm run util:deploy-commands --workspace=@createrington/server"
+    "deploy-commands": "npm run util:deploy-commands --workspace=@createrington/server",
+    "dump-schema": "npm run util:db-dump-schema --workspace=@createrington/server"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",

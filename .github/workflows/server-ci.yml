@@ -47,9 +47,8 @@ jobs:
         run: npm ci
 
       - name: Setup database schema
-        working-directory: ./packages/server
         run: |
-          PGPASSWORD=test_password psql -h localhost -U postgres -d test_db -f src/db/schema/init.sql
+          PGPASSWORD=test_password psql -h localhost -U postgres -d test_db -f db/schema/init.sql
 
       - name: Generate code (with DB access)
         run: npm run generate
