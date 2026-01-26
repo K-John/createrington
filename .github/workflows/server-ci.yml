@@ -70,7 +70,7 @@ jobs:
         working-directory: ./packages/server
         run: npm run test:unit
 
-      - name: Run integration tests (optional)
+      - name: Run integration tests
         if: false
         working-directory: ./packages/server
         run: npm run test:integration
