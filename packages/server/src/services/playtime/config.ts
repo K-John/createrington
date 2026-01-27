@@ -55,6 +55,7 @@ export interface ServerConfig {
   name: string;
   ip: string;
   port: number;
+  maxPlayers: number;
 }
 
 export const MINECRAFT_SERVERS: Record<number, ServerConfig> = {
@@ -63,6 +64,7 @@ export const MINECRAFT_SERVERS: Record<number, ServerConfig> = {
     name: config.servers.cogs.name,
     ip: config.servers.cogs.ip,
     port: config.servers.cogs.port,
+    maxPlayers: 20,
   },
 
   // [config.servers.test.id]: {

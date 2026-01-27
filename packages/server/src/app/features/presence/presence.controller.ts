@@ -57,7 +57,7 @@ export class PresenceController {
 
       const serverInfo = getServerByIp(serverIp);
       if (!serverInfo) {
-        logger.warn(`Unknown server IP: ${serverId}`);
+        logger.warn(`Unknown server IP: ${serverIp}`);
         throw new BadRequestError(
           `Server IP ${serverIp} is not configured. Please contact an administrator`,
         );
