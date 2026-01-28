@@ -1,35 +1,57 @@
 import { Server as HttpServer } from "node:http";
 import { Server as SocketIOServer, Socket } from "socket.io";
 import {
-  JoinServerPayload,
-  MessageDeletePayload,
+  InitialDataPayload,
+  InitialDataRequest,
   MessageUpdatePayload,
-  NewMessagePayload,
-  ServerStatusPayload,
+  PlayersUpdatePayload,
+  ServerInitialDataPayload,
+  ServerStatusUpdatePayload,
   SocketEvent,
+  SubscriptionConfirmation,
+  SubscriptionRequest,
+  SubscriptionType,
   WebSocketServiceConfig,
+  WebSocketStats,
 } from "./types";
 import { MessageCacheService } from "../discord/message/cache";
+import { PlaytimeManagerService } from "../playtime/playtime-manager.service";
+import { RoomManager } from "./room-manager";
+import { WebSocketDataProvider } from "./data-provider";
+import { CachedMessage } from "../discord/message/cache";
+import { SessionEndEvent, SessionStartEvent } from "../playtime";
 
 /**
- * WebSocket service for real-time communication with clients
- *
- * Features:
- * - Real-time message broadcasting from Discord
- * - Server-specific room management
- * - Integration with MessageCacheService
- * - Type-safe event handling
- * - CORS support
+ * Improved WebSocket service for real-time communication
  *
  * Architecture:
- * - Uses Socket.IO for WebSocket communication
- * - Clients join server-specific rooms
- * - Events are broadcast only to relevant rooms
- * - Integrates with Discord message cache via EventEmitter
+ * - Subscription-based: Clients explicitly subscribe to data streams
+ * - Room-based broadcasting: Server-specific and global rooms
+ * - Initial data loading: Clients can request current state
+ * - Type-safe events: All payloads are strongly typed
+ * - Easy to expand: Add new subscription types easily
+ *
+ * Features:
+ * - Real-time server status updates
+ * - Online player tracking
+ * - Message broadcasting from Discord
+ * - Flexible subscription model (global or server-specific)
+ * - Client can request initial data on demand
+ *
+ * Usage flow:
+ * 1. Client connects
+ * 2. Client requests initial data (optional)
+ * 3. Client subscribes to data streams (status, players, messages)
+ * 4. Server broadcasts updates to subscribed rooms
+ * 5. Client unsubscribes or disconnects
  */
 export class WebSocketService {
   private io: SocketIOServer;
+  private dataProvider!: WebSocketDataProvider;
   private isInitialized = false;
+  private startTime: Date;
+
+  private clientSockets: Map<string, Set<string>> = new Map(); // socketId -> Set<rooms>
 
   constructor(
     httpServer: HttpServer,
@@ -43,257 +65,579 @@ export class WebSocketService {
       path: config.path || "/socket.io",
     });
 
-    this.setupSocketHandlers();
+    this.startTime = new Date();
+    this.setupConnectionHandlers();
   }
 
   /**
-   * Initialize the WebSocket service and connect to message cache
+   * Initialize the WebSocket service
    *
-   * @param messageCacheService - Message cache service to listen to
+   * @param messageCacheService - Message cache service for Discord messages
+   * @param playtimeManagerService - Playtime manager for player tracking
    */
-  async initialize(messageCacheService: MessageCacheService): Promise<void> {
+  async initialize(
+    messageCacheService: MessageCacheService,
+    playtimeManagerService: PlaytimeManagerService,
+  ): Promise<void> {
     if (this.isInitialized) {
       logger.warn("WebSocketService already initialized");
       return;
     }
 
-    this.connectToMessageCache(messageCacheService);
-    this.isInitialized = true;
+    this.dataProvider = new WebSocketDataProvider(
+      messageCacheService,
+      playtimeManagerService,
+    );
 
+    this.connectToServices(messageCacheService, playtimeManagerService);
+
+    this.isInitialized = true;
     logger.info("WebSocketService initialized");
   }
 
   /**
-   * Set up Socket.IO connection and event handlers
+   * Set up Socket.IO connection handlers
    *
    * @private
    */
-  private setupSocketHandlers(): void {
+  private setupConnectionHandlers(): void {
     this.io.on(SocketEvent.CONNECTION, (socket: Socket) => {
       logger.info(`Client connected: ${socket.id}`);
 
-      socket.on(SocketEvent.JOIN_SERVER, (payload: JoinServerPayload) => {
-        this.handleJoinServer(socket, payload);
-      });
+      this.clientSockets.set(socket.id, new Set());
 
-      socket.on(SocketEvent.LEAVE_SERVER, (payload: JoinServerPayload) => {
-        this.handleLeaveServer(socket, payload);
-      });
+      // Handle subscription requests
+      socket.on(
+        SocketEvent.SUBSCRIBE,
+        (request: SubscriptionRequest, callback) => {
+          this.handleSubscribe(socket, request, callback);
+        },
+      );
 
+      // Handle unsubscription requests
+      socket.on(
+        SocketEvent.UNSUBSCRIBE,
+        (request: SubscriptionRequest, callback) => {
+          this.handleUnsubscribe(socket, request, callback);
+        },
+      );
+
+      // Handle initial data requests
+      socket.on(
+        SocketEvent.REQUEST_INITIAL_DATA,
+        (request: InitialDataRequest, callback) => {
+          this.handleInitialDataRequest(socket, request, callback);
+        },
+      );
+
+      // Handle disconnection
       socket.on(SocketEvent.DISCONNECT, () => {
         logger.info(`Client disconnected: ${socket.id}`);
+        this.clientSockets.delete(socket.id);
       });
 
+      // Handle errors
       socket.on(SocketEvent.ERROR, (error: Error) => {
         logger.error(`Socket error for ${socket.id}:`, error);
       });
     });
 
-    logger.debug("Socket.IO handlers registered");
+    logger.debug("Socket.IO connection handlers registered");
   }
 
   /**
-   * Connect to message cache service and listen for events
+   * Handle subscription request from client
    *
-   * @param messageCacheService - Message cache service instance
+   * @param socket - Client socket
+   * @param request - Subscription request
+   * @param callback - Acknowledgment callback
    *
    * @private
    */
-  private connectToMessageCache(
+  private async handleSubscribe(
+    socket: Socket,
+    request: SubscriptionRequest,
+    callback?: (response: SubscriptionConfirmation) => void,
+  ): Promise<void> {
+    try {
+      // Validate server-specific subscriptions
+      if (
+        request.type !== SubscriptionType.ALL &&
+        request.serverId === undefined &&
+        request.type !== SubscriptionType.SERVER_STATUS &&
+        request.type !== SubscriptionType.PLAYERS &&
+        request.type !== SubscriptionType.MESSAGES
+      ) {
+        throw new Error(`Server ID required for ${request.type} subscription`);
+      }
+
+      const rooms = RoomManager.getRoomsForSubscription(
+        request.type,
+        request.serverId,
+      );
+
+      // Join all relevant rooms
+      for (const room of rooms) {
+        await socket.join(room);
+        this.clientSockets.get(socket.id)?.add(room);
+      }
+
+      const primaryRoom = rooms[0];
+
+      logger.debug(
+        `Client ${socket.id} subscribed to ${request.type}${request.serverId ? ` (server: ${request.serverId})` : ""} - rooms: ${rooms.join(", ")}`,
+      );
+
+      // Send acknowledgment
+      const confirmation: SubscriptionConfirmation = {
+        type: request.type,
+        serverId: request.serverId,
+        room: primaryRoom,
+        success: true,
+      };
+
+      if (callback) {
+        callback(confirmation);
+      }
+
+      socket.emit(SocketEvent.SUBSCRIBED, confirmation);
+    } catch (error) {
+      logger.error(
+        `Failed to subscribe client ${socket.id} to ${request.type}:`,
+        error,
+      );
+
+      const confirmation: SubscriptionConfirmation = {
+        type: request.type,
+        serverId: request.serverId,
+        room: "",
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+
+      if (callback) {
+        callback(confirmation);
+      }
+    }
+  }
+
+  /**
+   * Handle unsubscription request from client
+   *
+   * @param socket - Client socket
+   * @param request - Unsubscription request
+   * @param callback - Acknowledgment callback
+   *
+   * @private
+   */
+  private async handleUnsubscribe(
+    socket: Socket,
+    request: SubscriptionRequest,
+    callback?: (response: SubscriptionConfirmation) => void,
+  ): Promise<void> {
+    try {
+      const rooms = RoomManager.getRoomsForSubscription(
+        request.type,
+        request.serverId,
+      );
+
+      // Leave all relevant rooms
+      for (const room of rooms) {
+        await socket.leave(room);
+        this.clientSockets.get(socket.id)?.delete(room);
+      }
+
+      const primaryRoom = rooms[0];
+
+      logger.debug(
+        `Client ${socket.id} unsubscribed from ${request.type}${request.serverId ? ` (server: ${request.serverId})` : ""}`,
+      );
+
+      const confirmation: SubscriptionConfirmation = {
+        type: request.type,
+        serverId: request.serverId,
+        room: primaryRoom,
+        success: true,
+      };
+
+      if (callback) {
+        callback(confirmation);
+      }
+
+      socket.emit(SocketEvent.UNSUBSCRIBED, confirmation);
+    } catch (error) {
+      logger.error(
+        `Failed to unsubscribe client ${socket.id} from ${request.type}:`,
+        error,
+      );
+
+      const confirmation: SubscriptionConfirmation = {
+        type: request.type,
+        serverId: request.serverId,
+        room: "",
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+
+      if (callback) {
+        callback(confirmation);
+      }
+    }
+  }
+
+  /**
+   * Handle initial data request from client
+   *
+   * @param socket - Client socket
+   * @param request - Initial data request
+   * @param callback - Callback to send data
+   *
+   * @private
+   */
+  private async handleInitialDataRequest(
+    socket: Socket,
+    request: InitialDataRequest,
+    callback?: (data: InitialDataPayload | ServerInitialDataPayload) => void,
+  ): Promise<void> {
+    try {
+      const includeMessages = request.includeMessages ?? true;
+      const messageLimit =
+        request.messageLimit ?? this.config.maxInitialMessages ?? 50;
+
+      let data: InitialDataPayload | ServerInitialDataPayload;
+
+      if (request.serverId !== undefined) {
+        // Server-specific data
+        data = await this.dataProvider.getServerInitialData(
+          request.serverId,
+          includeMessages,
+          messageLimit,
+        );
+
+        logger.debug(
+          `Sent initial data for server ${request.serverId} to client ${socket.id}`,
+        );
+      } else {
+        // All servers data
+        data = await this.dataProvider.getInitialData(
+          includeMessages,
+          messageLimit,
+        );
+
+        logger.debug(`Sent initial data (all servers) to client ${socket.id}`);
+      }
+
+      if (callback) {
+        callback(data);
+      }
+
+      socket.emit(SocketEvent.INITIAL_DATA, data);
+    } catch (error) {
+      logger.error(
+        `Failed to send initial data to client ${socket.id}:`,
+        error,
+      );
+      socket.emit(SocketEvent.ERROR, {
+        message: "Failed to load initial data",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  /**
+   * Connect to external services and listen for events
+   *
+   * @param messageCacheService - Message cache service
+   * @param playtimeManagerService - Playtime manager service
+   *
+   * @private
+   */
+  private connectToServices(
     messageCacheService: MessageCacheService,
+    playtimeManagerService: PlaytimeManagerService,
   ): void {
-    // Listen for new messages
+    // Message cache events
     messageCacheService.on("messageCreate", (serverId, message) => {
-      this.broadcastNewMessage(serverId, message);
+      this.broadcastMessageUpdate(serverId, "new", message);
     });
 
-    // Listen for message updates
     messageCacheService.on("messageUpdate", (serverId, message) => {
-      this.broadcastMessageUpdate(serverId, message);
+      this.broadcastMessageUpdate(serverId, "update", message);
     });
 
-    // Listen for message deletes
     messageCacheService.on("messageDelete", (serverId, messageId) => {
-      this.broadcastMessageDelete(serverId, messageId);
+      this.broadcastMessageUpdate(serverId, "delete", undefined, messageId);
     });
 
-    logger.debug("Connected to MessageCacheService events");
-  }
-
-  /**
-   * Handle client joining
-   *
-   * @param socket - Client socket
-   * @param payload - Join server payload
-   *
-   * @private
-   */
-  private handleJoinServer(socket: Socket, payload: JoinServerPayload): void {
-    const roomName = this.getServerRoom(payload.serverId);
-    socket.join(roomName);
-
-    logger.debug(`Client ${socket.id} joined server room: ${roomName}`);
-
-    socket.emit("joined", {
-      serverId: payload.serverId,
-      roomName,
+    messageCacheService.on("serverStarted", (serverId) => {
+      this.broadcastServerStatusUpdate(serverId, true);
     });
-  }
 
-  /**
-   * Handle client leaving a server room
-   *
-   * @param socket - Client socket
-   * @param payload - Leave server payload
-   *
-   * @private
-   */
-  private handleLeaveServer(socket: Socket, payload: JoinServerPayload): void {
-    const roomName = this.getServerRoom(payload.serverId);
-    socket.leave(roomName);
-
-    logger.debug(`Client ${socket.id} left server room: ${roomName}`);
-
-    socket.emit("left", {
-      serverId: payload.serverId,
-      roomName,
+    messageCacheService.on("serverClosed", (serverId) => {
+      this.broadcastServerStatusUpdate(serverId, false);
     });
-  }
 
-  /**
-   * Get room name for server
-   *
-   * @param serverId - Server ID
-   * @returns Room name
-   *
-   * @private
-   */
-  private getServerRoom(serverId: number): string {
-    return `server:${serverId}`;
-  }
-
-  /**
-   * Broadcast new message to clients in server room
-   *
-   * @param serverId - Server ID
-   * @param message - Cached message
-   */
-  private broadcastNewMessage(serverId: number, message: any): void {
-    const payload: NewMessagePayload = {
+    // Playtime service events
+    for (const [
       serverId,
-      message,
+      playtimeService,
+    ] of playtimeManagerService.getAllServices()) {
+      playtimeService.on("sessionStart", (event: SessionStartEvent) => {
+        this.broadcastPlayerJoin(serverId, event);
+      });
+
+      playtimeService.on("sessionEnd", (event: SessionEndEvent) => {
+        this.broadcastPlayerLeave(serverId, event);
+      });
+    }
+
+    logger.debug("Connected to external services");
+  }
+
+  /**
+   * Broadcast server status update
+   *
+   * @param serverId - Server ID
+   * @param online - Whether server is online
+   */
+  private async broadcastServerStatusUpdate(
+    serverId: number,
+    online: boolean,
+  ): Promise<void> {
+    try {
+      const status = await this.dataProvider.getServerStatus(serverId);
+      status.online = online;
+
+      const payload: ServerStatusUpdatePayload = {
+        serverId,
+        online,
+        playerCount: status.playerCount,
+        maxPlayers: status.maxPlayers,
+        timestamp: new Date(),
+      };
+
+      // Broadcast to server-specific room
+      this.io
+        .to(RoomManager.getServerStatusRoom(serverId))
+        .emit(SocketEvent.UPDATE_SERVER_STATUS, payload);
+
+      // Broadcast to global room
+      this.io
+        .to(RoomManager.getServerStatusRoom())
+        .emit(SocketEvent.UPDATE_SERVER_STATUS, payload);
+
+      logger.debug(
+        `Broadcast server status update: server ${serverId} ${online ? "online" : "offline"}`,
+      );
+    } catch (error) {
+      logger.error("Failed to broadcast server status update:", error);
+    }
+  }
+
+  /**
+   * Broadcast player join event
+   *
+   * @param serverId - Server ID
+   * @param event - Session start event
+   *
+   * @private
+   */
+  private broadcastPlayerJoin(
+    serverId: number,
+    event: SessionStartEvent,
+  ): void {
+    const payload: PlayersUpdatePayload = {
+      serverId,
+      type: "join",
+      player: {
+        uuid: event.uuid,
+        username: event.username,
+        serverId: event.serverId,
+        sessionStart: event.sessionStart,
+        sessionDuration: 0,
+      },
+      timestamp: new Date(),
     };
 
-    const roomName = this.getServerRoom(serverId);
-    this.io.to(roomName).emit(SocketEvent.NEW_MESSAGE, payload);
+    // Broadcast to server-specific room
+    this.io
+      .to(RoomManager.getPlayersRoom(serverId))
+      .emit(SocketEvent.UPDATE_PLAYERS, payload);
 
-    logger.debug(`Broadcast new message to ${roomName}: ${message.messageId}`);
-  }
-
-  /**
-   * Broadcast message update to clients in server room
-   *
-   * @param serverId - Server ID
-   * @param message - Updated cached message
-   */
-  private broadcastMessageUpdate(serverId: number, message: any): void {
-    const payload: MessageUpdatePayload = {
-      serverId,
-      messageId: message.messageId,
-      message,
-    };
-
-    const roomName = this.getServerRoom(serverId);
-    this.io.to(roomName).emit(SocketEvent.MESSAGE_UPDATE, payload);
+    // Broadcast to global room
+    this.io
+      .to(RoomManager.getPlayersRoom())
+      .emit(SocketEvent.UPDATE_PLAYERS, payload);
 
     logger.debug(
-      `Broadcast message update to ${roomName}: ${message.messageId}`,
+      `Broadcast player join: ${event.username} on server ${serverId}`,
+    );
+
+    // Also update server status (player count increased)
+    this.broadcastServerStatusUpdate(serverId, true);
+  }
+
+  /**
+   * Broadcast player leave event
+   *
+   * @param serverId - Server ID
+   * @param event - Session end event
+   *
+   * @private
+   */
+  private broadcastPlayerLeave(serverId: number, event: SessionEndEvent): void {
+    const payload: PlayersUpdatePayload = {
+      serverId,
+      type: "leave",
+      player: {
+        uuid: event.uuid,
+        username: event.username,
+        serverId: event.serverId,
+        sessionStart: event.sessionStart,
+        sessionDuration: event.secondsPlayed,
+      },
+      timestamp: new Date(),
+    };
+
+    // Broadcast to server-specific room
+    this.io
+      .to(RoomManager.getPlayersRoom(serverId))
+      .emit(SocketEvent.UPDATE_PLAYERS, payload);
+
+    // Broadcast to global room
+    this.io
+      .to(RoomManager.getPlayersRoom())
+      .emit(SocketEvent.UPDATE_PLAYERS, payload);
+
+    logger.debug(
+      `Broadcast player leave: ${event.username} from server ${serverId}`,
+    );
+
+    // Also update server status (player count decreased)
+    this.broadcastServerStatusUpdate(serverId, true);
+  }
+
+  /**
+   * Broadcast message update
+   *
+   * @param serverId - Server ID
+   * @param type - Update type (new, update, delete)
+   * @param message - Message data (for new/update)
+   * @param messageId - Message ID (for delete)
+   *
+   * @private
+   */
+  private broadcastMessageUpdate(
+    serverId: number,
+    type: "new" | "update" | "delete",
+    message?: CachedMessage,
+    messageId?: string,
+  ): void {
+    const payload: MessageUpdatePayload = {
+      serverId,
+      type,
+      message,
+      messageId,
+      timestamp: new Date(),
+    };
+
+    // Broadcast to server-specific room
+    this.io
+      .to(RoomManager.getMessagesRoom(serverId))
+      .emit(SocketEvent.UPDATE_MESSAGE, payload);
+
+    // Broadcast to global room
+    this.io
+      .to(RoomManager.getMessagesRoom())
+      .emit(SocketEvent.UPDATE_MESSAGE, payload);
+
+    logger.debug(
+      `Broadcast message ${type}: ${messageId || message?.messageId} on server ${serverId}`,
     );
   }
 
   /**
-   * Broadcast message deletion to clients in server room
-   *
-   * @param serverId - Server ID
-   * @param messageId - Deleted message ID
+   * Get service statistics
    */
-  private broadcastMessageDelete(serverId: number, messageId: string): void {
-    const payload: MessageDeletePayload = {
-      serverId,
-      messageId,
+  async getStats(): Promise<WebSocketStats> {
+    const rooms: Record<string, number> = {};
+    const subscriptions: Record<SubscriptionType, number> = {
+      [SubscriptionType.ALL]: 0,
+      [SubscriptionType.SERVER_STATUS]: 0,
+      [SubscriptionType.PLAYERS]: 0,
+      [SubscriptionType.MESSAGES]: 0,
     };
 
-    const roomName = this.getServerRoom(serverId);
-    this.io.to(roomName).emit(SocketEvent.MESSAGE_DELETE, payload);
+    // Count clients in each room
+    const socketRooms = await this.io.sockets.adapter.rooms;
+    for (const [roomName, socketIds] of socketRooms.entries()) {
+      // Skip individual socket rooms (these are created by Socket.IO automatically)
+      if (socketIds.size === 1 && socketIds.has(roomName)) {
+        continue;
+      }
 
-    logger.debug(`Broadcast message delete to ${roomName}: ${messageId}`);
-  }
+      rooms[roomName] = socketIds.size;
 
-  /**
-   * Broadcast status update to clients in server room
-   *
-   * @param payload - Server status payload
-   */
-  public broadcastServerStatus(payload: ServerStatusPayload): void {
-    const roomName = this.getServerRoom(payload.serverId);
-    this.io.to(roomName).emit(SocketEvent.SERVER_STATUS, payload);
+      // Count subscriptions by type
+      const parsed = RoomManager.parseRoom(roomName);
+      if (parsed.type in subscriptions) {
+        subscriptions[parsed.type as SubscriptionType] += socketIds.size;
+      }
+    }
 
-    logger.debug(`Broadcast server status to ${roomName}`);
-  }
-
-  /**
-   * Get count of connected clients
-   *
-   * @returns Number of connected clients
-   */
-  public getConnectedCount(): number {
-    return this.io.sockets.sockets.size;
-  }
-
-  /**
-   * Get count of clients in a specific server room
-   *
-   * @param serverId - Server ID
-   * @returns Number of clients in room
-   */
-  public async getRoomCount(serverId: number): Promise<number> {
-    const roomName = this.getServerRoom(serverId);
-    const sockets = await this.io.to(roomName).fetchSockets();
-    return sockets.length;
-  }
-
-  /**
-   * Get service status and statistics
-   *
-   * @returns Service status object
-   */
-  public async getStatus(): Promise<{
-    isInitialized: boolean;
-    connectedClients: number;
-    rooms: Record<number, number>;
-  }> {
-    const rooms: Record<number, number> = {};
-
-    // TODO
+    const uptimeSeconds = Math.floor(
+      (Date.now() - this.startTime.getTime()) / 1000,
+    );
 
     return {
-      isInitialized: this.isInitialized,
-      connectedClients: this.getConnectedCount(),
+      connectedClients: this.io.sockets.sockets.size,
       rooms,
+      subscriptions,
+      uptime: uptimeSeconds,
     };
   }
 
   /**
    * Close the WebSocket service
    */
-  public async close(): Promise<void> {
+  async close(): Promise<void> {
     if (!this.isInitialized) {
       return;
     }
 
     await this.io.close();
+    this.clientSockets.clear();
     this.isInitialized = false;
 
     logger.info("WebSocketService closed");
+  }
+
+  /**
+   * Manually broadcast a player sync for a server
+   * Useful for recovery or debugging
+   *
+   * @param serverId - Server ID
+   */
+  async broadcastPlayerSync(serverId: number): Promise<void> {
+    const players = await this.dataProvider.getServerPlayers(serverId);
+
+    const payload: PlayersUpdatePayload = {
+      serverId,
+      type: "sync",
+      players,
+      timestamp: new Date(),
+    };
+
+    this.io
+      .to(RoomManager.getPlayersRoom(serverId))
+      .emit(SocketEvent.UPDATE_PLAYERS, payload);
+
+    this.io
+      .to(RoomManager.getPlayersRoom())
+      .emit(SocketEvent.UPDATE_PLAYERS, payload);
+
+    logger.info(
+      `Broadcast player sync for server ${serverId}: ${players.length} players`,
+    );
   }
 }

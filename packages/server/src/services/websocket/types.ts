@@ -4,76 +4,150 @@ import { CachedMessage } from "../discord/message/cache";
  * WebSocket event types
  */
 export enum SocketEvent {
-  // Connection events
+  // Connection lifecycle
   CONNECTION = "connection",
   DISCONNECT = "disconnect",
-
-  // Message events
-  NEW_MESSAGE = "message:new",
-  MESSAGE_UPDATE = "message:update",
-  MESSAGE_DELETE = "message:delete",
-
-  // Server events
-  SERVER_STATUS = "server:status",
-
-  // Client events
-  JOIN_SERVER = "client:join_server",
-  LEAVE_SERVER = "client:leave_server",
-
-  // Error events
   ERROR = "error",
+
+  // Client actions
+  SUBSCRIBE = "subscribe",
+  UNSUBSCRIBE = "unsubscribe",
+  REQUEST_INITIAL_DATA = "request:initial",
+
+  // Server->Client: Initial data responses
+  INITIAL_DATA = "initial:data",
+
+  // Server->Client: Real-time updates
+  UPDATE_SERVER_STATUS = "update:server:status",
+  UPDATE_PLAYERS = "update:players",
+  UPDATE_MESSAGE = "update:message",
+
+  // Acknowledgments
+  SUBSCRIBED = "subscribed",
+  UNSUBSCRIBED = "unsubscribed",
 }
 
 /**
- * Payload for new message event
+ * Subscription types for different data streams
  */
-export interface NewMessagePayload {
-  serverId: number;
-  message: CachedMessage;
+export enum SubscriptionType {
+  SERVER_STATUS = "server:status",
+  PLAYERS = "players",
+  MESSAGES = "messages",
+  ALL = "all",
 }
 
 /**
- * Payload for message update event
+ * Room naming convention
  */
-export interface MessageUpdatePayload {
-  serverId: number;
-  messageId: string;
-  message: CachedMessage;
+export enum RoomType {
+  GLOBAL = "global",
+  SERVER = "server",
 }
 
 /**
- * Payload for message delete event
+ * Server status data
  */
-export interface MessageDeletePayload {
+export interface ServerStatus {
   serverId: number;
-  messageId: string;
+  serverName: string;
+  online: boolean;
+  playerCount: number;
+  maxPlayers: number;
+  lastUpdate: Date;
 }
 
 /**
- * Payload for server status event
+ * Player data for WebSocket transmission
  */
-export interface ServerStatusPayload {
+export interface PlayerData {
+  uuid: string;
+  username: string;
   serverId: number;
-  onlinePlayers: number;
+  sessionStart: Date;
+  sessionDuration: number; // seconds
+}
+
+/**
+ * Initial data payload containing all current state
+ */
+export interface InitialDataPayload {
+  servers: ServerStatus[];
+  players: PlayerData[];
+  messages: Record<number, CachedMessage[]>; // serverId -> messages
+  timestamp: Date;
+}
+
+/**
+ * Server-specific initial data
+ */
+export interface ServerInitialDataPayload {
+  serverId: number;
+  status: ServerStatus;
+  players: PlayerData[];
+  messages: CachedMessage[];
+  timestamp: Date;
+}
+
+/**
+ * Server status update payload
+ */
+export interface ServerStatusUpdatePayload {
+  serverId: number;
+  online: boolean;
+  playerCount: number;
   maxPlayers: number;
   timestamp: Date;
 }
 
 /**
- * Client-to-server event data
+ * Players update payload
  */
-export interface JoinServerPayload {
+export interface PlayersUpdatePayload {
   serverId: number;
+  type: "join" | "leave" | "sync";
+  players?: PlayerData[]; // For sync
+  player?: PlayerData; // For join/leave
+  timestamp: Date;
 }
 
 /**
- * Socket event handlers map
+ * Message update payload
  */
-export interface SocketEventHandlers {
-  [SocketEvent.NEW_MESSAGE]: (payload: NewMessagePayload) => void;
-  [SocketEvent.MESSAGE_UPDATE]: (payload: MessageUpdatePayload) => void;
-  [SocketEvent.MESSAGE_DELETE]: (payload: MessageDeletePayload) => void;
-  [SocketEvent.SERVER_STATUS]: (payload: ServerStatusPayload) => void;
+export interface MessageUpdatePayload {
+  serverId: number;
+  type: "new" | "update" | "delete";
+  message?: CachedMessage; // For new/update
+  messageId?: string; // For delete
+  timestamp: Date;
+}
+
+/**
+ * Subscription request from client
+ */
+export interface SubscriptionRequest {
+  type: SubscriptionType;
+  serverId?: number; // Required for server-specific subscriptions
+}
+
+/**
+ * Subscription confirmation
+ */
+export interface SubscriptionConfirmation {
+  type: SubscriptionType;
+  serverId?: number;
+  room: string;
+  success: boolean;
+  error?: string;
+}
+
+/**
+ * Initial data request from client
+ */
+export interface InitialDataRequest {
+  serverId?: number; // If provided, only get data for this server
+  includeMessages?: boolean;
+  messageLimit?: number;
 }
 
 /**
@@ -85,8 +159,27 @@ export interface WebSocketServiceConfig {
     origin: string | string[];
     credentials?: boolean;
   };
-  /** Port to listen on */
-  port?: number;
   /** Path for socket.io endpoint */
   path?: string;
+  /** Maximum messages to include in initial data per server */
+  maxInitialMessages?: number;
+}
+
+/**
+ * Client socket with metadata
+ */
+export interface ClientSocket {
+  id: string;
+  subscriptions: Set<string>; // room names
+  connectedAt: Date;
+}
+
+/**
+ * Service statistics
+ */
+export interface WebSocketStats {
+  connectedClients: number;
+  rooms: Record<string, number>; // room name -> client count
+  subscriptions: Record<SubscriptionType, number>; // subscription type -> total count
+  uptime: number; // seconds
 }
