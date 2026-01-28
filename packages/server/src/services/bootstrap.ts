@@ -21,6 +21,7 @@ import { SERVER_STATS_CONFIG, ServerStatsService } from "./discord/stats";
 import { RotatingStatusService } from "./discord/status";
 import { PlaytimeManagerService } from "./playtime/playtime-manager.service";
 import { RoleManagementService } from "./discord/role/role-management.service";
+import { WebSocketService } from "./websocket";
 
 /**
  * Register all services with the container
@@ -45,33 +46,6 @@ export function registerServices(): void {
     const app = createApp();
     return http.createServer(app);
   });
-
-  // container.register(
-  //   Services.WEBSOCKET_SERVICE,
-  //   async (c) => {
-  //     const httpServer = await c.get<http.Server>(Services.HTTP_SERVER);
-  //     const messageCacheService = await c.get<MessageCacheService>(
-  //       Services.MESSAGE_CACHE,
-  //     );
-
-  //     logger.info("Initializing WebSocket service...");
-
-  //     const websocketService = new WebSocketService(httpServer, {
-  //       cors: {
-  //         origin: config.envMode.isDev
-  //           ? "http://localhost:5173"
-  //           : config.meta.links.website,
-  //         credentials: true,
-  //       },
-  //       path: "/socket.io",
-  //     });
-
-  //     await websocketService.initialize(messageCacheService);
-
-  //     return websocketService;
-  //   },
-  //   { dependencies: [Services.HTTP_SERVER, Services.MESSAGE_CACHE] },
-  // );
 
   // =========================================================================
   // DISCORD BOTS (no dependencies, can initialize in parallel)
@@ -214,6 +188,50 @@ export function registerServices(): void {
     { dependencies: [Services.DISCORD_MAIN_BOT] },
   );
 
+  // =========================================================================
+  // COMMUNICATION SERVICES
+  // =========================================================================
+
+  container.register(
+    Services.WEBSOCKET_SERVICE,
+    async (c) => {
+      const httpServer = await c.get<http.Server>(Services.HTTP_SERVER);
+      const messageCacheService = await c.get<MessageCacheService>(
+        Services.MESSAGE_CACHE,
+      );
+      const playtimeManagerService = await c.get<PlaytimeManagerService>(
+        Services.PLAYTIME_MANAGER_SERVICE,
+      );
+
+      logger.info("Initializing WebSocket service...");
+
+      const websocketService = new WebSocketService(httpServer, {
+        cors: {
+          origin: config.envMode.isDev
+            ? "http://localhost:5173"
+            : config.meta.links.website,
+          credentials: true,
+        },
+        path: "/socket.io",
+        maxInitialMessages: 100,
+      });
+
+      await websocketService.initialize(
+        messageCacheService,
+        playtimeManagerService,
+      );
+
+      return websocketService;
+    },
+    {
+      dependencies: [
+        Services.HTTP_SERVER,
+        Services.MESSAGE_CACHE,
+        Services.PLAYTIME_MANAGER_SERVICE,
+      ],
+    },
+  );
+
   container.on("serviceReady", async (serviceName) => {
     if (serviceName === Services.MESSAGE_CACHE) {
       const playtimeManager = await container.get<PlaytimeManagerService>(
@@ -242,10 +260,6 @@ export function registerServices(): void {
       }
     }
   });
-
-  // =========================================================================
-  // COMMUNICATION SERVICES
-  // =========================================================================
 
   logger.info(
     `Registered ${Array.from(container["services"].keys()).length} services`,

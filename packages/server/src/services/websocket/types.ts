@@ -1,154 +1,16 @@
-import { CachedMessage } from "../discord/message/cache";
-
-/**
- * WebSocket event types
- */
-export enum SocketEvent {
-  // Connection lifecycle
-  CONNECTION = "connection",
-  DISCONNECT = "disconnect",
-  ERROR = "error",
-
-  // Client actions
-  SUBSCRIBE = "subscribe",
-  UNSUBSCRIBE = "unsubscribe",
-  REQUEST_INITIAL_DATA = "request:initial",
-
-  // Server->Client: Initial data responses
-  INITIAL_DATA = "initial:data",
-
-  // Server->Client: Real-time updates
-  UPDATE_SERVER_STATUS = "update:server:status",
-  UPDATE_PLAYERS = "update:players",
-  UPDATE_MESSAGE = "update:message",
-
-  // Acknowledgments
-  SUBSCRIBED = "subscribed",
-  UNSUBSCRIBED = "unsubscribed",
-}
-
-/**
- * Subscription types for different data streams
- */
-export enum SubscriptionType {
-  SERVER_STATUS = "server:status",
-  PLAYERS = "players",
-  MESSAGES = "messages",
-  ALL = "all",
-}
-
-/**
- * Room naming convention
- */
-export enum RoomType {
-  GLOBAL = "global",
-  SERVER = "server",
-}
-
-/**
- * Server status data
- */
-export interface ServerStatus {
-  serverId: number;
-  serverName: string;
-  online: boolean;
-  playerCount: number;
-  maxPlayers: number;
-  lastUpdate: Date;
-}
-
-/**
- * Player data for WebSocket transmission
- */
-export interface PlayerData {
-  uuid: string;
-  username: string;
-  serverId: number;
-  sessionStart: Date;
-  sessionDuration: number; // seconds
-}
-
-/**
- * Initial data payload containing all current state
- */
-export interface InitialDataPayload {
-  servers: ServerStatus[];
-  players: PlayerData[];
-  messages: Record<number, CachedMessage[]>; // serverId -> messages
-  timestamp: Date;
-}
-
-/**
- * Server-specific initial data
- */
-export interface ServerInitialDataPayload {
-  serverId: number;
-  status: ServerStatus;
-  players: PlayerData[];
-  messages: CachedMessage[];
-  timestamp: Date;
-}
-
-/**
- * Server status update payload
- */
-export interface ServerStatusUpdatePayload {
-  serverId: number;
-  online: boolean;
-  playerCount: number;
-  maxPlayers: number;
-  timestamp: Date;
-}
-
-/**
- * Players update payload
- */
-export interface PlayersUpdatePayload {
-  serverId: number;
-  type: "join" | "leave" | "sync";
-  players?: PlayerData[]; // For sync
-  player?: PlayerData; // For join/leave
-  timestamp: Date;
-}
-
-/**
- * Message update payload
- */
-export interface MessageUpdatePayload {
-  serverId: number;
-  type: "new" | "update" | "delete";
-  message?: CachedMessage; // For new/update
-  messageId?: string; // For delete
-  timestamp: Date;
-}
-
-/**
- * Subscription request from client
- */
-export interface SubscriptionRequest {
-  type: SubscriptionType;
-  serverId?: number; // Required for server-specific subscriptions
-}
-
-/**
- * Subscription confirmation
- */
-export interface SubscriptionConfirmation {
-  type: SubscriptionType;
-  serverId?: number;
-  room: string;
-  success: boolean;
-  error?: string;
-}
-
-/**
- * Initial data request from client
- */
-export interface InitialDataRequest {
-  serverId?: number; // If provided, only get data for this server
-  includeMessages?: boolean;
-  messageLimit?: number;
-}
+import type {
+  ServerStatus,
+  PlayerData,
+  InitialDataPayload,
+  ServerInitialDataPayload,
+  ServerStatusUpdatePayload,
+  PlayersUpdatePayload,
+  MessageUpdatePayload,
+  SubscriptionRequest,
+  SubscriptionConfirmation,
+  InitialDataRequest,
+} from "@createrington/shared";
+import { RoomType, SubscriptionType, SocketEvent } from "@createrington/shared";
 
 /**
  * WebSocket service configuration
@@ -183,3 +45,18 @@ export interface WebSocketStats {
   subscriptions: Record<SubscriptionType, number>; // subscription type -> total count
   uptime: number; // seconds
 }
+
+export type {
+  ServerStatus,
+  PlayerData,
+  InitialDataPayload,
+  ServerInitialDataPayload,
+  ServerStatusUpdatePayload,
+  PlayersUpdatePayload,
+  MessageUpdatePayload,
+  SubscriptionRequest,
+  SubscriptionConfirmation,
+  InitialDataRequest,
+};
+
+export { RoomType, SubscriptionType, SocketEvent };
