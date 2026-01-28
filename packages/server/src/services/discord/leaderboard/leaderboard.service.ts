@@ -2,7 +2,12 @@ import { Q } from "@/db";
 import { getLeaderboardConfig } from "./config";
 import { LeaderboardRefreshResult, LeaderboardType } from "./types";
 import { Discord } from "@/discord/constants";
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
+import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  Client,
+} from "discord.js";
 import { EmbedPresets } from "@/discord/embeds";
 
 /**
@@ -14,6 +19,43 @@ import { EmbedPresets } from "@/discord/embeds";
  * - Managing persistent leaderboard messages in database
  */
 export class LeaderboardService {
+  private refreshInterval?: NodeJS.Timeout;
+  private readonly REFRESH_INTERVAL = 60 * 60 * 1000;
+  constructor(private readonly bot: Client) {}
+  /**
+   * Initialize the service and start automatic refresh scheduler
+   * Called by the service container during startup
+   *
+   * @returns Promise resolving when the service is initialized
+   */
+  async initialize(): Promise<void> {
+    logger.info("Initializing LeaderboardService...");
+
+    logger.info("Running initial leaderboard refresh");
+    await this.refreshAll();
+
+    this.refreshInterval = setInterval(async () => {
+      logger.info("Running scheduled leaderboard refresh");
+      await this.refreshAll();
+    }, this.REFRESH_INTERVAL);
+
+    logger.info("LeaderboardService initialized");
+  }
+
+  /**
+   * Shutdown the service and cleanup timers
+   * Called by the service container during graceful shutdown
+   *
+   * @returns Promise resolving when the service if shut down
+   */
+  async shutdown(): Promise<void> {
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+      this.refreshInterval = undefined;
+      logger.info("LeaderboardService refresh scheduler stopped");
+    }
+  }
+
   /**
    * Creates a new leaderboard message or updates an existing one
    *
@@ -26,7 +68,7 @@ export class LeaderboardService {
    * @throws Error if message creation fails
    */
   async createOrUpdate(
-    type: LeaderboardType
+    type: LeaderboardType,
   ): Promise<{ messageId: string; channelId: string }> {
     const config = getLeaderboardConfig(type);
 
@@ -50,7 +92,7 @@ export class LeaderboardService {
 
       await Q.leaderboard.message.update(
         { id: existing.id },
-        { lastRefreshed: new Date() }
+        { lastRefreshed: new Date() },
       );
 
       logger.info(`Updated ${type} leaderboard message ${existing.messageId}`);
@@ -99,7 +141,7 @@ export class LeaderboardService {
    */
   async refresh(
     type: LeaderboardType,
-    isManual: boolean = false
+    isManual: boolean = false,
   ): Promise<LeaderboardRefreshResult> {
     try {
       const config = getLeaderboardConfig(type);
@@ -138,7 +180,7 @@ export class LeaderboardService {
       await Q.leaderboard.message.update({ id: existing.id }, updates);
 
       logger.info(
-        `Refreshed ${type} leaderboard (${isManual ? "manual" : "automatic"})`
+        `Refreshed ${type} leaderboard (${isManual ? "manual" : "automatic"})`,
       );
 
       return {
@@ -234,7 +276,7 @@ export class LeaderboardService {
    * @private
    */
   private buildLeaderboardButtons(
-    type: LeaderboardType
+    type: LeaderboardType,
   ): ActionRowBuilder<ButtonBuilder>[] {
     const refreshButton = new ButtonBuilder()
       .setCustomId(`leaderboard:refresh:${type}`)
@@ -245,5 +287,3 @@ export class LeaderboardService {
     return [new ActionRowBuilder<ButtonBuilder>().addComponents(refreshButton)];
   }
 }
-
-export const leaderboardService = new LeaderboardService();

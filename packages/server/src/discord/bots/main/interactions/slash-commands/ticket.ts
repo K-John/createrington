@@ -6,9 +6,9 @@ import {
   PermissionFlagsBits,
   SlashCommandBuilder,
 } from "discord.js";
-import { ticketService } from "../..";
-import { TicketType } from "@/services/discord/tickets";
+import { TicketService, TicketType } from "@/services/discord/tickets";
 import { Discord } from "@/discord/constants";
+import { getService, Services } from "@/services";
 
 /**
  * Slash command definition for the ticket command
@@ -23,8 +23,8 @@ export const data = new SlashCommandBuilder()
       .setName("open")
       .setDescription("Open a ticket for a user")
       .addUserOption((opt) =>
-        opt.setName("user").setDescription("Discord user").setRequired(true)
-      )
+        opt.setName("user").setDescription("Discord user").setRequired(true),
+      ),
   );
 
 /**
@@ -69,14 +69,18 @@ export const prodOnly = false;
  * @returns Promise resolving when the command execution is completed
  */
 export async function execute(
-  interaction: ChatInputCommandInteraction
+  interaction: ChatInputCommandInteraction,
 ): Promise<void> {
+  const ticketService = await getService<TicketService>(
+    Services.TICKET_SERVICE,
+  );
+
   const subcommand = interaction.options.getSubcommand();
   try {
     if (!interaction.channel) {
       const embed = EmbedPresets.error(
         "Error",
-        "This command can only be used in a channel."
+        "This command can only be used in a channel.",
       );
       await interaction.reply({
         embeds: [embed.build()],
@@ -96,10 +100,10 @@ export async function execute(
       const embed = EmbedPresets.success(
         "Ticket Created",
         `The ticket for user ${Discord.Users.mention(
-          user.id
+          user.id,
         )} has been created: ${Discord.Channels.mention(
-          result.ticket.channelId
-        )}`
+          result.ticket.channelId,
+        )}`,
       );
 
       await interaction.reply({
@@ -119,7 +123,7 @@ export async function execute(
     logger.error("/ticket failed:", error);
     const embed = EmbedPresets.error(
       "Ticket Error",
-      "Something went wrong while executing the command. Please try again."
+      "Something went wrong while executing the command. Please try again.",
     );
 
     await interaction.reply({

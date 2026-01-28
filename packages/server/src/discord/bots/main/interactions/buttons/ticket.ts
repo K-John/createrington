@@ -6,13 +6,17 @@ import {
   EmbedBuilder,
   MessageFlags,
 } from "discord.js";
-import { parseTicketButtonId, TicketStatus } from "@/services/discord/tickets";
-import { ticketService } from "../../index";
+import {
+  parseTicketButtonId,
+  TicketService,
+  TicketStatus,
+} from "@/services/discord/tickets";
 import { EmbedColors, EmbedPresets } from "@/discord/embeds";
 import { Discord } from "@/discord/constants";
 import { Q } from "@/db";
 import { isSendableChannel } from "@/discord/utils/channel-guard";
 import { TicketSystemIds } from "@/services/discord/tickets";
+import { getService, Services } from "@/services";
 
 /**
  * Handles ticket-related buttons
@@ -109,6 +113,9 @@ async function handleTranscript(
   interaction: ButtonInteraction,
   ticketId: number,
 ): Promise<void> {
+  const ticketService = await getService<TicketService>(
+    Services.TICKET_SERVICE,
+  );
   await interaction.deferUpdate();
 
   try {
@@ -186,6 +193,9 @@ async function handleCreate(
   interaction: ButtonInteraction,
   type: any,
 ): Promise<void> {
+  const ticketService = await getService<TicketService>(
+    Services.TICKET_SERVICE,
+  );
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   const hasOpen = await ticketService.hasOpenTicket(interaction.user.id);
@@ -275,6 +285,9 @@ async function handleConfirmClose(
   interaction: ButtonInteraction,
   ticketId: number,
 ): Promise<void> {
+  const ticketService = await getService<TicketService>(
+    Services.TICKET_SERVICE,
+  );
   await interaction.deferUpdate();
 
   await ticketService.closeTicket(ticketId, interaction.user.id, false);
@@ -318,6 +331,9 @@ async function handleReopen(
   interaction: ButtonInteraction,
   ticketId: number,
 ): Promise<void> {
+  const ticketService = await getService<TicketService>(
+    Services.TICKET_SERVICE,
+  );
   await ticketService.reopenTicket(ticketId, interaction.user.id);
 }
 
@@ -337,6 +353,9 @@ async function handleDelete(
   ticketId: number,
 ): Promise<void> {
   try {
+    const ticketService = await getService<TicketService>(
+      Services.TICKET_SERVICE,
+    );
     const channel = interaction.channel;
 
     if (!channel || !isSendableChannel(channel)) {

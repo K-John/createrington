@@ -1,8 +1,10 @@
 import { BadRequestError, InternalServerError } from "@/app/middleware";
+import { getService, Services } from "@/services";
 import {
-  getPlaytimeService,
   ModPlayerJoinData,
   ModPlayerLeaveData,
+  PlaytimeManagerService,
+  PlaytimeService,
 } from "@/services/playtime";
 import { getServerByIp } from "@/services/playtime/config";
 import { Request, Response } from "express";
@@ -66,20 +68,18 @@ export class PresenceController {
       targetServerId = serverInfo.serverId;
     }
 
-    let playtimeService;
     try {
-      playtimeService = getPlaytimeService(targetServerId);
-    } catch (error) {
-      logger.error(
-        `PlaytimeService not found for server ${targetServerId}:`,
-        error,
+      const playtimeManager = await getService<PlaytimeManagerService>(
+        Services.PLAYTIME_MANAGER_SERVICE,
       );
-      throw new InternalServerError(
-        `Playtime tracking not configured for server ${targetServerId}`,
-      );
-    }
 
-    try {
+      const playtimeService = playtimeManager.getService(targetServerId);
+
+      if (!playtimeService) {
+        throw new InternalServerError(
+          `Playtime tracking not configured for server ${targetServerId}`,
+        );
+      }
       const eventTimestamp = timestamp ? new Date(timestamp) : new Date();
 
       if (state === "joined") {

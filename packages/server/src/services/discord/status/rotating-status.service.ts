@@ -4,68 +4,84 @@ import config from "@/config";
 
 /**
  * Rotating status manager for the web bot
+ *
  * Handles status rotation with support for dynamic data
+ * Automatically rotates through configured statuses at a set interval
  */
 export class RotatingStatusService {
-  private client: Client;
   private statuses: StatusConfig[];
   private currentIndex: number = 0;
   private intervalId?: NodeJS.Timeout;
-  private rotationInterval: number;
 
   /**
    * Creates a new rotating status service
    *
-   * @param client - The Discord client instance
-   * @param rotationInterval - Interval between status changed in milliseconds (default: 60000)
+   * @param client - The Discord client instance (web bot)
+   * @param rotationInterval - Interval between status changes in milliseconds (default: 60000)
    */
-  constructor(client: Client, rotationInterval: number = 60000) {
-    this.client = client;
+  constructor(
+    private readonly client: Client,
+    private readonly rotatingInterval: number = 60000,
+  ) {
     this.statuses = statusConfigs;
-    this.rotationInterval = rotationInterval;
   }
 
   /**
-   * Starts the status rotation
+   * Initialize the service and start status rotation
+   * Called by the service container during startup
    *
    * Sets an initial status immediately, then rotates at the configured interval
+   *
+   * @returns Promise resolving when the service initialization is completed
    */
-  public start(): void {
+  async initialize(): Promise<void> {
+    // Uncomment if you want to skip in non-production:
     // if (!config.envMode.isProd) {
     //   logger.warn("Skipping rotating statuses in non-production environment");
     //   return;
     // }
 
     if (!this.client.isReady()) {
-      logger.warn("Cannot start status rotation - client not ready");
-      return;
+      logger.warn("Client not ready yet, waiting for ready state");
+      await new Promise<void>((resolve) => {
+        this.client.once("clientReady", () => resolve());
+      });
     }
+    logger.info("Initializing RotatingStatusService...");
 
-    this.rotateStatus();
+    await this.rotateStatus();
 
     this.intervalId = setInterval(() => {
-      this.rotateStatus();
-    }, this.rotationInterval);
+      this.rotateStatus().catch((error) => {
+        logger.error("Error during status rotation:", error);
+      });
+    }, this.rotatingInterval);
 
     logger.info(
-      `Started rotating status service (${this.statuses.length} statuses, ${this.rotationInterval}ms interval)`,
+      `RotatingStatusService initialized (${this.statuses.length} statuses, ${this.rotatingInterval / 1000}s interval)`,
     );
   }
 
   /**
-   * Stops the status rotation
+   * Shutdown the service and clean up timers
+   * Called by the service container during graceful shutdown
+   *
+   * @returns Promise resolving when the service is stopped
    */
-  public stop(): void {
+  async shutdown(): Promise<void> {
     if (this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = undefined;
-      logger.info("Stopped rotating status service");
+      logger.info("RotatingStatusService stopped");
     }
   }
 
   /**
    * Rotates to the next status
    * Handles both static and dynamic statuses
+   *
+   * @returns Promise resolving when the status is rotated
+   * @private
    */
   private async rotateStatus(): Promise<void> {
     const statusConfig = this.statuses[this.currentIndex];
@@ -88,9 +104,12 @@ export class RotatingStatusService {
    * Sets the bot's custom status
    *
    * @param status - The status text to display
+   *
+   * @private
    */
   private setStatus(status: string): void {
     if (!this.client.isReady()) {
+      logger.warn("Cannot set status - client not ready");
       return;
     }
 
@@ -104,6 +123,17 @@ export class RotatingStatusService {
       ],
       status: "online",
     });
+
+    logger.debug(`Set bot status to: "${status}"`);
+  }
+
+  /**
+   * Manually triggers a status rotation
+   *
+   * Useful for rtesting or forcing an immediate rotation
+   */
+  async forceRotation(): Promise<void> {
+    await this.rotateStatus();
   }
 
   /**
@@ -111,7 +141,7 @@ export class RotatingStatusService {
    *
    * @param status - Status configuration to add
    */
-  public addStatus(status: StatusConfig): void {
+  addStatus(status: StatusConfig): void {
     this.statuses.push(status);
     logger.debug(`Added new status: ${status.text}`);
   }
@@ -121,16 +151,16 @@ export class RotatingStatusService {
    *
    * @param category - Category to filter by
    */
-  public filterCategory(category: StatusCategory): void {
+  filterCategory(category: StatusCategory): void {
     this.statuses = statusConfigs.filter((s) => s.category === category);
     this.currentIndex = 0;
-    logger.info(`Filtered statuses to category ${category}`);
+    logger.info(`Filtered statuses to category: ${category}`);
   }
 
   /**
    * Resets statuses to default configuration
    */
-  public resetStatuses(): void {
+  resetStatuses(): void {
     this.statuses = statusConfigs;
     this.currentIndex = 0;
     logger.info("Reset statuses to default configuration");
@@ -138,8 +168,10 @@ export class RotatingStatusService {
 
   /**
    * Gets statistics about the status rotation
+   *
+   * @returns Object containing total count, current index, and count by category
    */
-  public getStats(): {
+  getStats(): {
     total: number;
     currentIndex: number;
     byCategory: Record<StatusCategory, number>;

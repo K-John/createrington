@@ -1,5 +1,6 @@
 import { EmbedPresets } from "@/discord/embeds";
-import { getPlaytimeService } from "@/services/playtime";
+import { getService, Services } from "@/services";
+import { PlaytimeManagerService } from "@/services/playtime";
 import {
   ChatInputCommandInteraction,
   MessageFlags,
@@ -47,7 +48,15 @@ export async function execute(
   const serverId = parseInt(serverOpt, 10);
 
   try {
-    const playtimeService = getPlaytimeService(serverId);
+    const playtimeManager = await getService<PlaytimeManagerService>(
+      Services.PLAYTIME_MANAGER_SERVICE,
+    );
+
+    const playtimeService = playtimeManager.getService(serverId);
+
+    if (!playtimeService) {
+      throw new Error(`Playtime service is not configured for this server`);
+    }
 
     const activeSessions = playtimeService.getActiveSessions();
 

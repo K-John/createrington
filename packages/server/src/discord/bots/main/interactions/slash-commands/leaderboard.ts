@@ -1,8 +1,9 @@
 import { Discord } from "@/discord/constants";
 import { EmbedPresets } from "@/discord/embeds";
+import { getService, Services } from "@/services";
 import {
   getAllLeaderboardTypes,
-  leaderboardService,
+  LeaderboardService,
   LeaderboardType,
 } from "@/services/discord/leaderboard";
 import {
@@ -33,9 +34,9 @@ export const data = new SlashCommandBuilder()
             ...getAllLeaderboardTypes().map((type) => ({
               name: type.charAt(0).toUpperCase() + type.slice(1),
               value: type,
-            }))
-          )
-      )
+            })),
+          ),
+      ),
   )
   .addSubcommand((sub) =>
     sub
@@ -50,12 +51,12 @@ export const data = new SlashCommandBuilder()
             ...getAllLeaderboardTypes().map((type) => ({
               name: type.charAt(0).toUpperCase() + type.slice(1),
               value: type,
-            }))
-          )
-      )
+            })),
+          ),
+      ),
   )
   .addSubcommand((sub) =>
-    sub.setName("refresh-all").setDescription("Refresh all leaderboards")
+    sub.setName("refresh-all").setDescription("Refresh all leaderboards"),
   );
 
 /**
@@ -97,24 +98,28 @@ export const prodOnly = false;
  * - Errors are caught and displayed with appropriate error embeds
  */
 export async function execute(
-  interaction: ChatInputCommandInteraction
+  interaction: ChatInputCommandInteraction,
 ): Promise<void> {
   const subcommand = interaction.options.getSubcommand();
 
+  const leaderboardService = await getService<LeaderboardService>(
+    Services.LEADERBOARD_SERVICE,
+  );
+
   try {
     if (subcommand === "create") {
-      await handleCreate(interaction);
+      await handleCreate(interaction, leaderboardService);
     } else if (subcommand === "refresh") {
-      await handleRefresh(interaction);
+      await handleRefresh(interaction, leaderboardService);
     } else if (subcommand === "refresh-all") {
-      await handleRefreshAll(interaction);
+      await handleRefreshAll(interaction, leaderboardService);
     }
   } catch (error) {
     logger.error("/leaderboard failed:", error);
 
     const embed = EmbedPresets.error(
       "Command Failed",
-      error instanceof Error ? error.message : "An unknown error occurred"
+      error instanceof Error ? error.message : "An unknown error occurred",
     );
 
     if (!interaction.replied && !interaction.deferred) {
@@ -144,7 +149,8 @@ export async function execute(
  * @returns Promise resolving when the leaderboard is created/updated
  */
 async function handleCreate(
-  interaction: ChatInputCommandInteraction
+  interaction: ChatInputCommandInteraction,
+  leaderboardService: LeaderboardService,
 ): Promise<void> {
   const type = interaction.options.getString("type", true) as LeaderboardType;
 
@@ -155,8 +161,8 @@ async function handleCreate(
   const embed = EmbedPresets.success(
     "Leaderboard Created",
     `Created ${type} leaderboard in ${Discord.Channels.mention(
-      result.channelId
-    )}`
+      result.channelId,
+    )}`,
   );
 
   await interaction.editReply({
@@ -180,7 +186,8 @@ async function handleCreate(
  * @throws Error if refresh fails or leaderboard message not found
  */
 async function handleRefresh(
-  interaction: ChatInputCommandInteraction
+  interaction: ChatInputCommandInteraction,
+  leaderboardService: LeaderboardService,
 ): Promise<void> {
   const type = interaction.options.getString("type", true) as LeaderboardType;
 
@@ -191,7 +198,7 @@ async function handleRefresh(
   if (result.success) {
     const embed = EmbedPresets.success(
       "Leaderboard Refreshed",
-      `Successfully refreshed ${type} leaderboard with ${result.entries.length} entries.`
+      `Successfully refreshed ${type} leaderboard with ${result.entries.length} entries.`,
     );
 
     await interaction.editReply({
@@ -220,7 +227,8 @@ async function handleRefresh(
  * - Failed leaderboards are listed with error messages
  */
 async function handleRefreshAll(
-  interaction: ChatInputCommandInteraction
+  interaction: ChatInputCommandInteraction,
+  leaderboardService: LeaderboardService,
 ): Promise<void> {
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
@@ -231,13 +239,13 @@ async function handleRefreshAll(
 
   const embed = EmbedPresets.success(
     "Leaderboards Refreshed",
-    `Successfully refreshed ${successful}/${results.length} leaderboards.`
+    `Successfully refreshed ${successful}/${results.length} leaderboards.`,
   );
 
   if (failed.length > 0) {
     embed.field(
       "Failed",
-      failed.map((r) => `- ${r.type}: ${r.error}`).join("\n")
+      failed.map((r) => `- ${r.type}: ${r.error}`).join("\n"),
     );
   }
 

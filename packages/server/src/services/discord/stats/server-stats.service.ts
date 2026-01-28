@@ -14,8 +14,6 @@ import { ServerStatsConfig } from "./types";
  */
 export class ServerStatsService {
   private lastStats: ServerStats | null = null;
-  private isRunning = false;
-  private isInitialized = false;
 
   constructor(
     private readonly client: Client,
@@ -23,36 +21,34 @@ export class ServerStatsService {
   ) {}
 
   /**
-   * Starts the stat service
+   * Initialize the service and start stat tracking
+   * Called by the service container during startup
    *
    * - Performs initial member fetch to populate cache
-   * - Performs initial update
+   * - Performs initial stats update
    * - Sets up event listeners for member changes
    *
-   * @returns Promise resolving when the first update completes
+   * @returns Promise resolving when the initialization is completed
    */
-  public async start(): Promise<void> {
-    if (this.isRunning) {
-      logger.warn("ServerStatsService is already running");
-      return;
-    }
+  async initialize(): Promise<void> {
+    logger.info("Initializing ServerStatsService");
+  }
 
-    logger.info("Starting ServerStatsService");
-
-    await this.ensureMembersFetched();
-
-    await this.updateStats();
-
-    this.setupEventListeners();
-
-    this.isRunning = true;
-    this.isInitialized = true;
-    logger.info("ServerStatsService started (event-driven mode)");
+  /**
+   * Shutdown the service
+   * Called by the service container during graceful shutdown
+   *
+   * Note: Event listeners are tied to the client and will be cleaned up
+   * when the client is destroyed, no cleanup needed here
+   */
+  async shutdown(): Promise<void> {
+    logger.info("ServerStatsService stopped");
   }
 
   /**
    * Ensures guild members are fetched and cached
    *
+   * @returns Promise resolving when the cache is ensured
    * @private
    */
   private async ensureMembersFetched(): Promise<void> {
@@ -90,27 +86,9 @@ export class ServerStatsService {
   }
 
   /**
-   * Stops the stats service
-   *
-   * Note: Event listeners are tied to the client and will be cleaned up
-   * when the client is destroyed
-   */
-  public stop(): void {
-    if (!this.isRunning) {
-      logger.warn("ServerStatsService is not running");
-      return;
-    }
-
-    this.isRunning = false;
-    logger.info("ServerStatsService stopped");
-  }
-
-  /**
    * Fetches current server statistics
    *
    * @returns Promise resolving to current stats
-   *
-   * @private
    */
   private async fetchStats(): Promise<ServerStats> {
     const guild = await this.client.guilds.fetch(this.config.guildId);
@@ -119,10 +97,8 @@ export class ServerStatsService {
     const bots = guild.members.cache.filter((m) => m.user.bot).size;
     const total = members + bots;
 
-    if (total === 0 && this.isInitialized) {
-      logger.warn(
-        "Member cache is empty despite initialization - this may indicate a caching issue",
-      );
+    if (total === 0) {
+      logger.warn("Member cache is empty - this may indicate a caching issue");
     }
 
     return {
@@ -157,6 +133,7 @@ export class ServerStatsService {
    *
    * Only updates if stats have changed since last update to minimize API calls
    *
+   * @returns Promise resolving when the stats are updated
    * @private
    */
   private async updateStats(): Promise<void> {
@@ -213,7 +190,7 @@ export class ServerStatsService {
         `Server stats updated - Members: ${stats.members}, Bots: ${stats.bots}, Total: ${stats.total}`,
       );
     } catch (error) {
-      logger.error("Failed to update server stats:", error);
+      logger.error("Failed to udpate server stats:", error);
     }
   }
 
@@ -222,9 +199,9 @@ export class ServerStatsService {
    *
    * Useful for testing or forcing an immediate update
    *
-   * @returns Promise resolving when the update completes
+   * @returns Promise resolving when the update is completed
    */
-  public async forceUpdate(): Promise<void> {
+  async forceUpdate(): Promise<void> {
     await this.updateStats();
   }
 
@@ -233,16 +210,7 @@ export class ServerStatsService {
    *
    * @returns Current cached stats or null if not yet fetched
    */
-  public getCurrentStats(): ServerStats | null {
+  getCurrentStats(): ServerStats | null {
     return this.lastStats;
-  }
-
-  /**
-   * Checks if the server is currently running
-   *
-   * @returns True if running, false otherwise
-   */
-  public isActive(): boolean {
-    return this.isRunning;
   }
 }

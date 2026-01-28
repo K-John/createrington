@@ -1,5 +1,6 @@
 import { EmbedPresets } from "@/discord/embeds";
-import { leaderboardService } from "@/services/discord/leaderboard";
+import { getService, Services } from "@/services";
+import { LeaderboardService } from "@/services/discord/leaderboard";
 import { isValidLeaderboardType } from "@/services/discord/leaderboard/config";
 import { LeaderboardType } from "@/services/discord/leaderboard/types";
 import { ButtonInteraction, MessageFlags } from "discord.js";
@@ -90,8 +91,11 @@ export async function execute(interaction: ButtonInteraction): Promise<void> {
  */
 async function handleRefresh(
   interaction: ButtonInteraction,
-  type: LeaderboardType
+  type: LeaderboardType,
 ): Promise<void> {
+  const leaderboardService = await getService<LeaderboardService>(
+    Services.LEADERBOARD_SERVICE,
+  );
   const cooldownCheck = await leaderboardService.canRefresh(type);
 
   if (!cooldownCheck.canRefresh) {
@@ -100,7 +104,7 @@ async function handleRefresh(
 
     const embed = EmbedPresets.error(
       "Leaderboard on Cooldown",
-      `This leaderboard can be refreshed <t:${unixTimestamp}:R>.`
+      `This leaderboard can be refreshed <t:${unixTimestamp}:R>.`,
     );
 
     await interaction.reply({
@@ -125,7 +129,7 @@ async function handleRefresh(
 
     const embed = EmbedPresets.error(
       "Refresh Failed",
-      "Failed to refresh the leaderboard. Please try again later."
+      "Failed to refresh the leaderboard. Please try again later.",
     );
 
     await interaction.followUp({

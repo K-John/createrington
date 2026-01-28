@@ -52,7 +52,7 @@ export class EmailService {
    * @private
    */
   private normalizeEmail(
-    email: string | { email: string; name?: string }
+    email: string | { email: string; name?: string },
   ): string {
     if (typeof email === "string") return email;
     return email.name ? `${email.name} <${email.email}>` : email.email;
@@ -72,7 +72,7 @@ export class EmailService {
     emails:
       | string
       | { email: string; name?: string }
-      | Array<string | { email: string; name?: string }>
+      | Array<string | { email: string; name?: string }>,
   ): string[] {
     const emailArray = Array.isArray(emails) ? emails : [emails];
     return emailArray.map((e) => this.normalizeEmail(e));
@@ -120,8 +120,8 @@ export class EmailService {
 
       logger.info(
         `Email send successfully: ${info.messageId} to ${this.normalizeEmails(
-          options.to
-        ).join(", ")}`
+          options.to,
+        ).join(", ")}`,
       );
 
       return {
@@ -152,7 +152,7 @@ export class EmailService {
   async sendTemplate<T extends EmailTemplate>(
     to: string | { email: string; name?: string },
     template: T,
-    data: EmailTemplateDataMap[T]
+    data: EmailTemplateDataMap[T],
   ): Promise<EmailResult> {
     try {
       const templateInstance =
@@ -189,7 +189,7 @@ export class EmailService {
   async sendToAdmin(
     subject: string,
     html: string,
-    text?: string
+    text?: string,
   ): Promise<EmailResult> {
     return this.send({
       to: config.meta.author.email,
@@ -211,7 +211,7 @@ export class EmailService {
    */
   async sendTemplateToAdmin<T extends EmailTemplate>(
     template: EmailTemplate,
-    data: EmailTemplateDataMap[T]
+    data: EmailTemplateDataMap[T],
   ): Promise<EmailResult> {
     return this.sendTemplate(config.meta.author.email, template, data);
   }

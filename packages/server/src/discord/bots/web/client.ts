@@ -1,8 +1,11 @@
-import config from "@/config";
-import { ActivityType, Client, GatewayIntentBits, Partials } from "discord.js";
+import { Client, GatewayIntentBits, Partials } from "discord.js";
 
-const BOT_TOKEN = config.discord.bots.web.token;
-
+/**
+ * Web Discord bot client instance
+ *
+ * NOTE: This is just the client definition.
+ * Login happens in services/bootstrap.ts
+ */
 export const webBot = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -13,62 +16,3 @@ export const webBot = new Client({
   ],
   partials: [Partials.Channel],
 });
-
-webBot.once("clientReady", () => {
-  logger.info("Logged in as", webBot.user?.tag);
-});
-
-/**
- * Gets the web Discord bot client instance
- *
- * Throws an error if the client is not initialized yet (before login)
- *
- * @returns The Discord client instance
- * @throws Error if client is not ready
- */
-export function getWebClient(): Client {
-  if (!webBot.isReady()) {
-    throw Error("Discord client is not ready yet");
-  }
-  return webBot;
-}
-
-/**
- * Ensures the web bot is logged in and ready
- *
- * Useful for utilities that may run before the bot has finished connecting
- *
- * @returns Promise resolving to the ready Discord client
- */
-export async function ensureWebClientReady(): Promise<Client> {
-  if (!webBot.isReady()) {
-    await webBot.login(BOT_TOKEN);
-    await new Promise<void>((resolve) => {
-      webBot.once("clientReady", () => resolve());
-    });
-  }
-  return webBot;
-}
-
-/**
- * Sets the bot's custom status
- *
- * @param status - The status text to display
- */
-export function setWebBotStatus(status: string): void {
-  if (!webBot.isReady) {
-    logger.warn("Cannot set status - bot not ready");
-    return;
-  }
-
-  webBot.user?.setPresence({
-    activities: [
-      {
-        type: ActivityType.Custom,
-        name: "custom",
-        state: status,
-      },
-    ],
-    status: "online",
-  });
-}

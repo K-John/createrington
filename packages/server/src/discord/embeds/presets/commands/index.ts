@@ -55,7 +55,7 @@ export const CommandEmbedPresets = {
       .join("\n");
 
     embed.description(
-      `**${onlineCount}** player${onlineCount !== 1 ? "s" : ""}`,
+      `**${onlineCount}** player${onlineCount !== 1 ? "s" : ""} online\n\n${playerList}`,
     );
 
     return embed;

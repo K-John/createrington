@@ -9,7 +9,7 @@ export function createApp(): Express {
   app.use(express.urlencoded({ extended: true }));
   app.use(cors({ origin: true, credentials: true }));
 
-  registerRoutes(app);
+  // registerRoutes(app);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

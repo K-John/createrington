@@ -2,7 +2,6 @@ import { Q } from "@/db";
 import { BalanceUtils } from "@/db/repositories/balance/utils";
 import { EmbedPresets } from "@/discord/embeds";
 import { CooldownType } from "@/discord/utils/cooldown";
-import { formatBalance } from "@/utils/format";
 import {
   ChatInputCommandInteraction,
   MessageFlags,

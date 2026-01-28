@@ -1,5 +1,5 @@
-import { User } from "discord.js";
-import { ensureMainClientReady } from "../bots/main/client";
+import { getService, Services } from "@/services";
+import { Client, User } from "discord.js";
 
 /**
  * Discord server utility functions for fetching, validating, and working with Discord users
@@ -25,7 +25,7 @@ export const DiscordUsers = {
    */
   async fetch(discordId: string): Promise<User | null> {
     try {
-      const client = await ensureMainClientReady();
+      const client = await getService<Client>(Services.DISCORD_MAIN_BOT);
       return await client.users.fetch(discordId);
     } catch (error) {
       logger.error(`Failed to fetch user ${discordId}:`, error);
@@ -150,7 +150,7 @@ export const DiscordUsers = {
       size?: number;
       dynamic?: boolean;
       format?: "png" | "jpg" | "webp" | "gif";
-    }
+    },
   ): Promise<string | null> {
     const user = await this.fetch(discordId);
     if (!user) return null;
@@ -209,7 +209,7 @@ export const DiscordUsers = {
    */
   async resolve(discordId: string): Promise<User | null> {
     try {
-      const client = await ensureMainClientReady();
+      const client = await getService<Client>(Services.DISCORD_MAIN_BOT);
 
       const cached = client.users.cache.get(discordId);
 
