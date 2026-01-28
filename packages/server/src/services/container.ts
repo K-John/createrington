@@ -280,6 +280,7 @@ export const Services = {
   ROTATING_STATUS_SERVICE: "discord.rotatingStatusService",
   PLAYTIME_MANAGER_SERVICE: "minecraft.playtimeManagerService",
   ROLE_MANAGEMENT_SERVICE: "discord.roleManagementService",
+  WEBSOCKET_SERVICE: "http.webSocketService",
 } as const;
 
 export type ServiceKey = (typeof Services)[keyof typeof Services];
