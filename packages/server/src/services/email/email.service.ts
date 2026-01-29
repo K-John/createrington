@@ -1,7 +1,7 @@
 import nodemailer from "nodemailer";
 import type { Transporter } from "nodemailer";
 import config from "@/config";
-import {
+import type {
   EmailOptions,
   EmailResult,
   EmailTemplate,

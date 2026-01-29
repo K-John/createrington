@@ -11,11 +11,11 @@ import {
   AttachmentBuilder,
 } from "discord.js";
 import { TicketRepository } from "@/db/repositories/ticket";
-import { Ticket, TicketIdentifier } from "@/generated/db";
+import type { Ticket, TicketIdentifier } from "@/generated/db";
 import {
-  TicketType,
+  type TicketType,
   TicketStatus,
-  CreateTicketOptions,
+  type CreateTicketOptions,
   TicketUserAction,
 } from "./";
 import { getTicketTypeConfig, TicketSystemIds } from "./";

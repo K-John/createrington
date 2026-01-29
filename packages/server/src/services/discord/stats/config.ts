@@ -1,5 +1,5 @@
 import config from "@/config";
-import { ServerStatsConfig } from "./types";
+import type { ServerStatsConfig } from "./types";
 import { Discord } from "@/discord/constants";
 
 /**

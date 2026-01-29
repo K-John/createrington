@@ -1,5 +1,5 @@
 import { AuthRole, discordOAuth } from "@/services/discord/oauth/oauth.service";
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import { BadRequestError, UnauthorizedError } from "@/app/middleware";
 import { jwtService } from "@/services/auth/jwt/jwt.service";
 
@@ -37,7 +37,7 @@ export class AuthController {
    */
   static async handleDiscordCallback(
     req: Request,
-    res: Response
+    res: Response,
   ): Promise<void> {
     const { code, state } = req.body;
 
@@ -50,17 +50,17 @@ export class AuthController {
 
       if (user.role === AuthRole.UNVERIFIED) {
         logger.warn(
-          `Unverified user ${user.username} (${user.discordId}) attempted to login`
+          `Unverified user ${user.username} (${user.discordId}) attempted to login`,
         );
         throw new UnauthorizedError(
-          "You are not registered. Please contact an administrator."
+          "You are not registered. Please contact an administrator.",
         );
       }
 
       const token = jwtService.generate(user);
 
       logger.info(
-        `User ${user.username} (${user.discordId}) logged in successfully`
+        `User ${user.username} (${user.discordId}) logged in successfully`,
       );
 
       res.json({

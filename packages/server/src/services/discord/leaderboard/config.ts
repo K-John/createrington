@@ -1,5 +1,5 @@
 import config from "@/config";
-import { LeaderboardConfig, LeaderboardType } from "./types";
+import { type LeaderboardConfig, LeaderboardType } from "./types";
 import { Q } from "@/db";
 import { formatPlaytime } from "@/utils/format";
 import { Discord } from "@/discord/constants";

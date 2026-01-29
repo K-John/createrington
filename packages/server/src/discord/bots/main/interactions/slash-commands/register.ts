@@ -7,7 +7,7 @@ import { minecraftRcon, ServerId, WhitelistAction } from "@/utils/rcon";
 import {
   ActionRowBuilder,
   ButtonBuilder,
-  ChatInputCommandInteraction,
+  type ChatInputCommandInteraction,
   MessageFlags,
   SlashCommandBuilder,
 } from "discord.js";

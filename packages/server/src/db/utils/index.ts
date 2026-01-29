@@ -1,4 +1,4 @@
-import { Player } from "@/generated/db";
+import type { Player } from "@/generated/db";
 import { Q } from "..";
 
 export * from "./errors";

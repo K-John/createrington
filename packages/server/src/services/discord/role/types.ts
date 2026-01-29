@@ -1,4 +1,4 @@
-import { DiscordRoleId } from "@/discord/constants";
+import type { DiscordRoleId } from "@/discord/constants";
 
 /**
  * Defines when role eligibility should be checked

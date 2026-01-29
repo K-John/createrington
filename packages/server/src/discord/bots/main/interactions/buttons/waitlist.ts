@@ -4,7 +4,7 @@ import { Discord } from "@/discord/constants";
 import {
   ActionRowBuilder,
   ButtonBuilder,
-  ButtonInteraction,
+  type ButtonInteraction,
   ButtonStyle,
   MessageFlags,
 } from "discord.js";

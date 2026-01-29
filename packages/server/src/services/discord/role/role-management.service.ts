@@ -1,6 +1,6 @@
-import { Client } from "discord.js";
+import type { Client } from "discord.js";
 import { RoleAssignmentService } from "./role-assignment.service";
-import { PlaytimeService } from "@/services/playtime";
+import type { PlaytimeService } from "@/services/playtime";
 import { Q } from "@/db";
 import { getDailyRoleRules, getRealtimeRoleRules } from "./config";
 import { RoleConditionType } from "./types";

@@ -1,12 +1,12 @@
-import {
+import type {
   CachedMessage,
-  MessageSource,
   ParsedEmbed,
   ParsedAttachment,
   MinecraftMessageData,
   SystemMessageData,
   WebMessageData,
 } from "@createrington/shared";
+import { MessageSource } from "@createrington/shared";
 
 /**
  * Configuration for a single server's message cache

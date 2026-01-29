@@ -1,4 +1,4 @@
-import { EmbedBuilder, ColorResolvable } from "discord.js";
+import { EmbedBuilder, type ColorResolvable } from "discord.js";
 /**
  * Fluent interface for building Discord embeds with sensible defaults
  * Provides a clean, chainable API for creatng embeds throughout the app
@@ -31,7 +31,7 @@ export class DiscordEmbedBuilder {
   }
 
   public fields(
-    fields: Array<{ name: string; value: string; inline?: boolean }>
+    fields: Array<{ name: string; value: string; inline?: boolean }>,
   ): this {
     this.embed.addFields(fields);
     return this;

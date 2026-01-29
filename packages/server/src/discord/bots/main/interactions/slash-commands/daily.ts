@@ -2,7 +2,7 @@ import { EmbedPresets } from "@/discord/embeds";
 import { CooldownType } from "@/discord/utils/cooldown";
 import { rewardService } from "@/services/reward";
 import {
-  ChatInputCommandInteraction,
+  type ChatInputCommandInteraction,
   MessageFlags,
   SlashCommandBuilder,
 } from "discord.js";

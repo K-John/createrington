@@ -1,14 +1,14 @@
 import {
   ActionRowBuilder,
   ButtonBuilder,
-  ButtonInteraction,
+  type ButtonInteraction,
   ButtonStyle,
   EmbedBuilder,
   MessageFlags,
 } from "discord.js";
 import {
   parseTicketButtonId,
-  TicketService,
+  type TicketService,
   TicketStatus,
 } from "@/services/discord/tickets";
 import { EmbedColors, EmbedPresets } from "@/discord/embeds";

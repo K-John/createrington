@@ -1,4 +1,4 @@
-import { WaitlistConfirmationData } from "../types";
+import type { WaitlistConfirmationData } from "../types";
 import { BaseEmailTemplate } from "./base.template";
 
 export class WaitlistConfirmationTemplate extends BaseEmailTemplate<WaitlistConfirmationData> {

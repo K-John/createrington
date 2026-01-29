@@ -5,7 +5,7 @@
  * providing better autocomplete organization
  */
 
-import { DiscordMessageService } from "@/services/discord/message/message.service";
+import type { DiscordMessageService } from "@/services/discord/message/message.service";
 import { DiscordUsers } from "./users";
 import { DiscordRolesNamespace } from "./roles";
 import { DiscordChannelsNamespace } from "./channels";

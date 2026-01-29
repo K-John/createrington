@@ -1,4 +1,4 @@
-import { Client } from "discord.js";
+import type { Client } from "discord.js";
 import { RoleAssignmentService } from "../role-assignment.service";
 import { getDailyRoleRules } from "../config";
 import { RoleConditionType } from "../types";

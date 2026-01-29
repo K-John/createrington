@@ -1,4 +1,4 @@
-import { RateLimitBucket } from "./types";
+import type { RateLimitBucket } from "./types";
 
 /**
  * Manages Discord API rate limit buckets

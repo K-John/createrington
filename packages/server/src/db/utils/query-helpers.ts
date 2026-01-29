@@ -14,7 +14,7 @@ export function formatCriteria(criteria: Record<string, any>): string {
  */
 export function createNotFoundError(
   entityName: string,
-  criteria: Record<string, any>
+  criteria: Record<string, any>,
 ): NotFoundError {
   return new NotFoundError(entityName, criteria);
 }
@@ -24,7 +24,7 @@ export function createNotFoundError(
  * Useful for discriminated union types
  */
 export function getFirstCriteria<T extends Record<string, any>>(
-  criteria: T
+  criteria: T,
 ): { key: keyof T; value: T[keyof T] } {
   const key = Object.keys(criteria)[0] as keyof T;
   return { key, value: criteria[key] };

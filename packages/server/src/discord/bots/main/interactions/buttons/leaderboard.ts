@@ -1,9 +1,9 @@
 import { EmbedPresets } from "@/discord/embeds";
 import { getService, Services } from "@/services";
-import { LeaderboardService } from "@/services/discord/leaderboard";
+import type { LeaderboardService } from "@/services/discord/leaderboard";
 import { isValidLeaderboardType } from "@/services/discord/leaderboard/config";
-import { LeaderboardType } from "@/services/discord/leaderboard/types";
-import { ButtonInteraction, MessageFlags } from "discord.js";
+import type { LeaderboardType } from "@/services/discord/leaderboard/types";
+import { type ButtonInteraction, MessageFlags } from "discord.js";
 
 /**
  * Handles leaderboard-related buttons

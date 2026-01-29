@@ -1,4 +1,4 @@
-import { EmailAttachment } from "../types";
+import type { EmailAttachment } from "../types";
 
 /**
  * Abstract base class for email templates

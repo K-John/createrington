@@ -4,7 +4,7 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  ChatInputCommandInteraction,
+  type ChatInputCommandInteraction,
   MessageFlags,
   PermissionFlagsBits,
   SlashCommandBuilder,

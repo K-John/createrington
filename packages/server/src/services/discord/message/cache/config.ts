@@ -1,5 +1,5 @@
 import config from "@/config";
-import { MessageCacheServiceConfig } from "./types";
+import type { MessageCacheServiceConfig } from "./types";
 import { Discord } from "@/discord/constants";
 
 /**

@@ -1,10 +1,10 @@
 import config from "@/config";
 import fs from "node:fs";
-import { CooldownType } from "@/discord/utils/cooldown";
+import type { CooldownType } from "@/discord/utils/cooldown";
 import {
-  ChatInputCommandInteraction,
+  type ChatInputCommandInteraction,
   Collection,
-  SlashCommandBuilder,
+  type SlashCommandBuilder,
 } from "discord.js";
 import path from "node:path";
 import { pathToFileURL } from "node:url";

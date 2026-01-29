@@ -1,7 +1,7 @@
 import config from "@/config";
-import { AuthenticatedUser } from "@/services/discord/oauth/oauth.service";
+import type { AuthenticatedUser } from "@/services/discord/oauth/oauth.service";
 import jwt from "jsonwebtoken";
-import { JWTPayload } from "./types";
+import type { JWTPayload } from "./types";
 
 /**
  * JWT service for creating and verifying authentication tokens
@@ -47,7 +47,7 @@ export class JWTService {
     });
 
     logger.debug(
-      `Generated JWT for user ${user.minecraftUsername} (${user.username})`
+      `Generated JWT for user ${user.minecraftUsername} (${user.username})`,
     );
     return token;
   }
@@ -129,11 +129,11 @@ export class JWTService {
         minecraftUsername: decoded.minecraftUsername,
       },
       this.secret,
-      { expiresIn: "7d" }
+      { expiresIn: "7d" },
     );
 
     logger.debug(
-      `Refreshed JWT for user ${decoded.minecraftUsername} (${decoded.username})`
+      `Refreshed JWT for user ${decoded.minecraftUsername} (${decoded.username})`,
     );
     return newToken;
   }

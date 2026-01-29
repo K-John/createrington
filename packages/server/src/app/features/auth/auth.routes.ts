@@ -1,8 +1,5 @@
 import { AuthController } from "./auth.controller";
-import {
-  AuthLevel,
-  route,
-} from "@/app/middleware";
+import { AuthLevel, route } from "@/app/middleware";
 import { Router } from "express";
 
 const router = Router();
@@ -19,7 +16,7 @@ router.get("/discord", ...route(AuthLevel.PUBLIC, AuthController.getAuthUrl));
 // POST /api/auth/discord/callback - Code exchange with Discord API
 router.post(
   "/discord/callback",
-  ...route(AuthLevel.PUBLIC, AuthController.handleDiscordCallback)
+  ...route(AuthLevel.PUBLIC, AuthController.handleDiscordCallback),
 );
 
 // ============================================================================

@@ -1,4 +1,4 @@
-import { Client } from "discord.js";
+import type { Client } from "discord.js";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadCommandHandlers } from "../common/loaders/command-loader";

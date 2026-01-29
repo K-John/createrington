@@ -1,6 +1,6 @@
 import config from "@/config";
 import { DatabaseError } from "@/db/utils/errors";
-import { NextFunction, Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 
 /**
  * Custom app error class with HTTP status code
@@ -9,7 +9,7 @@ export class AppError extends Error {
   constructor(
     message: string,
     public statusCode: number = 500,
-    public isOperational: boolean = true
+    public isOperational: boolean = true,
   ) {
     super(message);
     this.name = "AppError";
@@ -89,7 +89,7 @@ export function errorHandler(
   err: Error | AppError | DatabaseError,
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void {
   let statusCode = 500;
   let message = "Internal Server Error";
@@ -151,7 +151,7 @@ export function errorHandler(
 export function notFoundHandler(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void {
   const error = new NotFoundError(`Route ${req.originalUrl} not found`);
   next(error);

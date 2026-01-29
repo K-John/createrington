@@ -3,7 +3,7 @@ import { EmbedPresets } from "@/discord/embeds";
 import { isSendableChannel } from "@/discord/utils/channel-guard";
 import { RoleManager } from "@/discord/utils/roles/role-manager";
 import {
-  ChatInputCommandInteraction,
+  type ChatInputCommandInteraction,
   GuildMember,
   MessageFlags,
   PermissionFlagsBits,
@@ -22,7 +22,7 @@ export const data = new SlashCommandBuilder()
     option
       .setName("content")
       .setDescription("The message to send")
-      .setRequired(true)
+      .setRequired(true),
   );
 
 /**
@@ -40,7 +40,7 @@ export const prodOnly = false;
  * 3. Sends the message to the channel
  */
 export async function execute(
-  interaction: ChatInputCommandInteraction
+  interaction: ChatInputCommandInteraction,
 ): Promise<void> {
   const member = interaction.member as GuildMember;
   const content = interaction.options.getString("content", true);
@@ -68,7 +68,7 @@ export async function execute(
 
     const embed = EmbedPresets.error(
       "Message Error",
-      "Failed to send message to the channel. Please try again later."
+      "Failed to send message to the channel. Please try again later.",
     );
 
     await interaction.reply({

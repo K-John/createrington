@@ -1,8 +1,8 @@
 import { EmbedPresets } from "@/discord/embeds";
 import { getService, Services } from "@/services";
-import { PlaytimeManagerService } from "@/services/playtime";
+import type { PlaytimeManagerService } from "@/services/playtime";
 import {
-  ChatInputCommandInteraction,
+  type ChatInputCommandInteraction,
   MessageFlags,
   SlashCommandBuilder,
 } from "discord.js";

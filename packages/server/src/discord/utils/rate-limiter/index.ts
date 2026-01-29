@@ -1,5 +1,3 @@
-// packages/server/src/discord/utils/rate-limiter/index.ts
-
 export * from "./types";
 export { DiscordRateLimiter } from "./rate-limiter";
 export { BucketManager } from "./bucket-manager";

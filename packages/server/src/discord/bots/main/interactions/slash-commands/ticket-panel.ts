@@ -1,6 +1,6 @@
 import {
   SlashCommandBuilder,
-  ChatInputCommandInteraction,
+  type ChatInputCommandInteraction,
   PermissionFlagsBits,
   MessageFlags,
   ButtonBuilder,
@@ -42,13 +42,13 @@ export const prodOnly = false;
  * @returns Promise resolving when the command execution is completed
  */
 export async function execute(
-  interaction: ChatInputCommandInteraction
+  interaction: ChatInputCommandInteraction,
 ): Promise<void> {
   try {
     if (!isSendableChannel(interaction.channel)) {
       const embed = EmbedPresets.error(
         "Invalid Channel",
-        "This command can only be used in text channels."
+        "This command can only be used in text channels.",
       );
 
       await interaction.reply({
@@ -72,7 +72,7 @@ export async function execute(
         button.setEmoji(config.emoji);
       } catch (error) {
         logger.warn(
-          `Invalid emoji for ticket type ${config.type}: ${config.emoji}`
+          `Invalid emoji for ticket type ${config.type}: ${config.emoji}`,
         );
       }
 
@@ -88,7 +88,7 @@ export async function execute(
 
     const successEmbed = EmbedPresets.success(
       "Panel Created",
-      "Ticket panel has been created in this channel."
+      "Ticket panel has been created in this channel.",
     );
 
     await interaction.reply({
@@ -100,7 +100,7 @@ export async function execute(
 
     const embed = EmbedPresets.error(
       "Panel Creation Failed",
-      "Failed to create ticket panel. Please try again."
+      "Failed to create ticket panel. Please try again.",
     );
 
     if (!interaction.replied && !interaction.deferred) {

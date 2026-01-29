@@ -1,9 +1,8 @@
 import { Q } from "@/db";
 import { isAdminDb } from "@/db/utils";
 import { EmbedPresets } from "@/discord/embeds";
-import { isAdmin } from "@/discord/utils/admin-guard";
 import { minecraftRcon, ServerId, WhitelistAction } from "@/utils/rcon";
-import { ButtonInteraction, MessageFlags } from "discord.js";
+import { type ButtonInteraction, MessageFlags } from "discord.js";
 
 /**
  * Handles departed member management buttons

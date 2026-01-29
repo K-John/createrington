@@ -1,12 +1,12 @@
-import { Client, GuildMember } from "discord.js";
-import {
+import type { Client, GuildMember } from "discord.js";
+import type {
   AnyRoleRule,
   RoleAssignmentNotification,
   RoleAssignmentResult,
-  RoleConditionType,
   RoleEligibilityResult,
 } from "./types";
-import { BaseRoleCondition } from "./conditions/base-condition";
+import { RoleConditionType } from "./types";
+import type { BaseRoleCondition } from "./conditions/base-condition";
 import { PlaytimeCondition } from "./conditions/playtime-condition";
 import config from "@/config";
 import { RoleManager } from "@/discord/utils/roles/role-manager";

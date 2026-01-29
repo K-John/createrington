@@ -1,7 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { BaseEmailTemplate } from "./base.template";
-import { EmailAttachment, WaitlistInvitationData } from "../types";
+import type { EmailAttachment, WaitlistInvitationData } from "../types";
 import config from "@/config";
 
 const links = config.meta.links;
@@ -155,7 +155,7 @@ export class WaitlistInvitationTemplate extends BaseEmailTemplate<WaitlistInvita
       "..",
       "..",
       "assets",
-      "logo.png"
+      "logo.png",
     );
 
     return [

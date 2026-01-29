@@ -1,4 +1,4 @@
-import { Pool, PoolClient } from "pg";
+import type { Pool, PoolClient } from "pg";
 
 /**
  * Transaction class for manual transaction control
@@ -72,7 +72,7 @@ export class Transaction {
  */
 export async function transaction<T>(
   db: Pool,
-  callback: (client: PoolClient) => Promise<T>
+  callback: (client: PoolClient) => Promise<T>,
 ): Promise<T> {
   const client = await db.connect();
 
@@ -104,7 +104,7 @@ export async function transaction<T>(
  */
 export async function savepoint(
   client: PoolClient,
-  name: string
+  name: string,
 ): Promise<void> {
   await client.query(`SAVEPOINT ${name}`);
   logger.debug(`Savepoint created: ${name}`);
@@ -118,7 +118,7 @@ export async function savepoint(
  */
 export async function rollbackToSavepoint(
   client: PoolClient,
-  name: string
+  name: string,
 ): Promise<void> {
   await client.query(`ROLLBACK TO SAVEPOINT ${name}`);
   logger.debug(`Rolled back to savepoint: ${name}`);
@@ -132,7 +132,7 @@ export async function rollbackToSavepoint(
  */
 export async function releaseSavepoint(
   client: PoolClient,
-  name: string
+  name: string,
 ): Promise<void> {
   await client.query(`RELEASE SAVEPOINT ${name}`);
   logger.debug(`Savepoint released: ${name}`);

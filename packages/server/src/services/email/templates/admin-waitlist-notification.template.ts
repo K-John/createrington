@@ -1,4 +1,4 @@
-import { AdminWaitlistNotificationData } from "../types";
+import type { AdminWaitlistNotificationData } from "../types";
 import { BaseEmailTemplate } from "./base.template";
 
 export class AdminWaitlistNotificationTemplate extends BaseEmailTemplate<AdminWaitlistNotificationData> {

@@ -1,7 +1,7 @@
 import config from "@/config";
 import fs from "node:fs";
 import path from "node:path";
-import { Client, ClientEvents } from "discord.js";
+import type { Client, ClientEvents } from "discord.js";
 import { pathToFileURL } from "node:url";
 
 const isDev = config.envMode.isDev;

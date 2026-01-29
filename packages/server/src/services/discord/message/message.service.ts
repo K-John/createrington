@@ -1,6 +1,6 @@
 import config from "@/config";
 import { isSendableChannel } from "@/discord/utils/channel-guard";
-import {
+import type {
   Client,
   EmbedBuilder,
   Message,
@@ -8,7 +8,7 @@ import {
   MessageEditOptions,
   TextChannel,
 } from "discord.js";
-import {
+import type {
   DeleteMessageOptions,
   EditMessageOptions,
   ReplyMessageOptions,

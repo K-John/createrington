@@ -1,6 +1,5 @@
-import { ServerStats } from "./types";
-import { Client } from "discord.js";
-import { ServerStatsConfig } from "./types";
+import type { ServerStats, ServerStatsConfig } from "./types";
+import type { Client } from "discord.js";
 
 /**
  * Service for updating Discord server statistics in channel names

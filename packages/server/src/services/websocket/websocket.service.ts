@@ -1,25 +1,24 @@
-import { Server as HttpServer } from "node:http";
+import type { Server as HttpServer } from "node:http";
 import { Server as SocketIOServer, Socket } from "socket.io";
-import {
+import type {
   InitialDataPayload,
   InitialDataRequest,
   MessageUpdatePayload,
   PlayersUpdatePayload,
   ServerInitialDataPayload,
   ServerStatusUpdatePayload,
-  SocketEvent,
   SubscriptionConfirmation,
   SubscriptionRequest,
-  SubscriptionType,
   WebSocketServiceConfig,
   WebSocketStats,
 } from "./types";
-import { MessageCacheService } from "../discord/message/cache";
-import { PlaytimeManagerService } from "../playtime/playtime-manager.service";
+import { SocketEvent, SubscriptionType } from "./types";
+import type { MessageCacheService } from "../discord/message/cache";
+import type { PlaytimeManagerService } from "../playtime/playtime-manager.service";
 import { RoomManager } from "./room-manager";
 import { WebSocketDataProvider } from "./data-provider";
-import { CachedMessage } from "../discord/message/cache";
-import { SessionEndEvent, SessionStartEvent } from "../playtime";
+import type { CachedMessage } from "../discord/message/cache";
+import type { SessionEndEvent, SessionStartEvent } from "../playtime";
 
 /**
  * Improved WebSocket service for real-time communication

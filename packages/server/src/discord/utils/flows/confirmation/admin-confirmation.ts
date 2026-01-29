@@ -1,5 +1,5 @@
 import { EmbedPresets } from "@/discord/embeds";
-import { ButtonStyle, ChatInputCommandInteraction } from "discord.js";
+import { ButtonStyle, type ChatInputCommandInteraction } from "discord.js";
 import { ConfirmationFlow } from ".";
 
 export interface AdminChangeConfirmation {
@@ -16,7 +16,7 @@ export interface AdminChangeConfirmation {
 }
 
 export async function confirmAdminChange(
-  options: AdminChangeConfirmation
+  options: AdminChangeConfirmation,
 ): Promise<void> {
   const {
     interaction,
@@ -60,7 +60,7 @@ export async function confirmAdminChange(
         handler: async (btnInteraction) => {
           const cancelEmbed = EmbedPresets.info(
             "Cancelled",
-            "Action cancelled. No changes were made."
+            "Action cancelled. No changes were made.",
           );
 
           await btnInteraction.update({

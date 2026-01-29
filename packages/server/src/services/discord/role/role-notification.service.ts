@@ -1,6 +1,6 @@
 import { EmbedPresets } from "@/discord/embeds";
 import { getNotificationConfig } from "./config";
-import { RoleAssignmentNotification } from "./types";
+import type { RoleAssignmentNotification } from "./types";
 import { Discord } from "@/discord/constants";
 
 /**
@@ -17,13 +17,13 @@ export class RoleNotificationService {
    * @returns Promise resolving when notification is sent
    */
   async sendNotification(
-    notification: RoleAssignmentNotification
+    notification: RoleAssignmentNotification,
   ): Promise<void> {
     const config = getNotificationConfig(notification.role.roleId);
 
     if (!config.enabled) {
       logger.debug(
-        `Notifications disabled for role ${notification.role.label}`
+        `Notifications disabled for role ${notification.role.label}`,
       );
       return;
     }
@@ -31,7 +31,7 @@ export class RoleNotificationService {
     const channelId = config.channelId;
     if (!channelId) {
       logger.warn(
-        `No channel ID configured for role notification (${notification.role.label})`
+        `No channel ID configured for role notification (${notification.role.label})`,
       );
       return;
     }
@@ -46,7 +46,7 @@ export class RoleNotificationService {
 
       if (result.success) {
         logger.info(
-          `Sent role notification for ${notification.username} -> ${notification.role.label}`
+          `Sent role notification for ${notification.username} -> ${notification.role.label}`,
         );
       } else {
         logger.error(`Failed to send role notification: ${result.error}`);
@@ -65,7 +65,7 @@ export class RoleNotificationService {
    * @returns Promise resolving when notification is sent
    */
   async sendMultipleNotifications(
-    notifications: RoleAssignmentNotification[]
+    notifications: RoleAssignmentNotification[],
   ): Promise<void> {
     if (notifications.length === 0) {
       return;
@@ -98,11 +98,11 @@ export class RoleNotificationService {
 
       if (result.success) {
         logger.info(
-          `Sent multiple role notifications for ${notifications[0].username}`
+          `Sent multiple role notifications for ${notifications[0].username}`,
         );
       } else {
         logger.error(
-          `Failed to send multiple role notifications: ${result.error}`
+          `Failed to send multiple role notifications: ${result.error}`,
         );
       }
     } catch (error) {
@@ -117,7 +117,7 @@ export class RoleNotificationService {
    * @returns Promise resolving when announcement is sent
    */
   async sendTopPlayerAnnouncement(
-    notification: RoleAssignmentNotification
+    notification: RoleAssignmentNotification,
   ): Promise<void> {
     const config = getNotificationConfig(notification.role.roleId);
     const channelId = config.channelId;
@@ -132,7 +132,7 @@ export class RoleNotificationService {
         notification.username,
         notification.role.label,
         notification.currentValue,
-        notification.role.conditionType
+        notification.role.conditionType,
       );
 
       await Discord.Messages.send({

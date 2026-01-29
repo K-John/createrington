@@ -1,4 +1,4 @@
-import { GuildMember, Role } from "discord.js";
+import type { GuildMember, Role } from "discord.js";
 
 /**
  * Role manager utility for handling role assignments throughout the bot
@@ -17,7 +17,7 @@ export class RoleManager {
   private static async assignRole(
     member: GuildMember,
     roleId: string,
-    reason?: string
+    reason?: string,
   ): Promise<boolean> {
     try {
       const role = member.guild.roles.cache.get(roleId);
@@ -36,13 +36,13 @@ export class RoleManager {
       logger.info(
         `Assigned role ${role.name} to ${member.user.tag}${
           reason ? ` - Reason: ${reason}` : ""
-        }`
+        }`,
       );
       return true;
     } catch (error) {
       logger.error(
         `Failed to assign role ${roleId} to ${member.user.tag}:`,
-        error
+        error,
       );
       return false;
     }
@@ -61,7 +61,7 @@ export class RoleManager {
   static async assign(
     member: GuildMember,
     roleIdOrIds: string | string[],
-    reason?: string
+    reason?: string,
   ): Promise<boolean | { successful: number; failed: number }> {
     if (typeof roleIdOrIds === "string") {
       return this.assignRole(member, roleIdOrIds);
@@ -90,7 +90,7 @@ export class RoleManager {
   private static async removeRole(
     member: GuildMember,
     roleId: string,
-    reason?: string
+    reason?: string,
   ): Promise<boolean> {
     try {
       const role = member.guild.roles.cache.get(roleId);
@@ -102,7 +102,7 @@ export class RoleManager {
 
       if (!member.roles.cache.has(roleId)) {
         logger.debug(
-          `Member ${member.user.tag} doesn't have role ${role.name}`
+          `Member ${member.user.tag} doesn't have role ${role.name}`,
         );
         return true;
       }
@@ -111,13 +111,13 @@ export class RoleManager {
       logger.info(
         `Removed role ${role.name} from ${member.user.tag}${
           reason ? ` - Reason: ${reason}` : ""
-        }`
+        }`,
       );
       return true;
     } catch (error) {
       logger.error(
         `Failed to remove role ${roleId} from ${member.user.tag}:`,
-        error
+        error,
       );
       return false;
     }
@@ -136,7 +136,7 @@ export class RoleManager {
   static async remove(
     member: GuildMember,
     roleIdOrIds: string | string[],
-    reason?: string
+    reason?: string,
   ): Promise<boolean | { successful: number; failed: number }> {
     if (typeof roleIdOrIds === "string") {
       return this.removeRole(member, roleIdOrIds, reason);
@@ -200,7 +200,7 @@ export class RoleManager {
     member: GuildMember,
     oldRoleId: string,
     newRoleId: string,
-    reason?: string
+    reason?: string,
   ): Promise<boolean> {
     try {
       const oldRole = member.guild.roles.cache.get(oldRoleId);
@@ -215,7 +215,7 @@ export class RoleManager {
       await member.roles.add(newRole, reason);
 
       logger.info(
-        `Swapped role ${oldRole.name} -> ${newRole.name} for ${member.user.tag}`
+        `Swapped role ${oldRole.name} -> ${newRole.name} for ${member.user.tag}`,
       );
       return true;
     } catch (error) {

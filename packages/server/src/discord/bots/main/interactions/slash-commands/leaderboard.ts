@@ -3,11 +3,11 @@ import { EmbedPresets } from "@/discord/embeds";
 import { getService, Services } from "@/services";
 import {
   getAllLeaderboardTypes,
-  LeaderboardService,
-  LeaderboardType,
+  type LeaderboardService,
+  type LeaderboardType,
 } from "@/services/discord/leaderboard";
 import {
-  ChatInputCommandInteraction,
+  type ChatInputCommandInteraction,
   MessageFlags,
   PermissionFlagsBits,
   SlashCommandBuilder,

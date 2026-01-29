@@ -1,6 +1,6 @@
 import cfg from "@/config";
 import { Discord } from "@/discord/constants";
-import { TicketType, TicketTypeConfig } from "./types";
+import { TicketType, type TicketTypeConfig } from "./types";
 
 /**
  * System-wide ticket configuration constants

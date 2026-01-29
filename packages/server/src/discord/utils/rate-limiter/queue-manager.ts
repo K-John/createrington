@@ -1,5 +1,5 @@
 import EventEmitter from "node:events";
-import { QueuedRequest, RequestPriority } from "./types";
+import { type QueuedRequest, RequestPriority } from "./types";
 
 /**
  * Manages request queues with priority-based ordering

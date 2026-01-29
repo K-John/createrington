@@ -1,4 +1,4 @@
-import { AnyRoleRule, RoleEligibilityResult } from "../types";
+import type { AnyRoleRule, RoleEligibilityResult } from "../types";
 
 /**
  * Abstract base class for role assignment conditions

@@ -1,9 +1,8 @@
 import EventEmitter from "node:events";
-import {
+import type {
   CachedMessage,
   MessageCacheServiceConfig,
   MessageQueryOptions,
-  MessageSource,
   MinecraftMessageData,
   ParsedAttachment,
   ParsedEmbed,
@@ -11,7 +10,8 @@ import {
   SystemMessageData,
   WebMessageData,
 } from "./types";
-import {
+import { MessageSource } from "./types";
+import type {
   Client,
   Embed,
   Message,

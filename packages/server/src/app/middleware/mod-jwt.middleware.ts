@@ -1,6 +1,6 @@
 import config from "@/config";
 import { UnauthorizedError } from "./error-handler";
-import { NextFunction, Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 
 /**
