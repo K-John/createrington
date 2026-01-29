@@ -92,3 +92,9 @@ export interface ModPlayerLeaveData {
   username: string;
   timestamp?: Date;
 }
+
+export enum ServerState {
+  UNKNOWN = "unknown",
+  ONLINE = "online",
+  OFFLINE = "offline",
+}

@@ -8,8 +8,14 @@ import {
   SessionEndEvent,
   SessionStartEvent,
   MinecraftPlayer,
+  ServerState,
 } from "./types";
 import { status } from "minecraft-server-util";
+import {
+  CachedMessage,
+  MessageCacheService,
+  MessageSource,
+} from "../discord/message/cache";
 
 export interface PlaytimeServiceEvents {
   sessionStart: (event: SessionStartEvent) => void;
@@ -61,6 +67,7 @@ export class PlaytimeService extends EventEmitter {
   private config: Required<PlaytimeServiceConfig>;
   private activeSessions: Map<string, ActiveSession> = new Map();
   private isInitialized = false;
+  private serverState: ServerState = ServerState.UNKNOWN;
 
   constructor(config: PlaytimeServiceConfig) {
     super();
@@ -100,10 +107,112 @@ export class PlaytimeService extends EventEmitter {
       setTimeout(resolve, this.config.initialDelayMs),
     );
 
-    await this.performRecoverySync();
-
     this.isInitialized = true;
-    logger.info("PlaytimeService initialized (HTTP mode)");
+    logger.info("PlaytimeService initialized");
+  }
+
+  /**
+   * Detect server state - called externally after message cache is ready
+   */
+  public async detectServerState(
+    messageCacheService: MessageCacheService,
+  ): Promise<void> {
+    try {
+      logger.info(
+        `Detecting initial server state for server ${this.config.serverId}...`,
+      );
+
+      const recentMessages = messageCacheService.getMessages(
+        this.config.serverId,
+        { limit: 100 },
+      );
+
+      const latestSystemMessage = recentMessages.find(
+        (msg) =>
+          msg.source === MessageSource.SYSTEM && msg.systemData?.description,
+      );
+
+      if (latestSystemMessage) {
+        const description =
+          latestSystemMessage.systemData!.description!.toLowerCase();
+
+        if (description.includes("server closed")) {
+          this.serverState = ServerState.OFFLINE;
+          logger.info(
+            `Server ${this.config.serverId} detected as OFFLINE (latest system message: "server closed")`,
+          );
+          this.emit("serverOffline");
+          return;
+        }
+      }
+
+      this.serverState = ServerState.ONLINE;
+      logger.info(
+        `Server ${this.config.serverId} detected as ONLINE (no recent "server closed" message)`,
+      );
+      this.emit("serverOnline");
+    } catch (error) {
+      logger.error(
+        `Failed to detect initial server state for server ${this.config.serverId}:`,
+        error,
+      );
+      this.serverState = ServerState.ONLINE; // Safer to assume online
+    }
+  }
+
+  /**
+   * Detect server state by examining recent Discord relay messages
+   *
+   * Looks for system embeds with "Server started" or "Server closed" in description
+   * The most recent status message determines the current state
+   *
+   * @deprecated
+   */
+  private async detectInitialServerState(
+    messageCacheService: MessageCacheService,
+  ): Promise<void> {
+    try {
+      logger.info(
+        `Detecting initial server state for server ${this.config.serverId}...`,
+      );
+
+      const recentMessage = messageCacheService.getMessages(
+        this.config.serverId,
+        { limit: 100 },
+      );
+
+      const latestSystemMessage = recentMessage.find(
+        (msg) =>
+          msg.source === MessageSource.SYSTEM && msg.systemData?.description,
+      );
+
+      if (latestSystemMessage) {
+        const description =
+          latestSystemMessage.systemData!.description!.toLowerCase();
+
+        if (description.includes("server closed")) {
+          this.serverState = ServerState.OFFLINE;
+          logger.info(
+            `Server ${this.config.serverId} detected as OFFLINE (latest system message: "server closed")`,
+          );
+          this.emit("serverOffline");
+          return;
+        }
+      }
+
+      this.serverState = ServerState.ONLINE;
+      logger.info(
+        `Server ${this.config.serverId} detected as ONLINE (no recent "server closed" events)`,
+      );
+      this.emit("serverOnline");
+    } catch (error) {
+      logger.error(
+        `Failed to detect initial server state for server ${this.config.serverId}`,
+        error,
+      );
+
+      this.serverState = ServerState.OFFLINE;
+    }
   }
 
   /**
@@ -116,10 +225,8 @@ export class PlaytimeService extends EventEmitter {
    * - Attempts up to maxSyncRetries times (default: 3)
    * - 2 second delay between retries
    * - If all retries fail, assumes server is offline
-   *
-   * @private
    */
-  private async performRecoverySync(): Promise<void> {
+  async performRecoverySync(): Promise<void> {
     logger.info("Starting recovery sync...");
 
     let retries = 0;
@@ -306,14 +413,14 @@ export class PlaytimeService extends EventEmitter {
   public handleServerShutdown(): void {
     if (this.activeSessions.size === 0) {
       logger.info("Server shutdown detected but no active sessions to end");
-      return;
+    } else {
+      logger.warn(
+        `Server ${this.config.serverId} shutdown detected - ending ${this.activeSessions} active session(s)`,
+      );
+      this.endAllSessions();
     }
 
-    logger.warn(
-      `Server ${this.config.serverId} shutdown detected - ending ${this.activeSessions.size} active session(s)`,
-    );
-
-    this.endAllSessions();
+    this.serverState = ServerState.OFFLINE;
     this.emit("serverShutdown", this.config.serverId);
     this.emit("serverOffline");
   }
@@ -326,8 +433,12 @@ export class PlaytimeService extends EventEmitter {
    * mod will send join notifications as players connect.
    */
   public handleServerStartup(): void {
-    logger.info("Server startup detected by message cache");
-    this.emit("serverOffline");
+    logger.info(
+      `Server ${this.config.serverId} startup detected by message cache`,
+    );
+
+    this.serverState = ServerState.ONLINE;
+    this.emit("serverOnline");
   }
 
   /**
@@ -375,6 +486,14 @@ export class PlaytimeService extends EventEmitter {
    * @private
    */
   private handlePlayerJoin(player: MinecraftPlayer): void {
+    if (this.serverState !== ServerState.ONLINE) {
+      logger.info(
+        `Server ${this.config.serverId} marked as ONLINE (player join received)`,
+      );
+      this.serverState = ServerState.ONLINE;
+      this.emit("serverOnline");
+    }
+
     const session: ActiveSession = {
       uuid: player.uuid,
       username: player.username,
@@ -549,6 +668,20 @@ export class PlaytimeService extends EventEmitter {
   }
 
   /**
+   * Get current server state
+   */
+  public getServerState(): ServerState {
+    return this.serverState;
+  }
+
+  /**
+   * Check if server is online
+   */
+  public isOnline(): boolean {
+    return this.serverState === ServerState.ONLINE;
+  }
+
+  /**
    * Gets current service status
    *
    * @returns Object containing runtime status
@@ -556,11 +689,13 @@ export class PlaytimeService extends EventEmitter {
   public getStatus(): {
     isInitialized: boolean;
     activeSessions: number;
+    serverState: ServerState;
     config: PlaytimeServiceConfig;
   } {
     return {
       isInitialized: this.isInitialized,
       activeSessions: this.activeSessions.size,
+      serverState: this.serverState,
       config: this.config,
     };
   }
