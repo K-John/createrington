@@ -94,7 +94,7 @@ export class ${className}Queries {
    * - Each connection has its own cache map
    * - Keys are fully qualified (e.g., "${tableName}.actions")
    */
-  private static queryInstances = new WeakMap
+  private static queryInstances = new WeakMap<
     Pool | PoolClient,
     Map<string, any>
   >();
