@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useAuth } from "@/contexts/auth";
+import { useServerData, usePlayerData } from "@/contexts/socket";
 import styles from "./Sidebar.module.scss";
 
 interface NavItem {
@@ -17,13 +18,51 @@ export const Sidebar: React.FC = () => {
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  // Mock server status - replace with actual API later
-  const serverStatus = {
-    online: 2,
-    total: 3,
-    players: 156,
-    maxPlayers: 500,
-  };
+  // Get real-time server and player data from WebSocket
+  const {
+    stats: serverStats,
+    servers,
+    loading: serversLoading,
+  } = useServerData();
+  const { stats: playerStats } = usePlayerData();
+
+  // Compute server status from real data
+  const serverStatus = useMemo(
+    () => ({
+      online: serverStats.online,
+      total: serverStats.total,
+      players: playerStats.total,
+      maxPlayers: serverStats.totalCapacity,
+    }),
+    [serverStats, playerStats],
+  );
+
+  // Dynamically generate server nav items from real data
+  const serverNavItems: NavItem[] = useMemo(() => {
+    if (serversLoading) {
+      return [
+        {
+          label: "Loading...",
+          icon: <></>,
+        },
+      ];
+    }
+
+    return servers.map((server) => ({
+      label: server.serverName,
+      path: `/servers/${server.serverId}`,
+      requiresAuth: true,
+      icon: (
+        <span className={styles.serverIndicator}>
+          <span
+            className={`${styles.serverDot} ${
+              server.online ? styles.online : styles.offline
+            }`}
+          />
+        </span>
+      ),
+    }));
+  }, [servers, serversLoading]);
 
   const navItems: NavItem[] = [
     {
@@ -99,18 +138,7 @@ export const Sidebar: React.FC = () => {
         </svg>
       ),
       children: [
-        {
-          label: "Server 1",
-          path: "/servers/1",
-          requiresAuth: true,
-          icon: <></>,
-        },
-        {
-          label: "Server 2",
-          path: "/servers/2",
-          requiresAuth: true,
-          icon: <></>,
-        },
+        ...serverNavItems,
         {
           label: "Server Status",
           path: "/servers/status",
@@ -431,6 +459,9 @@ export const Sidebar: React.FC = () => {
                             handleNavigation(child.path, child.onClick)
                           }
                         >
+                          {child.icon && (
+                            <span className={styles.navIcon}>{child.icon}</span>
+                          )}
                           <span className={styles.navLabel}>{child.label}</span>
                         </button>
                       ))}

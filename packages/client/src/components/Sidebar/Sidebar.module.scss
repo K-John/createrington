@@ -542,3 +542,48 @@
     z-index: 1;
   }
 }
+
+.serverIndicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.serverDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+
+  &.online {
+    background-color: #10b981; // Green for online
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+  }
+
+  &.offline {
+    background-color: #ef4444; // Red for offline
+  }
+}
+
+// If you want to add loading state styling
+.navItem {
+  &.loading {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+}
+
+// Optional: Add a pulse animation for online servers
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.serverDot.online {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
