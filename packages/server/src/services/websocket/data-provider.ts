@@ -48,24 +48,14 @@ export class WebSocketDataProvider {
     }
 
     const playtimeService = this.playtimeManagerService.getService(serverId);
+    const activeSessions = playtimeService?.getActiveSessions() ?? [];
 
-    if (!playtimeService) {
-      return {
-        serverId,
-        serverName: config.name,
-        online: false,
-        playerCount: 0,
-        maxPlayers: config.maxPlayers,
-        lastUpdate: new Date(),
-      };
-    }
-
-    const activeSessions = playtimeService.getActiveSessions();
+    const isOnline = playtimeService?.isOnline() ?? false;
 
     return {
       serverId,
       serverName: config.name,
-      online: activeSessions.length > 0, // If players are online, server is online
+      online: isOnline,
       playerCount: activeSessions.length,
       maxPlayers: config.maxPlayers,
       lastUpdate: new Date(),

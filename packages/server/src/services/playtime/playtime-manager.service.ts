@@ -2,6 +2,7 @@ import { playtimeRepo } from "@/db";
 import { MINECRAFT_SERVERS } from "./config";
 import { PlaytimeService } from "./playtime.service";
 import { MessageCacheService } from "../discord/message/cache";
+import { ServerState } from "./types";
 
 /**
  * Manager service for multiple PlaytimeService instances
@@ -13,6 +14,7 @@ import { MessageCacheService } from "../discord/message/cache";
  */
 export class PlaytimeManagerService {
   private playtimeServices: Map<number, PlaytimeService> = new Map();
+  private messageCacheService?: MessageCacheService;
 
   /**
    * Initialize playtime services for all configured servers
@@ -21,13 +23,13 @@ export class PlaytimeManagerService {
    * @returns Promise resolving when the service is initialized
    */
   async initialize(): Promise<void> {
-    logger.info("Initializing PlaytimeManagerService...");
+    logger.info("Initializing the PlaytimeManagerService...");
 
     const serverConfigs = Object.values(MINECRAFT_SERVERS);
 
     if (serverConfigs.length === 0) {
       logger.warn(
-        "No Minecraft servers configured. Playtime tracking disabled.",
+        "No Minecraft servers configured. Playtime tracking disabled",
       );
       return;
     }
@@ -128,6 +130,22 @@ export class PlaytimeManagerService {
   }
 
   /**
+   * Check if a specific server is online
+   */
+  isServerOnline(serverId: number): boolean {
+    const service = this.playtimeServices.get(serverId);
+    return service?.isOnline() ?? false;
+  }
+
+  /**
+   * Get server state
+   */
+  getServerState(serverId: number): ServerState | undefined {
+    const service = this.playtimeServices.get(serverId);
+    return service?.getServerState();
+  }
+
+  /**
    * Get status of all services
    */
   getStatus(): Record<number, any> {
@@ -142,9 +160,34 @@ export class PlaytimeManagerService {
    * Setup integration with message cache service for server shutdown detection
    */
   setupMessageCacheIntegration(messageCacheService: MessageCacheService): void {
+    this.messageCacheService = messageCacheService;
+
     logger.info(
       "Setting up message cache integration for playtime services...",
     );
+
+    for (const [serverId, service] of this.playtimeServices) {
+      service
+        .detectServerState(messageCacheService)
+        .then(() => {
+          logger.info(
+            `Server ${serverId} state detected: ${service.getServerState()}`,
+          );
+
+          // If server is online, perform recovery sync
+          if (service.getServerState() === ServerState.ONLINE) {
+            service.performRecoverySync().catch((error) => {
+              logger.error(
+                `Recovery sync failed for server ${serverId}:`,
+                error,
+              );
+            });
+          }
+        })
+        .catch((error) => {
+          logger.error(`Failed to detect state for server ${serverId}:`, error);
+        });
+    }
 
     messageCacheService.on("serverClosed", (serverId: number) => {
       const service = this.playtimeServices.get(serverId);
