@@ -1,13 +1,11 @@
-import { Home } from "./pages/Home/Home";
+import { RouterProvider } from "react-router-dom";
 import { AuthProvider } from "./contexts/auth";
-import { Sidebar } from "./components/Sidebar";
 import {
   WebSocketProvider,
   ServerDataProvider,
   PlayerDataProvider,
 } from "./contexts/socket";
 import "./styles/main.scss";
-import styles from "./App.module.scss";
 
 function App() {
   return (
@@ -22,14 +20,7 @@ function App() {
         }}
       >
         <ServerDataProvider autoSubscribe>
-          <PlayerDataProvider autoSubscribe>
-            <div className={styles.app}>
-              <Sidebar />
-              <main className={styles.main}>
-                <Home />
-              </main>
-            </div>
-          </PlayerDataProvider>
+          <PlayerDataProvider autoSubscribe></PlayerDataProvider>
         </ServerDataProvider>
       </WebSocketProvider>
     </AuthProvider>
