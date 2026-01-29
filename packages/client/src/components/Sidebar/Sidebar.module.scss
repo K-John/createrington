@@ -35,6 +35,7 @@ $discord-blurple-active: #3c45a5;
 
   &.collapsed {
     width: 5rem;
+    overflow: visible; // CRITICAL: Maintain overflow visible when collapsed
   }
 
   @include max-lg {
@@ -54,6 +55,7 @@ $discord-blurple-active: #3c45a5;
   justify-content: space-between;
   min-height: 72px;
   position: relative;
+  overflow: visible; // Allow tooltips to overflow
 
   .collapsed & {
     justify-content: center;
@@ -106,33 +108,33 @@ $discord-blurple-active: #3c45a5;
 .collapseToggle {
   @include reset-button;
   @include flex-center;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   flex-shrink: 0;
   color: $fg-secondary;
   background-color: transparent;
   border-radius: $radius-md;
-  @include transition(all);
+  transition: all 0.2s ease-out; // Smooth transition without shadow
 
   &:hover {
     color: $fg-primary;
     background-color: $surface-hover;
+    // Removed @include hover-lift; which was adding the shadow
   }
 
   &:active {
     transform: scale(0.95);
-  }
-
-  .collapsed & {
-    width: 40px;
-    height: 40px;
   }
 }
 
 .collapseIcon {
   width: 20px;
   height: 20px;
-  @include transition(transform);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); // Smooth rotation
+
+  .collapsed & {
+    transform: rotate(180deg); // Rotate icon when collapsed
+  }
 }
 
 // ============================================================================
@@ -147,6 +149,7 @@ $discord-blurple-active: #3c45a5;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  overflow: visible; // Allow tooltips to overflow
 
   .collapsed & {
     padding: $spacing-3;
@@ -377,9 +380,10 @@ $discord-blurple-active: #3c45a5;
     display: none;
   }
 
-  // Allow horizontal overflow when collapsed to show tooltips
+  // IMPORTANT: When collapsed, prevent clipping of tooltips
   .collapsed & {
     overflow-x: visible;
+    overflow-y: auto;
   }
 }
 
@@ -390,20 +394,26 @@ $discord-blurple-active: #3c45a5;
   gap: $spacing-1;
   padding: 0 $spacing-3;
   overflow: visible; // Allow tooltips to overflow
+  position: relative; // Establish positioning context
 }
 
 .navItem {
   list-style: none;
   position: relative; // For tooltip positioning
-  overflow: visible; // Allow tooltip to overflow
+  overflow: visible; // CRITICAL: Allow tooltip to overflow
+  z-index: 1; // Ensure tooltips appear above siblings
 
   // Show tooltip on hover ONLY when sidebar is collapsed
-  &:hover .tooltip {
-    // Only show when parent sidebar has collapsed class
-    .sidebar.collapsed & {
-      opacity: 1;
-      visibility: visible;
-      transform: translateY(-50%) translateX(#{$spacing-2}); // Slide in
+  &:hover {
+    z-index: 2; // Raise z-index on hover to ensure tooltip is on top
+
+    .tooltip {
+      // Only show when parent sidebar has collapsed class
+      .sidebar.collapsed & {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(-50%) translateX(0); // Slide in
+      }
     }
   }
 }
@@ -419,7 +429,7 @@ $discord-blurple-active: #3c45a5;
   font-weight: $font-medium;
   @include transition(all);
   position: relative;
-  overflow: hidden;
+  overflow: visible; // CHANGED: Allow tooltip overflow
 
   .collapsed & {
     justify-content: center;
@@ -567,10 +577,8 @@ $discord-blurple-active: #3c45a5;
 // ============================================================================
 
 .tooltip {
-  position: absolute;
-  left: calc(100% + #{$spacing-3}); // Position to the right of nav item
-  top: 50%;
-  transform: translateY(-50%) translateX(-8px); // Start slightly left for animation
+  position: fixed; // Use fixed to escape all container clipping
+  left: 4rem; // Position right after collapsed sidebar
   padding: $spacing-2 $spacing-3;
   background-color: $bg-elevated;
   color: $fg-primary;
@@ -579,15 +587,16 @@ $discord-blurple-active: #3c45a5;
   border-radius: $radius-md;
   white-space: nowrap;
   pointer-events: none;
-  z-index: $z-tooltip;
+  z-index: 9999; // Very high z-index to appear above everything
   opacity: 0;
   visibility: hidden;
   transition:
-    opacity 0.2s ease-out,
-    visibility 0.2s ease-out,
-    transform 0.2s ease-out;
-  box-shadow: $shadow-lg;
+    opacity 0.15s ease-out,
+    visibility 0.15s ease-out,
+    left 0.15s ease-out;
+  box-shadow: $shadow-xl;
   border: 1px solid $border-primary;
+  margin-left: $spacing-3; // Gap from sidebar
 
   // Arrow pointing to the link - border
   &::before {
@@ -614,7 +623,7 @@ $discord-blurple-active: #3c45a5;
     z-index: 1;
   }
 
-  // Only show when sidebar is collapsed
+  // Only exist when sidebar is collapsed
   .sidebar:not(.collapsed) & {
     display: none;
   }
@@ -628,6 +637,7 @@ $discord-blurple-active: #3c45a5;
   padding: $spacing-4;
   border-top: 1px solid $border-primary;
   flex-shrink: 0;
+  overflow: visible; // Allow tooltips to overflow
 
   .collapsed & {
     padding: $spacing-3;

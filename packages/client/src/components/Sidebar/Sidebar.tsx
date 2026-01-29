@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Home,
@@ -37,6 +37,9 @@ export const Sidebar: React.FC = () => {
   const location = useLocation();
   const { user } = useAuth();
   const { isCollapsed, toggleCollapsed } = useSidebar();
+  const [hoveredItemIndex, setHoveredItemIndex] = useState<number | null>(null);
+  const [tooltipTop, setTooltipTop] = useState<number>(0);
+
   const sidebarMode: "main" | "market" = location.pathname.startsWith("/market")
     ? "market"
     : "main";
@@ -143,6 +146,22 @@ export const Sidebar: React.FC = () => {
 
   const currentNavItems =
     sidebarMode === "main" ? filteredMainNavItems : marketNavItems;
+
+  // Handle tooltip positioning
+  const handleMouseEnter = (
+    event: React.MouseEvent<HTMLLIElement>,
+    index: number,
+  ) => {
+    if (isCollapsed) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      setTooltipTop(rect.top + rect.height / 2);
+      setHoveredItemIndex(index);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setHoveredItemIndex(null);
+  };
 
   // Don't render market sidebar if not authenticated
   if (sidebarMode === "market" && !user) {
@@ -273,19 +292,22 @@ export const Sidebar: React.FC = () => {
       {/* Navigation */}
       <nav className={styles.nav}>
         <ul className={styles.navList}>
-          {currentNavItems.map((item) => {
+          {currentNavItems.map((item, index) => {
             const Icon = item.icon;
+            const showTooltip = isCollapsed && hoveredItemIndex === index;
+
             return (
-              <li key={item.path} className={styles.navItem}>
+              <li
+                key={item.path}
+                className={styles.navItem}
+                onMouseEnter={(e) => handleMouseEnter(e, index)}
+                onMouseLeave={handleMouseLeave}
+              >
                 <NavLink
                   to={item.path}
                   end={item.path === "/" || item.path === "/market"}
                   className={({ isActive }) =>
                     `${styles.navLink} ${isActive ? styles.active : ""}`
-                  }
-                  data-tooltip={
-                    item.label +
-                    (item.badge !== undefined ? ` (${item.badge})` : "")
                   }
                 >
                   <Icon className={styles.navIcon} />
@@ -304,8 +326,16 @@ export const Sidebar: React.FC = () => {
                     />
                   )}
                 </NavLink>
-                {isCollapsed && (
-                  <span className={styles.tooltip}>
+                {showTooltip && (
+                  <span
+                    className={styles.tooltip}
+                    style={{
+                      top: `${tooltipTop}px`,
+                      transform: "translateY(-50%)",
+                      opacity: 1,
+                      visibility: "visible",
+                    }}
+                  >
                     {item.label}
                     {item.badge !== undefined && ` (${item.badge})`}
                   </span>
@@ -316,19 +346,29 @@ export const Sidebar: React.FC = () => {
 
           {/* Back button for market mode */}
           {sidebarMode === "market" && (
-            <li className={styles.navItem}>
-              <NavLink
-                to="/"
-                className={styles.navLink}
-                data-tooltip="Back to Main"
-              >
+            <li
+              className={styles.navItem}
+              onMouseEnter={(e) => handleMouseEnter(e, currentNavItems.length)}
+              onMouseLeave={handleMouseLeave}
+            >
+              <NavLink to="/" className={styles.navLink}>
                 <ArrowLeftCircle className={styles.navIcon} />
                 {!isCollapsed && (
                   <span className={styles.navLabel}>Back to Main</span>
                 )}
               </NavLink>
-              {isCollapsed && (
-                <span className={styles.tooltip}>Back to Main</span>
+              {isCollapsed && hoveredItemIndex === currentNavItems.length && (
+                <span
+                  className={styles.tooltip}
+                  style={{
+                    top: `${tooltipTop}px`,
+                    transform: "translateY(-50%)",
+                    opacity: 1,
+                    visibility: "visible",
+                  }}
+                >
+                  Back to Main
+                </span>
               )}
             </li>
           )}
