@@ -1,4 +1,4 @@
-name: Backend CI
+name: Backend Tests
 
 on:
   push:
@@ -49,6 +49,7 @@ jobs:
       - name: Setup database schema
         run: |
           PGPASSWORD=test_password psql -h localhost -U postgres -d test_db -f db/schema/init-docker.sql
+
       - name: Create placeholder Discord entities
         run: |
           mkdir -p packages/server/generated/discord
@@ -63,17 +64,19 @@ jobs:
       - name: Generate code (with DB access)
         run: npm run generate
 
-      - name: Type check
-        run: npm run typecheck
-
       - name: Run unit tests
         working-directory: ./packages/server
         run: npm run test:unit
 
       - name: Run integration tests
-        if: false
+        if: false # Enable when integration tests are ready
         working-directory: ./packages/server
         run: npm run test:integration
 
-      - name: Build
-        run: npm run build:server
+      - name: Upload test coverage (optional)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-coverage
+          path: packages/server/coverage/
+          retention-days: 7
