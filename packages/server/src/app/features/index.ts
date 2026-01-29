@@ -17,7 +17,7 @@ export function registerRoutes(app: Express): void {
   app.use(`${API_PREFIX}/waitlist`, waitlistRoutes);
   app.use(`${API_PREFIX}/auth`, authRoutes);
   app.use(`${API_PREFIX}/presence`, presenceRoutes);
-  app.use(`${API_PREFIX}/servers`, serverRoutes);
+  app.use(`${API_PREFIX}/server`, serverRoutes);
 
   logger.info("API routes registered");
 }
