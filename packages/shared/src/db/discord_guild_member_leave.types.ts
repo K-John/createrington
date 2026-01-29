@@ -22,6 +22,18 @@ export interface DiscordGuildMemberLeaveRow {
 export type DiscordGuildMemberLeave = CamelCaseKeys<DiscordGuildMemberLeaveRow>;
 
 /**
+ * API representation (dates as ISO strings for JSON serialization) 
+ */
+export interface DiscordGuildMemberLeaveApiData {
+  id: number;
+  discordId: string;
+  minecraftUuid: string;
+  minecraftUsername: string;
+  departedAt: string;
+  notificationMessageId: string | null;
+  deletedAt: string | null;
+}
+/**
  * Data required to create a new discord_guild_member_leave record
  */
 export interface DiscordGuildMemberLeaveCreate {

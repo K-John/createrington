@@ -26,6 +26,22 @@ export interface TicketRow {
 export type Ticket = CamelCaseKeys<TicketRow>;
 
 /**
+ * API representation (dates as ISO strings for JSON serialization) 
+ */
+export interface TicketApiData {
+  id: number;
+  ticketNumber: number;
+  type: any;
+  creatorDiscordId: string;
+  channelId: string;
+  status: any;
+  createdAt: string;
+  closedAt: string | null;
+  closedByDiscordId: string | null;
+  deletedAt: string | null;
+  metadata: Record<string, any> | null;
+}
+/**
  * Data required to create a new ticket record
  */
 export interface TicketCreate {

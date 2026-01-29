@@ -25,6 +25,21 @@ export interface PlayerBalanceTransactionRow {
 export type PlayerBalanceTransaction = CamelCaseKeys<PlayerBalanceTransactionRow>;
 
 /**
+ * API representation (dates as ISO strings for JSON serialization) 
+ */
+export interface PlayerBalanceTransactionApiData {
+  id: number;
+  playerMinecraftUuid: string;
+  amount: bigint;
+  balanceBefore: bigint;
+  balanceAfter: bigint;
+  transactionType: string;
+  description: string | null;
+  relatedPlayerUuid: string | null;
+  metadata: Record<string, any> | null;
+  createdAt: string;
+}
+/**
  * Data required to create a new player_balance_transaction record
  */
 export interface PlayerBalanceTransactionCreate {

@@ -18,6 +18,14 @@ export interface AdminRow {
 export type Admin = CamelCaseKeys<AdminRow>;
 
 /**
+ * API representation (dates as ISO strings for JSON serialization) 
+ */
+export interface AdminApiData {
+  discordId: string;
+  createdAt: string | null;
+  vanished: boolean | null;
+}
+/**
  * Data required to create a new admin record
  */
 export interface AdminCreate {

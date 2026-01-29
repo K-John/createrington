@@ -19,6 +19,15 @@ export interface DiscordGuildMemberJoinRow {
 export type DiscordGuildMemberJoin = CamelCaseKeys<DiscordGuildMemberJoinRow>;
 
 /**
+ * API representation (dates as ISO strings for JSON serialization) 
+ */
+export interface DiscordGuildMemberJoinApiData {
+  joinNumber: number;
+  userId: string;
+  username: string;
+  joinedAt: string;
+}
+/**
  * Data required to create a new discord_guild_member_join record
  */
 export interface DiscordGuildMemberJoinCreate {

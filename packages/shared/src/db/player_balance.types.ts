@@ -18,6 +18,14 @@ export interface PlayerBalanceRow {
 export type PlayerBalance = CamelCaseKeys<PlayerBalanceRow>;
 
 /**
+ * API representation (dates as ISO strings for JSON serialization) 
+ */
+export interface PlayerBalanceApiData {
+  minecraftUuid: string;
+  balance: bigint;
+  updatedAt: string;
+}
+/**
  * Data required to create a new player_balance record
  */
 export interface PlayerBalanceCreate {

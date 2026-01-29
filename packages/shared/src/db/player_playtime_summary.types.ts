@@ -23,6 +23,19 @@ export interface PlayerPlaytimeSummaryRow {
 export type PlayerPlaytimeSummary = CamelCaseKeys<PlayerPlaytimeSummaryRow>;
 
 /**
+ * API representation (dates as ISO strings for JSON serialization) 
+ */
+export interface PlayerPlaytimeSummaryApiData {
+  playerMinecraftUuid: string;
+  serverId: number;
+  totalSeconds: bigint;
+  totalSessions: number;
+  firstSeen: string | null;
+  lastSeen: string | null;
+  avgSessionSeconds: bigint | null;
+  updatedAt: string;
+}
+/**
  * Data required to create a new player_playtime_summary record
  */
 export interface PlayerPlaytimeSummaryCreate {

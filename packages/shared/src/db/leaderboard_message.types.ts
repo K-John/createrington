@@ -22,6 +22,18 @@ export interface LeaderboardMessageRow {
 export type LeaderboardMessage = CamelCaseKeys<LeaderboardMessageRow>;
 
 /**
+ * API representation (dates as ISO strings for JSON serialization) 
+ */
+export interface LeaderboardMessageApiData {
+  id: number;
+  leaderboardType: string;
+  channelId: string;
+  messageId: string;
+  lastRefreshed: string | null;
+  lastManualRefresh: string | null;
+  createdAt: string;
+}
+/**
  * Data required to create a new leaderboard_message record
  */
 export interface LeaderboardMessageCreate {

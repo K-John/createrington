@@ -24,6 +24,20 @@ export interface PlayerRow {
 export type Player = CamelCaseKeys<PlayerRow>;
 
 /**
+ * API representation (dates as ISO strings for JSON serialization) 
+ */
+export interface PlayerApiData {
+  id: number;
+  minecraftUuid: string;
+  minecraftUsername: string;
+  discordId: string;
+  online: boolean;
+  lastSeen: string;
+  createdAt: string;
+  updatedAt: string;
+  currentServerId: number | null;
+}
+/**
  * Data required to create a new player record
  */
 export interface PlayerCreate {

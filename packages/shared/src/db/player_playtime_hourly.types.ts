@@ -19,6 +19,15 @@ export interface PlayerPlaytimeHourlyRow {
 export type PlayerPlaytimeHourly = CamelCaseKeys<PlayerPlaytimeHourlyRow>;
 
 /**
+ * API representation (dates as ISO strings for JSON serialization) 
+ */
+export interface PlayerPlaytimeHourlyApiData {
+  playerMinecraftUuid: string;
+  serverId: number;
+  playHour: string;
+  secondsPlayed: bigint;
+}
+/**
  * Data required to create a new player_playtime_hourly record
  */
 export interface PlayerPlaytimeHourlyCreate {

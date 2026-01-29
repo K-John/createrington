@@ -19,6 +19,15 @@ export interface ServerRow {
 export type Server = CamelCaseKeys<ServerRow>;
 
 /**
+ * API representation (dates as ISO strings for JSON serialization) 
+ */
+export interface ServerApiData {
+  id: number;
+  name: string;
+  identifier: string;
+  createdAt: string;
+}
+/**
  * Data required to create a new server record
  */
 export interface ServerCreate {

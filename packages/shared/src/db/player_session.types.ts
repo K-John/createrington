@@ -21,6 +21,17 @@ export interface PlayerSessionRow {
 export type PlayerSession = CamelCaseKeys<PlayerSessionRow>;
 
 /**
+ * API representation (dates as ISO strings for JSON serialization) 
+ */
+export interface PlayerSessionApiData {
+  id: number;
+  playerMinecraftUuid: string;
+  serverId: number;
+  sessionStart: string;
+  sessionEnd: string | null;
+  secondsPlayed: bigint | null;
+}
+/**
  * Data required to create a new player_session record
  */
 export interface PlayerSessionCreate {

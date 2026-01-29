@@ -29,6 +29,25 @@ export interface WaitlistEntryRow {
 export type WaitlistEntry = CamelCaseKeys<WaitlistEntryRow>;
 
 /**
+ * API representation (dates as ISO strings for JSON serialization) 
+ */
+export interface WaitlistEntryApiData {
+  id: number;
+  email: string;
+  discordName: string;
+  discordId: string | null;
+  token: string | null;
+  submittedAt: string;
+  discordMessageId: string | null;
+  status: string;
+  joinedDiscord: boolean;
+  verified: boolean;
+  registered: boolean;
+  joinedMinecraft: boolean;
+  acceptedAt: string | null;
+  acceptedBy: string | null;
+}
+/**
  * Data required to create a new waitlist_entry record
  */
 export interface WaitlistEntryCreate {

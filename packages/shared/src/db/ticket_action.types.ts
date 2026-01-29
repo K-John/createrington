@@ -21,6 +21,17 @@ export interface TicketActionRow {
 export type TicketAction = CamelCaseKeys<TicketActionRow>;
 
 /**
+ * API representation (dates as ISO strings for JSON serialization) 
+ */
+export interface TicketActionApiData {
+  id: number;
+  ticketId: number;
+  actionType: string;
+  performedByDiscordId: string;
+  performedAt: string;
+  metadata: Record<string, any> | null;
+}
+/**
  * Data required to create a new ticket_action record
  */
 export interface TicketActionCreate {

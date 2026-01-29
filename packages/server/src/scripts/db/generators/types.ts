@@ -24,6 +24,10 @@ ${generateRowInterface(table, className)}
 ${generateEntityType(className)}
 
 /**
+ * API representation (dates as ISO strings for JSON serialization) 
+ */
+${generateApiDataType(table, className)}
+/**
  * Data required to create a new ${table.tableName} record
  */
 ${generateCreateInterface(table, className)}
@@ -38,6 +42,43 @@ ${generateIdentifierType(table, className)}
  */
 ${generateFiltersType(table, className)}
 `;
+}
+
+/**
+ * Generate API data type with dates as strings
+ */
+function generateApiDataType(table: TableInfo, className: string): string {
+  const fields = table.columns.map((col) => {
+    const camelName = snakeToCamel(col.columnName);
+    let type = pgTypeToTsType(
+      col.udtName,
+      false, // Get base type without null
+      col.numericPrecision,
+      col.numericScale,
+    );
+
+    // Convert Date to string for API
+    if (type === "Date") {
+      type = "string";
+    }
+
+    // Add null if nullable
+    if (col.isNullable) {
+      type = `${type} | null`;
+    }
+
+    const comment = getNumericComment(
+      col.udtName,
+      col.numericPrecision,
+      col.numericScale,
+    );
+
+    return `  ${camelName}: ${type};${comment}`;
+  });
+
+  return `export interface ${className}ApiData {
+${fields.join("\n")}
+}`;
 }
 
 /**

@@ -19,6 +19,15 @@ export interface PlayerPlaytimeDailyRow {
 export type PlayerPlaytimeDaily = CamelCaseKeys<PlayerPlaytimeDailyRow>;
 
 /**
+ * API representation (dates as ISO strings for JSON serialization) 
+ */
+export interface PlayerPlaytimeDailyApiData {
+  playerMinecraftUuid: string;
+  serverId: number;
+  playDate: string;
+  secondsPlayed: bigint;
+}
+/**
  * Data required to create a new player_playtime_daily record
  */
 export interface PlayerPlaytimeDailyCreate {

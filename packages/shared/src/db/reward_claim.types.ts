@@ -21,6 +21,17 @@ export interface RewardClaimRow {
 export type RewardClaim = CamelCaseKeys<RewardClaimRow>;
 
 /**
+ * API representation (dates as ISO strings for JSON serialization) 
+ */
+export interface RewardClaimApiData {
+  id: number;
+  playerMinecraftUuid: string;
+  rewardType: string;
+  claimedAt: string;
+  amount: bigint;
+  metadata: Record<string, any> | null;
+}
+/**
  * Data required to create a new reward_claim record
  */
 export interface RewardClaimCreate {

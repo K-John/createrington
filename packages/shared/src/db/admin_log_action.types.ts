@@ -29,6 +29,25 @@ export interface AdminLogActionRow {
 export type AdminLogAction = CamelCaseKeys<AdminLogActionRow>;
 
 /**
+ * API representation (dates as ISO strings for JSON serialization) 
+ */
+export interface AdminLogActionApiData {
+  id: number;
+  adminDiscordId: string;
+  adminDiscordUsername: string;
+  actionType: string;
+  targetPlayerUuid: string;
+  targetPlayerName: string;
+  tableName: string;
+  fieldName: string;
+  oldValue: string | null;
+  newValue: string | null;
+  reason: string | null;
+  serverId: number | null;
+  performedAt: string;
+  metadata: Record<string, any> | null;
+}
+/**
  * Data required to create a new admin_log_action record
  */
 export interface AdminLogActionCreate {
