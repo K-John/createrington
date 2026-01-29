@@ -20,7 +20,9 @@ import {
   Server,
 } from "lucide-react";
 import { useServerData, usePlayerData } from "@/contexts/socket";
+import { useAuth } from "@/contexts/auth";
 import { useSidebar } from "@/contexts/sidebar";
+import { Loading } from "@/components/Loading";
 import styles from "./Sidebar.module.scss";
 
 interface NavItem {
@@ -33,14 +35,22 @@ interface NavItem {
 
 export const Sidebar: React.FC = () => {
   const location = useLocation();
+  const { user } = useAuth();
   const { isCollapsed, toggleCollapsed } = useSidebar();
   const sidebarMode: "main" | "market" = location.pathname.startsWith("/market")
     ? "market"
     : "main";
 
   // Get WebSocket data
-  const { servers, stats: serverStats } = useServerData();
-  const { stats: playerStats } = usePlayerData();
+  const {
+    servers,
+    stats: serverStats,
+    loading: serversLoading,
+  } = useServerData();
+  const { stats: playerStats, loading: playersLoading } = usePlayerData();
+
+  // Check if data is loading
+  const isLoading = serversLoading || playersLoading;
 
   // Check if single server or multiple
   const isSingleServer = servers.length === 1;
@@ -57,11 +67,13 @@ export const Sidebar: React.FC = () => {
       label: "Market",
       path: "/market",
       icon: Store,
+      requiresAuth: true,
     },
     {
       label: "Crypto",
       path: "/crypto",
       icon: Coins,
+      requiresAuth: true,
     },
     {
       label: "Chat",
@@ -124,8 +136,18 @@ export const Sidebar: React.FC = () => {
     },
   ];
 
+  // Filter nav items based on auth
+  const filteredMainNavItems = mainNavItems.filter(
+    (item) => !item.requiresAuth || user,
+  );
+
   const currentNavItems =
-    sidebarMode === "main" ? mainNavItems : marketNavItems;
+    sidebarMode === "main" ? filteredMainNavItems : marketNavItems;
+
+  // Don't render market sidebar if not authenticated
+  if (sidebarMode === "market" && !user) {
+    return null;
+  }
 
   return (
     <aside
@@ -159,72 +181,90 @@ export const Sidebar: React.FC = () => {
 
       {/* Server Status */}
       <div className={styles.serverStatus}>
-        {isSingleServer && singleServer ? (
-          // Single server display
-          <>
-            <div className={styles.statusIndicator}>
-              <div
-                className={`${styles.statusDot} ${
-                  singleServer.online ? styles.online : styles.offline
-                }`}
-              />
-              {!isCollapsed && (
-                <span
-                  className={styles.statusText}
-                  style={{
-                    color: singleServer.online ? "#22c55e" : "#ef4444",
-                  }}
-                >
-                  {singleServer.online ? "Online" : "Offline"}
-                </span>
-              )}
-            </div>
-            {!isCollapsed && singleServer.online && (
-              <div className={styles.playerCount}>
-                {singleServer.playerCount} / {singleServer.maxPlayers} Players
-              </div>
-            )}
-          </>
+        {isLoading ? (
+          <Loading mode="inline" size="small" text="" />
         ) : (
-          // Multiple servers display
           <>
-            <div className={styles.statusIndicator}>
-              <Server className={styles.serverIcon} />
-              {!isCollapsed && (
-                <span className={styles.statusText}>Servers</span>
-              )}
-            </div>
-            {!isCollapsed && (
-              <div className={styles.serverStats}>
-                <div className={styles.statRow}>
-                  <span className={styles.statLabel}>Online:</span>
-                  <span className={styles.statValue}>
-                    {serverStats.online} / {serverStats.total}
+            {isSingleServer && singleServer ? (
+              // Single server display
+              <>
+                <div className={styles.statusIndicator}>
+                  <div
+                    className={`${styles.statusDot} ${
+                      singleServer.online ? styles.online : styles.offline
+                    }`}
+                    title={
+                      isCollapsed
+                        ? singleServer.online
+                          ? "Server Online"
+                          : "Server Offline"
+                        : undefined
+                    }
+                  />
+                  <span
+                    className={styles.statusText}
+                    style={{
+                      color: singleServer.online ? "#22c55e" : "#ef4444",
+                    }}
+                  >
+                    {singleServer.online ? "Online" : "Offline"}
                   </span>
                 </div>
-                <div className={styles.statRow}>
-                  <span className={styles.statLabel}>Players:</span>
-                  <span className={styles.statValue}>
-                    {serverStats.totalPlayers} / {serverStats.totalCapacity}
-                  </span>
+                {singleServer.online && (
+                  <>
+                    <div className={styles.playerCount}>
+                      {singleServer.playerCount} / {singleServer.maxPlayers}{" "}
+                      Players
+                    </div>
+                    <div className={styles.collapsedPlayerCount}>
+                      <div
+                        className={styles.miniStat}
+                        title={`${singleServer.playerCount}/${singleServer.maxPlayers} players online`}
+                      >
+                        {singleServer.playerCount}/{singleServer.maxPlayers}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </>
+            ) : (
+              // Multiple servers display
+              <>
+                <div className={styles.statusIndicator}>
+                  <div title={isCollapsed ? "Servers" : undefined}>
+                    <Server className={styles.serverIcon} />
+                  </div>
+                  <span className={styles.statusText}>Servers</span>
                 </div>
-              </div>
-            )}
-            {isCollapsed && (
-              <div className={styles.collapsedStats}>
-                <div
-                  className={styles.miniStat}
-                  title={`${serverStats.online}/${serverStats.total} servers online`}
-                >
-                  {serverStats.online}/{serverStats.total}
+                <div className={styles.serverStats}>
+                  <div className={styles.statRow}>
+                    <span className={styles.statLabel}>Online:</span>
+                    <span className={styles.statValue}>
+                      {serverStats.online} / {serverStats.total}
+                    </span>
+                  </div>
+                  <div className={styles.statRow}>
+                    <span className={styles.statLabel}>Players:</span>
+                    <span className={styles.statValue}>
+                      {serverStats.totalPlayers} / {serverStats.totalCapacity}
+                    </span>
+                  </div>
                 </div>
-                <div
-                  className={styles.miniStat}
-                  title={`${serverStats.totalPlayers} players online`}
-                >
-                  {serverStats.totalPlayers}
+                <div className={styles.collapsedStats}>
+                  <div
+                    className={styles.miniStat}
+                    title={`${serverStats.online}/${serverStats.total} servers online`}
+                  >
+                    {serverStats.online}/{serverStats.total}
+                  </div>
+                  <div
+                    className={styles.miniStat}
+                    title={`${serverStats.totalPlayers} players online`}
+                  >
+                    {serverStats.totalPlayers}
+                  </div>
                 </div>
-              </div>
+              </>
             )}
           </>
         )}
@@ -243,7 +283,10 @@ export const Sidebar: React.FC = () => {
                   className={({ isActive }) =>
                     `${styles.navLink} ${isActive ? styles.active : ""}`
                   }
-                  title={isCollapsed ? item.label : undefined}
+                  data-tooltip={
+                    item.label +
+                    (item.badge !== undefined ? ` (${item.badge})` : "")
+                  }
                 >
                   <Icon className={styles.navIcon} />
                   {!isCollapsed && (
@@ -255,9 +298,18 @@ export const Sidebar: React.FC = () => {
                     </>
                   )}
                   {isCollapsed && item.badge !== undefined && (
-                    <span className={styles.badgeDot} />
+                    <span
+                      className={styles.badgeDot}
+                      title={`${item.badge} ${item.label.toLowerCase()}`}
+                    />
                   )}
                 </NavLink>
+                {isCollapsed && (
+                  <span className={styles.tooltip}>
+                    {item.label}
+                    {item.badge !== undefined && ` (${item.badge})`}
+                  </span>
+                )}
               </li>
             );
           })}
@@ -268,22 +320,32 @@ export const Sidebar: React.FC = () => {
               <NavLink
                 to="/"
                 className={styles.navLink}
-                title={isCollapsed ? "Back to Main" : undefined}
+                data-tooltip="Back to Main"
               >
                 <ArrowLeftCircle className={styles.navIcon} />
                 {!isCollapsed && (
                   <span className={styles.navLabel}>Back to Main</span>
                 )}
               </NavLink>
+              {isCollapsed && (
+                <span className={styles.tooltip}>Back to Main</span>
+              )}
             </li>
           )}
         </ul>
       </nav>
 
-      {/* Footer */}
-      {!isCollapsed && (
+      {/* Footer - Login Button */}
+      {!user && (
         <div className={styles.footer}>
-          <button className={styles.loginButton}>
+          <button
+            className={styles.loginButton}
+            onClick={() => {
+              // This will be handled by the auth context
+              window.location.href = "/auth/discord";
+            }}
+            title={isCollapsed ? "Login with Discord" : undefined}
+          >
             <svg
               className={styles.loginIcon}
               viewBox="0 0 24 24"
@@ -292,7 +354,9 @@ export const Sidebar: React.FC = () => {
             >
               <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z" />
             </svg>
-            Login with Discord
+            {!isCollapsed && (
+              <span className={styles.loginText}>Login with Discord</span>
+            )}
           </button>
         </div>
       )}
