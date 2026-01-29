@@ -15,8 +15,8 @@ import {
   Briefcase,
   ClipboardList,
   ArrowLeftCircle,
-  ChevronLeft,
-  ChevronRight,
+  PanelLeftClose,
+  PanelLeftOpen,
   Server,
 } from "lucide-react";
 import { useServerData, usePlayerData } from "@/contexts/socket";
@@ -150,9 +150,9 @@ export const Sidebar: React.FC = () => {
           title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {isCollapsed ? (
-            <ChevronRight className={styles.collapseIcon} />
+            <PanelLeftOpen className={styles.collapseIcon} />
           ) : (
-            <ChevronLeft className={styles.collapseIcon} />
+            <PanelLeftClose className={styles.collapseIcon} />
           )}
         </button>
       </div>

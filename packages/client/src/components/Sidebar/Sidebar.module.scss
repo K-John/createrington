@@ -38,27 +38,26 @@ $discord-blurple-active: #3c45a5;
 // ============================================================================
 
 .header {
-  padding: $spacing-6 $spacing-4;
+  padding: $spacing-4;
   border-bottom: 1px solid $border-primary;
   flex-shrink: 0;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: $spacing-3;
-  min-height: 80px; // Ensure consistent height
+  justify-content: space-between;
+  min-height: 72px; // Ensure consistent height
+  position: relative;
 
   .collapsed & {
-    padding: $spacing-4 $spacing-2;
+    justify-content: center;
+    padding: $spacing-3;
   }
 }
 
 .logoLink {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: $spacing-3;
   text-decoration: none;
-  width: 100%;
   @include transition(opacity);
 
   &:hover {
@@ -66,20 +65,20 @@ $discord-blurple-active: #3c45a5;
   }
 
   .collapsed & {
-    gap: 0;
+    display: none;
   }
 }
 
 .logo {
   flex-shrink: 0;
-  width: 48px; // Larger logo
-  height: 48px;
+  width: 40px;
+  height: 40px;
   border-radius: $radius-lg;
   overflow: hidden;
   @include transition(transform);
 
   &:hover {
-    transform: scale(1.1);
+    transform: scale(1.05);
   }
 }
 
@@ -90,40 +89,43 @@ $discord-blurple-active: #3c45a5;
 }
 
 .title {
-  @include heading-4; // Larger title
+  @include heading-5;
   color: $fg-primary;
-  background: linear-gradient(135deg, $interactive-primary, $color-accent-600);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
   white-space: nowrap;
+  font-weight: $font-semibold;
 }
 
 .collapseToggle {
   @include reset-button;
   @include flex-center;
-  width: 100%;
-  max-width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   flex-shrink: 0;
-  color: $fg-primary;
-  background-color: $surface-hover;
+  color: $fg-secondary;
+  background-color: transparent;
   border-radius: $radius-md;
   @include transition(all);
 
   &:hover {
-    color: $color-white;
-    background-color: $interactive-primary;
+    color: $fg-primary;
+    background-color: $surface-hover;
   }
 
   &:active {
     transform: scale(0.95);
+  }
+
+  .collapsed & {
+    // When collapsed, button is centered and slightly larger
+    width: 40px;
+    height: 40px;
   }
 }
 
 .collapseIcon {
   width: 20px;
   height: 20px;
+  @include transition(transform);
 }
 
 // ============================================================================
