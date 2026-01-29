@@ -1,11 +1,132 @@
-import { RouterProvider } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/auth";
 import {
   WebSocketProvider,
   ServerDataProvider,
   PlayerDataProvider,
 } from "./contexts/socket";
+import { SidebarProvider, useSidebar } from "./contexts/sidebar";
+import { Sidebar } from "./components/Sidebar";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { Home } from "./pages/Home/Home";
+import { Profile } from "./pages/Profile/Profile";
+import { Settings } from "./pages/Settings/Settings";
+import { ServerDetail } from "./pages/ServerDetail/ServerDetail";
+import { ServerStatus } from "./pages/ServerStatus/ServerStatus";
+import { Forum } from "./pages/Forum/Forum";
+import { Leaderboard } from "./pages/Leaderboard/Leaderboard";
+import { Shop } from "./pages/Shop/Shop";
+import { NotFound } from "./pages/NotFound/NotFound";
+import {
+  AdminDashboard,
+  AdminWaitlist,
+  AdminPlayers,
+  AdminSettings,
+} from "./pages/Admin";
+import styles from "./App.module.scss";
 import "./styles/main.scss";
+
+// Inner component that uses sidebar context
+function AppContent() {
+  const { isCollapsed } = useSidebar();
+
+  return (
+    <div className={styles.app}>
+      <Sidebar />
+      <main className={`${styles.main} ${isCollapsed ? styles.collapsed : ""}`}>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<Home />} />
+          <Route path="/rules" element={<div>Rules Page</div>} />
+          <Route path="/team" element={<div>Team Page</div>} />
+          <Route path="/apply-to-join" element={<div>Apply Page</div>} />
+          <Route path="/blue-map" element={<div>Map Page</div>} />
+          <Route path="/server-chat" element={<div>Chat Page</div>} />
+          <Route path="/online-players" element={<div>Players Page</div>} />
+          <Route path="/crypto" element={<div>Crypto Page</div>} />
+
+          {/* Market Routes */}
+          <Route path="/market" element={<div>Market Dashboard</div>} />
+          <Route path="/marketplace" element={<div>Marketplace Page</div>} />
+          <Route path="/market/companies" element={<div>Companies Page</div>} />
+          <Route path="/market/shops" element={<div>Shops Page</div>} />
+          <Route path="/market/requests" element={<div>Requests Page</div>} />
+
+          {/* Protected Routes */}
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Server Routes */}
+          <Route
+            path="/servers/:serverId"
+            element={
+              <ProtectedRoute>
+                <ServerDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/servers/status" element={<ServerStatus />} />
+
+          {/* Additional Routes */}
+          <Route path="/forum" element={<Forum />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/shop" element={<Shop />} />
+
+          {/* Admin Routes */}
+          <Route
+            path="/admin/dashboard"
+            element={
+              <ProtectedRoute requiresAdmin>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/waitlist"
+            element={
+              <ProtectedRoute requiresAdmin>
+                <AdminWaitlist />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/players"
+            element={
+              <ProtectedRoute requiresAdmin>
+                <AdminPlayers />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/settings"
+            element={
+              <ProtectedRoute requiresAdmin>
+                <AdminSettings />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* 404 Route */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </main>
+    </div>
+  );
+}
 
 function App() {
   return (
@@ -16,11 +137,17 @@ function App() {
           maxReconnectAttempts: 5,
           url: "http://localhost:5000",
           reconnectDelay: 1000,
-          healthCheckInterval: 30000, // Ping every 30 seconds
+          healthCheckInterval: 30000,
         }}
       >
         <ServerDataProvider autoSubscribe>
-          <PlayerDataProvider autoSubscribe></PlayerDataProvider>
+          <PlayerDataProvider autoSubscribe>
+            <SidebarProvider>
+              <BrowserRouter>
+                <AppContent />
+              </BrowserRouter>
+            </SidebarProvider>
+          </PlayerDataProvider>
         </ServerDataProvider>
       </WebSocketProvider>
     </AuthProvider>

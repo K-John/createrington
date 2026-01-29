@@ -1,0 +1,490 @@
+@use "../../styles/variables" as *;
+@use "../../styles/mixins" as *;
+
+// Discord Brand Colors
+$discord-blurple: #5865f2;
+$discord-blurple-hover: #4752c4;
+$discord-blurple-active: #3c45a5;
+
+// ============================================================================
+// Sidebar Container
+// ============================================================================
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 20rem; // Increased from 16rem
+  height: 100vh;
+  background-color: $bg-secondary;
+  border-right: 1px solid $border-primary;
+  display: flex;
+  flex-direction: column;
+  z-index: $z-fixed;
+  overflow: hidden;
+  @include transition(width);
+
+  &.collapsed {
+    width: 5rem; // Collapsed width to show icons only
+  }
+
+  @include max-lg {
+    display: none; // Hide on mobile/tablet for now
+  }
+}
+
+// ============================================================================
+// Header
+// ============================================================================
+
+.header {
+  padding: $spacing-6 $spacing-4;
+  border-bottom: 1px solid $border-primary;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-3;
+  min-height: 80px; // Ensure consistent height
+
+  .collapsed & {
+    padding: $spacing-4 $spacing-2;
+  }
+}
+
+.logoLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-3;
+  text-decoration: none;
+  width: 100%;
+  @include transition(opacity);
+
+  &:hover {
+    opacity: 0.9;
+  }
+
+  .collapsed & {
+    gap: 0;
+  }
+}
+
+.logo {
+  flex-shrink: 0;
+  width: 48px; // Larger logo
+  height: 48px;
+  border-radius: $radius-lg;
+  overflow: hidden;
+  @include transition(transform);
+
+  &:hover {
+    transform: scale(1.1);
+  }
+}
+
+.logoImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.title {
+  @include heading-4; // Larger title
+  color: $fg-primary;
+  background: linear-gradient(135deg, $interactive-primary, $color-accent-600);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  white-space: nowrap;
+}
+
+.collapseToggle {
+  @include reset-button;
+  @include flex-center;
+  width: 100%;
+  max-width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  color: $fg-primary;
+  background-color: $surface-hover;
+  border-radius: $radius-md;
+  @include transition(all);
+
+  &:hover {
+    color: $color-white;
+    background-color: $interactive-primary;
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+.collapseIcon {
+  width: 20px;
+  height: 20px;
+}
+
+// ============================================================================
+// Server Status
+// ============================================================================
+
+.serverStatus {
+  padding: $spacing-5;
+  border-bottom: 1px solid $border-primary;
+  flex-shrink: 0;
+  min-height: 100px; // Ensure consistent height
+
+  .collapsed & {
+    padding: $spacing-3;
+  }
+}
+
+.statusIndicator {
+  @include flex-start;
+  gap: $spacing-3;
+  margin-bottom: $spacing-3;
+
+  .collapsed & {
+    justify-content: center;
+    margin-bottom: $spacing-2;
+  }
+}
+
+.statusDot {
+  width: 12px; // Larger status dot
+  height: 12px;
+  border-radius: $radius-full;
+  flex-shrink: 0;
+  @include transition(background-color);
+
+  &.online {
+    background-color: $status-online;
+    box-shadow: 0 0 12px rgba($status-online, 0.5);
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  &.offline {
+    background-color: $status-offline;
+    box-shadow: 0 0 8px rgba($status-offline, 0.3);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+.statusText {
+  @include body-base; // Larger text
+  font-weight: $font-semibold;
+}
+
+.serverIcon {
+  width: 20px;
+  height: 20px;
+  color: $interactive-primary;
+  flex-shrink: 0;
+}
+
+.playerCount {
+  @include body-base;
+  color: $fg-tertiary;
+  padding-left: $spacing-8; // Align with status text
+  font-weight: $font-medium;
+}
+
+// Multiple servers stats
+.serverStats {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-2;
+  padding-left: $spacing-8;
+}
+
+.statRow {
+  @include flex-between;
+  gap: $spacing-4;
+}
+
+.statLabel {
+  @include body-small;
+  color: $fg-tertiary;
+  font-weight: $font-medium;
+}
+
+.statValue {
+  @include body-small;
+  color: $fg-primary;
+  font-weight: $font-semibold;
+}
+
+// Collapsed stats display
+.collapsedStats {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-2;
+}
+
+.miniStat {
+  font-size: $text-xs;
+  line-height: $leading-normal;
+  color: $fg-primary;
+  font-weight: $font-bold;
+  background-color: $surface-primary;
+  padding: $spacing-1 $spacing-2;
+  border-radius: $radius-md;
+  white-space: nowrap;
+}
+
+// ============================================================================
+// Navigation
+// ============================================================================
+
+.nav {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: $spacing-3 0;
+
+  // Hide scrollbar but keep scrolling ability
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+
+  &::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+}
+
+.navList {
+  @include reset-list;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-1;
+  padding: 0 $spacing-3;
+}
+
+.navItem {
+  list-style: none;
+}
+
+.navLink {
+  @include flex-start;
+  gap: $spacing-3;
+  padding: $spacing-4 $spacing-4; // Larger padding
+  color: $fg-secondary;
+  text-decoration: none;
+  border-radius: $radius-lg;
+  font-size: $text-base; // Larger font
+  font-weight: $font-medium;
+  @include transition(all);
+  position: relative;
+  overflow: hidden;
+
+  .collapsed & {
+    justify-content: center;
+    padding: $spacing-3;
+  }
+
+  // Hover state
+  &:hover:not(.active) {
+    background-color: $surface-hover;
+    color: $fg-primary;
+    transform: translateX(3px);
+
+    .collapsed & {
+      transform: scale(1.05);
+    }
+
+    .navIcon {
+      color: $interactive-primary;
+      transform: scale(1.1);
+    }
+  }
+
+  // Active state
+  &.active {
+    background: linear-gradient(
+      90deg,
+      rgba($interactive-primary, 0.2),
+      rgba($interactive-primary, 0.08)
+    );
+    color: $interactive-primary;
+    font-weight: $font-semibold;
+    border-left: 4px solid $interactive-primary; // Thicker border
+    padding-left: calc($spacing-4 - 4px);
+
+    .collapsed & {
+      border-left: none;
+      border-bottom: 3px solid $interactive-primary;
+      padding-bottom: calc($spacing-3 - 3px);
+    }
+
+    .navIcon {
+      color: $interactive-primary;
+    }
+
+    // Glow effect
+    &::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        rgba($interactive-primary, 0.15),
+        transparent
+      );
+      pointer-events: none;
+    }
+  }
+
+  // Focus state
+  &:focus-visible {
+    outline: 2px solid $border-focus;
+    outline-offset: 2px;
+  }
+}
+
+.navIcon {
+  width: 24px; // Larger icons
+  height: 24px;
+  flex-shrink: 0;
+  @include transition(color, transform);
+}
+
+.navLabel {
+  flex: 1;
+  white-space: nowrap;
+}
+
+.badge {
+  @include flex-center;
+  min-width: 24px; // Larger badge
+  height: 24px;
+  padding: 0 $spacing-2;
+  background-color: $interactive-primary;
+  color: $color-white;
+  font-size: $text-xs;
+  font-weight: $font-bold;
+  border-radius: $radius-full;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba($interactive-primary, 0.3);
+}
+
+.badgeDot {
+  position: absolute;
+  top: $spacing-2;
+  right: $spacing-2;
+  width: 8px;
+  height: 8px;
+  background-color: $interactive-primary;
+  border-radius: $radius-full;
+  box-shadow: 0 0 8px rgba($interactive-primary, 0.6);
+}
+
+// ============================================================================
+// Footer
+// ============================================================================
+
+.footer {
+  padding: $spacing-4;
+  border-top: 1px solid $border-primary;
+  flex-shrink: 0;
+}
+
+.loginButton {
+  @include reset-button;
+  @include flex-center;
+  gap: $spacing-2;
+  width: 100%;
+  padding: $spacing-3 $spacing-4;
+  background-color: $discord-blurple;
+  color: $color-white;
+  border-radius: $radius-md;
+  font-size: $text-sm;
+  font-weight: $font-semibold;
+  @include transition(all);
+  cursor: pointer;
+
+  &:hover {
+    background-color: $discord-blurple-hover;
+    @include hover-lift;
+    box-shadow: 0 0 16px rgba($discord-blurple, 0.4);
+  }
+
+  &:active {
+    transform: translateY(0) scale(0.98);
+  }
+}
+
+.loginIcon {
+  width: 20px;
+  height: 20px;
+  transform: translateY(0.5px);
+  flex-shrink: 0;
+}
+
+// ============================================================================
+// Animations
+// ============================================================================
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+// Removed initial load animation - sidebar appears instantly now
+
+// ============================================================================
+// Responsive
+// ============================================================================
+
+// Mobile sidebar (hidden by default, can be toggled)
+@include max-lg {
+  .sidebar {
+    &.mobile-open {
+      display: flex;
+      width: 100%;
+      animation: slideIn 0.2s $ease-out;
+    }
+  }
+}
+
+// Tablet - slightly smaller
+@include breakpoint($breakpoint-lg, $breakpoint-xl) {
+  .sidebar {
+    width: 18rem;
+
+    &.collapsed {
+      width: 5rem;
+    }
+  }
+}
+
+// ============================================================================
+// Print Styles
+// ============================================================================
+
+@media print {
+  .sidebar {
+    display: none;
+  }
+}
