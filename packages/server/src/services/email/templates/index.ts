@@ -1,5 +1,5 @@
 import { EmailTemplate } from "../types";
-import { BaseEmailTemplate } from "./base.template";
+import type { BaseEmailTemplate } from "./base.template";
 import { WaitlistConfirmationTemplate } from "./waitlist-confirmation.template";
 import { WaitlistInvitationTemplate } from "./waitlist-invitation.template";
 import { AdminWaitlistNotificationTemplate } from "./admin-waitlist-notification.template";

@@ -1,5 +1,5 @@
 import EventEmitter from "node:events";
-import {
+import type {
   ActiveSession,
   ModPlayerJoinData,
   ModPlayerLeaveData,
@@ -8,12 +8,11 @@ import {
   SessionEndEvent,
   SessionStartEvent,
   MinecraftPlayer,
-  ServerState,
 } from "./types";
+import { ServerState } from "./types";
 import { status } from "minecraft-server-util";
 import {
-  CachedMessage,
-  MessageCacheService,
+  type MessageCacheService,
   MessageSource,
 } from "../discord/message/cache";
 

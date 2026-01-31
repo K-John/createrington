@@ -78,7 +78,7 @@ export class WaitlistController {
     const discordExists = await waitlist.entry.find({ discordName });
     if (discordExists) {
       throw new ConflictError(
-        "This Discord username is already on teh waitlist",
+        "This Discord username is already on the waitlist",
       );
     }
 

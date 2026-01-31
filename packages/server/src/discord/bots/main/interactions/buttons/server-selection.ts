@@ -1,4 +1,8 @@
-import { ButtonInteraction, GuildMember, MessageFlags } from "discord.js";
+import {
+  type ButtonInteraction,
+  type GuildMember,
+  MessageFlags,
+} from "discord.js";
 import { getServerConfig } from "../../config/server-selection";
 import { RoleManager } from "@/discord/utils/roles/role-manager";
 import { EmbedPresets } from "@/discord/embeds";

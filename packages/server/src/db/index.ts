@@ -3,7 +3,7 @@ import config from "@/config";
 import {
   DatabaseQueries,
   createQueryInstances,
-  createQueries,
+  type createQueries,
 } from "@/generated/db";
 import * as repositories from "./repositories";
 
@@ -18,6 +18,8 @@ import * as repositories from "./repositories";
  * @env DB_PORT - The port PostgreSQL is running on
  */
 const pool = new pg.Pool(config.database.pool);
+
+pg.types.setTypeParser(20, BigInt);
 
 try {
   await pool.query("SELECT 1");

@@ -1,6 +1,10 @@
 import { EmbedPresets } from "@/discord/embeds";
 import { isSendableChannel } from "@/discord/utils/channel-guard";
-import { ButtonInteraction, GuildChannel, MessageFlags } from "discord.js";
+import {
+  type ButtonInteraction,
+  type GuildChannel,
+  MessageFlags,
+} from "discord.js";
 
 /**
  * Handles registration-related buttons
@@ -60,10 +64,10 @@ export async function execute(interaction: ButtonInteraction): Promise<void> {
       setTimeout(async () => {
         try {
           await channel.delete(
-            `Registration completed - closed by ${interaction.user.tag}`
+            `Registration completed - closed by ${interaction.user.tag}`,
           );
           logger.info(
-            `Deleted registration channel ${channelName} - closed by ${interaction.user.tag}`
+            `Deleted registration channel ${channelName} - closed by ${interaction.user.tag}`,
           );
         } catch (error) {
           logger.error("Failed to delete registration channel:", error);

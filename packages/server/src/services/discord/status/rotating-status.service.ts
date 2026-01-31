@@ -1,6 +1,5 @@
 import { ActivityType, Client } from "discord.js";
-import { StatusCategory, StatusConfig, statusConfigs } from "./types";
-import config from "@/config";
+import { type StatusCategory, type StatusConfig, statusConfigs } from "./types";
 
 /**
  * Rotating status manager for the web bot

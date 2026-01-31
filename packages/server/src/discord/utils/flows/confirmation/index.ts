@@ -1,13 +1,13 @@
 import {
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonInteraction,
-  ButtonStyle,
-  ChatInputCommandInteraction,
-  ComponentType,
+  type ButtonInteraction,
+  type ButtonStyle,
+  type ChatInputCommandInteraction,
   MessageFlags,
+  ButtonBuilder,
+  ActionRowBuilder,
+  ComponentType,
 } from "discord.js";
-import { DiscordEmbedBuilder } from "@/discord/embeds/embed-builder";
+import type { DiscordEmbedBuilder } from "@/discord/embeds/embed-builder";
 import { EmbedPresets } from "@/discord/embeds";
 
 export interface ConfirmationButton {
@@ -51,7 +51,7 @@ export class ConfirmationFlow {
    */
   static async create(
     interaction: ChatInputCommandInteraction,
-    options: ConfirmationFlowOptions
+    options: ConfirmationFlowOptions,
   ): Promise<void> {
     const {
       embed,
@@ -70,11 +70,11 @@ export class ConfirmationFlow {
         .setCustomId(`${flowId}:${btn.customId}`)
         .setLabel(btn.label)
         .setStyle(btn.style)
-        .setEmoji(btn.emoji || "")
+        .setEmoji(btn.emoji || ""),
     );
 
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-      buttonComponents
+      buttonComponents,
     );
 
     const message = isDeferred
@@ -140,13 +140,13 @@ export class ConfirmationFlow {
           const disableRow =
             new ActionRowBuilder<ButtonBuilder>().addComponents(
               buttonComponents.map((btn) =>
-                ButtonBuilder.from(btn).setDisabled(true)
-              )
+                ButtonBuilder.from(btn).setDisabled(true),
+              ),
             );
 
           const timeoutEmbed = EmbedPresets.error(
             "Confirmation Expired",
-            "This confirmation has timed out. Please run the command again"
+            "This confirmation has timed out. Please run the command again",
           );
 
           await interaction.editReply({

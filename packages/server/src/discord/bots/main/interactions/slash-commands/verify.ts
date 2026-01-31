@@ -4,7 +4,7 @@ import { EmbedPresets } from "@/discord/embeds";
 import { CooldownType } from "@/discord/utils/cooldown";
 import { RoleManager } from "@/discord/utils/roles/role-manager";
 import {
-  ChatInputCommandInteraction,
+  type ChatInputCommandInteraction,
   MessageFlags,
   SlashCommandBuilder,
 } from "discord.js";
@@ -20,7 +20,7 @@ export const data = new SlashCommandBuilder()
     option
       .setName("token")
       .setDescription("Your unique verification token")
-      .setRequired(true)
+      .setRequired(true),
   );
 
 /**
@@ -61,7 +61,7 @@ export const prodOnly = false;
  * @returns Promise resolving when the command execution is completed
  */
 export async function execute(
-  interaction: ChatInputCommandInteraction
+  interaction: ChatInputCommandInteraction,
 ): Promise<void> {
   const token = interaction.options.getString("token", true);
   const discordId = interaction.user.id;
@@ -74,7 +74,7 @@ export async function execute(
   ) {
     const embed = EmbedPresets.errorWithAdmin(
       "Verification Failed",
-      "Could not verify your roles. Please try again."
+      "Could not verify your roles. Please try again.",
     );
 
     await interaction.reply({
@@ -99,7 +99,7 @@ export async function execute(
     if (!entry) {
       const embed = EmbedPresets.errorWithAdmin(
         "Invalid Token",
-        "The token provided is invalid or has expired."
+        "The token provided is invalid or has expired.",
       );
 
       await interaction.reply({
@@ -111,7 +111,7 @@ export async function execute(
     if (entry.discordId && entry.discordId !== discordId) {
       const embed = EmbedPresets.errorWithAdmin(
         "Invalid Already Used",
-        "This token has already been used by another Discord account."
+        "This token has already been used by another Discord account.",
       );
 
       await interaction.reply({
@@ -126,13 +126,13 @@ export async function execute(
         discordId,
         verified: true,
         joinedDiscord: true,
-      }
+      },
     );
 
     await waitlistRepo.updateProgressEmbed(entry.id);
 
     logger.info(
-      `User ${interaction.user.tag} (${discordId}) verified within token waitlist entry ${entry.id}`
+      `User ${interaction.user.tag} (${discordId}) verified within token waitlist entry ${entry.id}`,
     );
 
     await interaction.reply({
@@ -143,7 +143,7 @@ export async function execute(
     logger.error("/verify failed:", error);
     const embed = EmbedPresets.errorWithAdmin(
       "Verification Error",
-      "Something went wrong while verifying your token. Please try again."
+      "Something went wrong while verifying your token. Please try again.",
     );
 
     await interaction.reply({

@@ -4,6 +4,196 @@ import { createNotFoundError } from "../utils/query-helpers";
 import { FilterValue } from "@createrington/shared/db/base.types";
 
 /**
+ * Fluent query builder for composable queries
+ * Accumulates filters and options, then executes via the underlying BaseQueries methods
+ */
+class QueryBuilder<
+  TConfig extends {
+    Entity: QueryResultRow;
+    Filters?: Record<string, any>;
+  },
+> {
+  private filters: Partial<NonNullable<TConfig["Filters"]>> = {};
+  private options: {
+    limit?: number;
+    offset?: number;
+    orderBy?: keyof TConfig["Entity"];
+    orderDirection?: "ASC" | "DESC";
+    select?: Array<keyof TConfig["Entity"]>;
+  } = {};
+
+  constructor(
+    private executor: (
+      filters?: Partial<NonNullable<TConfig["Filters"]>>,
+      options?: any,
+    ) => Promise<any[]>,
+  ) {}
+
+  /**
+   * Add filter conditions
+   * Can be called multiple times - conditions are merged
+   *
+   * @param filters - Filter conditions to apply
+   * @returns This builder for chaining
+   *
+   * @example
+   * Q.player.where({ isActive: true }).where({ role: "admin" })
+   */
+  where(filters: Partial<NonNullable<TConfig["Filters"]>>): this {
+    this.filters = { ...this.filters, ...filters };
+    return this;
+  }
+
+  /**
+   * Set sort order
+   *
+   * @param field - Field to sort by
+   * @param direction - Sort direction (default: "ASC")
+   * @returns This builder for chaining
+   *
+   * @example
+   * Q.player.where({ isActive: true }).orderBy("createdAt", "DESC")
+   */
+  orderBy(
+    field: keyof TConfig["Entity"],
+    direction: "ASC" | "DESC" = "ASC",
+  ): this {
+    this.options.orderBy = field;
+    this.options.orderDirection = direction;
+    return this;
+  }
+
+  /**
+   * Set maximum number of results
+   *
+   * @param count - Maximum number of rows to return
+   * @returns This builder for chaining
+   *
+   * @example
+   * Q.player.where({ isActive: true }).limit(10)
+   */
+  limit(count: number): this {
+    this.options.limit = count;
+    return this;
+  }
+
+  /**
+   * Set result offset for pagination
+   *
+   * @param count - Number of rows to skip
+   * @returns This builder for chaining
+   *
+   * @example
+   * Q.player.where({ isActive: true }).limit(10).offset(20)
+   */
+  offset(count: number): this {
+    this.options.offset = count;
+    return this;
+  }
+
+  /**
+   * Select specific fields (field projection)
+   *
+   * @param fields - Array of field names to select
+   * @returns This builder for chaining
+   *
+   * @example
+   * Q.player.where({ isActive: true }).select(["id", "minecraftUsername"])
+   */
+  select(fields: Array<keyof TConfig["Entity"]>): this {
+    this.options.select = fields;
+    return this;
+  }
+
+  /**
+   * Set page number and size (convenience method)
+   * Automatically calculates offset
+   *
+   * @param page - Page number (0-indexed)
+   * @param pageSize - Number of items per page
+   * @returns This builder for chaining
+   *
+   * @example
+   * Q.player.where({ isActive: true }).paginate(2, 20) // page 2, 20 items per page
+   */
+  paginate(page: number, pageSize: number): this {
+    this.options.limit = pageSize;
+    this.options.offset = page * pageSize;
+    return this;
+  }
+
+  /**
+   * Execute the query and return all matching results
+   *
+   * @returns Promise resolving to array of entities
+   *
+   * @example
+   * const players = await Q.player
+   *   .where({ isActive: true })
+   *   .orderBy("createdAt", "DESC")
+   *   .limit(10)
+   *   .all()
+   */
+  async all(): Promise<TConfig["Entity"][]> {
+    return this.executor(this.filters, this.options);
+  }
+
+  /**
+   * Execute the query and return the first result
+   * Returns null if no results found
+   *
+   * @returns Promise resolving to first entity or null
+   *
+   * @example
+   * const player = await Q.player
+   *   .where({ minecraftUsername: "Steve" })
+   *   .first()
+   */
+  async first(): Promise<TConfig["Entity"] | null> {
+    const results = await this.executor(this.filters, {
+      ...this.options,
+      limit: 1,
+    });
+    return results[0] || null;
+  }
+
+  /**
+   * Execute the query and return the first result
+   * Throws an error if no results found
+   *
+   * @returns Promise resolving to first entity
+   * @throws Error if no results found
+   *
+   * @example
+   * const player = await Q.player
+   *   .where({ minecraftUsername: "Steve" })
+   *   .firstOrFail()
+   */
+  async firstOrFail(): Promise<TConfig["Entity"]> {
+    const result = await this.first();
+    if (!result) {
+      throw new Error("No results found for query");
+    }
+    return result;
+  }
+
+  /**
+   * Execute the query and return count of results
+   * Note: This still fetches all results and counts them
+   * For large datasets, prefer using count() method directly
+   *
+   * @returns Promise resolving to count
+   *
+   * @example
+   * const count = await Q.player.where({ isActive: true }).count()
+   */
+  async count(): Promise<number> {
+    const results = await this.executor(this.filters, this.options);
+    return results.length;
+  }
+}
+
+/**
  * Base class for database query operations
  * Provides common CRUD functionality that can be extended by specific entity data
  */
@@ -445,6 +635,7 @@ export abstract class BaseQueries<
    * Accepts either a minimal identifier OR a full entity object
    *
    * @param identifier - Unique identifier or full entity object
+   * @param options - Optional query options including field selection
    * @returns Promise resolving to the entity or null
    *
    * @example
@@ -454,16 +645,43 @@ export abstract class BaseQueries<
    * @example
    * // Pass full entity (auto-extracts identifier)
    * await Q.player.find(somePlayer)
+   *
+   * @example
+   * // With field projection
+   * await Q.player.find({ minecraftUuid: "abc-123" }, { select: ["id", "minecraftUsername"] })
    */
   async find(
     identifier:
       | NonNullable<TConfig["Identifier"]>
       | TConfig["Entity"]
       | Record<string, any>,
-  ): Promise<TConfig["Entity"] | null> {
+    options?: { select?: Array<keyof TConfig["Entity"]> },
+  ): Promise<TConfig["Entity"] | null>;
+  async find<K extends keyof TConfig["Entity"]>(
+    identifier:
+      | NonNullable<TConfig["Identifier"]>
+      | TConfig["Entity"]
+      | Record<string, any>,
+    options?: { select?: K[] },
+  ): Promise<Pick<TConfig["Entity"], K> | null>;
+  async find(
+    identifier:
+      | NonNullable<TConfig["Identifier"]>
+      | TConfig["Entity"]
+      | Record<string, any>,
+    options?: { select?: Array<keyof TConfig["Entity"]> },
+  ): Promise<any | null> {
     const extracted = this.extractIdentifier(identifier as Record<string, any>);
     const { whereClause, values } = this.getColumnMapping(extracted);
-    const query = `SELECT * FROM ${this.table} WHERE ${whereClause} LIMIT 1`;
+
+    // Build column selection
+    const columns = options?.select
+      ? options.select
+          .map((field) => this.getColumnName(field as string))
+          .join(", ")
+      : "*";
+
+    const query = `SELECT ${columns} FROM ${this.table} WHERE ${whereClause} LIMIT 1`;
 
     try {
       const result = await this.db.query<TConfig["DbEntity"]>(query, values);
@@ -482,6 +700,7 @@ export abstract class BaseQueries<
    * Accepts either a minimal identifier OR a full entity object
    *
    * @param identifier - Unique identifier or full entity object
+   * @param options - Optional query options including field selection
    * @returns Promise resolving to the entity
    * @throws Error if entity is not found
    *
@@ -493,14 +712,33 @@ export abstract class BaseQueries<
    * // Pass full entity
    * await Q.player.get(player) // Uses player.minecraftUuid
    * await Q.player.balance.get(player) // Uses player.id (maps to playerId)
+   *
+   * @example
+   * // With field projection
+   * const player = await Q.player.get({ discordId: "123" }, { select: ["id", "minecraftUsername"] })
    */
   async get(
     identifier:
       | NonNullable<TConfig["Identifier"]>
       | TConfig["Entity"]
       | Record<string, any>,
-  ): Promise<TConfig["Entity"]> {
-    const entity = await this.find(identifier);
+    options?: { select?: Array<keyof TConfig["Entity"]> },
+  ): Promise<TConfig["Entity"]>;
+  async get<K extends keyof TConfig["Entity"]>(
+    identifier:
+      | NonNullable<TConfig["Identifier"]>
+      | TConfig["Entity"]
+      | Record<string, any>,
+    options?: { select?: K[] },
+  ): Promise<Pick<TConfig["Entity"], K>>;
+  async get(
+    identifier:
+      | NonNullable<TConfig["Identifier"]>
+      | TConfig["Entity"]
+      | Record<string, any>,
+    options?: { select?: Array<keyof TConfig["Entity"]> },
+  ): Promise<any> {
+    const entity = await this.find(identifier, options);
 
     if (!entity) {
       const extracted = this.extractIdentifier(
@@ -762,6 +1000,126 @@ export abstract class BaseQueries<
   };
 
   // ============================================================================
+  // QUERY BUILDER (Fluent Interface)
+  // ============================================================================
+
+  /**
+   * Create a query builder for fluent, composable queries
+   *
+   * @param filters - Optional initial filter conditions
+   * @returns QueryBuilder instance
+   *
+   * @example
+   * const players = await Q.player
+   *   .where({ isActive: true })
+   *   .orderBy("createdAt", "DESC")
+   *   .limit(50)
+   *   .all()
+   *
+   * @example
+   * const player = await Q.player
+   *   .where({ minecraftUsername: "Steve" })
+   *   .select(["id", "minecraftUsername"])
+   *   .first()
+   */
+  where(
+    filters: Partial<NonNullable<TConfig["Filters"]>>,
+  ): QueryBuilder<TConfig> {
+    return new QueryBuilder<TConfig>((f, opts) => this.findAll(f, opts)).where(
+      filters,
+    );
+  }
+
+  /**
+   * Create a query builder starting with orderBy
+   *
+   * @param field - Field to sort by
+   * @param direction - Sort direction (default: "ASC")
+   * @returns QueryBuilder instance
+   *
+   * @example
+   * const players = await Q.player
+   *   .orderBy("createdAt", "DESC")
+   *   .limit(10)
+   *   .all()
+   */
+  orderBy(
+    field: keyof TConfig["Entity"],
+    direction: "ASC" | "DESC" = "ASC",
+  ): QueryBuilder<TConfig> {
+    return new QueryBuilder<TConfig>((f, opts) =>
+      this.findAll(f, opts),
+    ).orderBy(field, direction);
+  }
+
+  /**
+   * Create a query builder starting with limit
+   *
+   * @param count - Maximum number of rows to return
+   * @returns QueryBuilder instance
+   *
+   * @example
+   * const players = await Q.player.limit(10).all()
+   */
+  limit(count: number): QueryBuilder<TConfig> {
+    return new QueryBuilder<TConfig>((f, opts) => this.findAll(f, opts)).limit(
+      count,
+    );
+  }
+
+  /**
+   * Create a query builder starting with offset
+   *
+   * @param count - Number of rows to skip
+   * @returns QueryBuilder instance
+   *
+   * @example
+   * const players = await Q.player.offset(20).limit(10).all()
+   */
+  offset(count: number): QueryBuilder<TConfig> {
+    return new QueryBuilder<TConfig>((f, opts) => this.findAll(f, opts)).offset(
+      count,
+    );
+  }
+
+  /**
+   * Create a query builder starting with field selection
+   *
+   * @param fields - Array of field names to select
+   * @returns QueryBuilder instance
+   *
+   * @example
+   * const players = await Q.player
+   *   .select(["id", "minecraftUsername"])
+   *   .where({ isActive: true })
+   *   .all()
+   */
+  selectFields(fields: Array<keyof TConfig["Entity"]>): QueryBuilder<TConfig> {
+    return new QueryBuilder<TConfig>((f, opts) => this.findAll(f, opts)).select(
+      fields,
+    );
+  }
+
+  /**
+   * Create a query builder starting with pagination
+   *
+   * @param page - Page number (0-indexed)
+   * @param pageSize - Number of items per page
+   * @returns QueryBuilder instance
+   *
+   * @example
+   * const players = await Q.player
+   *   .paginate(2, 20)
+   *   .where({ isActive: true })
+   *   .all()
+   */
+  paginate(page: number, pageSize: number): QueryBuilder<TConfig> {
+    return new QueryBuilder<TConfig>((f, opts) =>
+      this.findAll(f, opts),
+    ).paginate(page, pageSize);
+  }
+
+  // ============================================================================
   // MULTIPLE ENTITY OPERATIONS (by non-unique filters)
   // ============================================================================
 
@@ -769,8 +1127,27 @@ export abstract class BaseQueries<
    * Finds all entities matching the filter criteria
    *
    * @param filters - Optional filter criteria (can be partial)
-   * @param options - Optional pagination and sorting options
+   * @param options - Optional pagination, sorting, and field selection options
    * @returns Promise resolving to an array of entities
+   *
+   * @example
+   * // Get all players
+   * await Q.player.findAll()
+   *
+   * @example
+   * // With filters
+   * await Q.player.findAll({ isActive: true })
+   *
+   * @example
+   * // With field projection
+   * await Q.player.findAll({ isActive: true }, { select: ["id", "minecraftUsername"] })
+   *
+   * @example
+   * // With pagination and sorting
+   * await Q.player.findAll(
+   *   { isActive: true },
+   *   { limit: 10, offset: 0, orderBy: "createdAt", orderDirection: "DESC" }
+   * )
    */
   async findAll(
     filters?: Partial<NonNullable<TConfig["Filters"]>>,
@@ -779,13 +1156,41 @@ export abstract class BaseQueries<
       offset?: number;
       orderBy?: keyof TConfig["Entity"];
       orderDirection?: "ASC" | "DESC";
+      select?: Array<keyof TConfig["Entity"]>;
     },
-  ): Promise<TConfig["Entity"][]> {
+  ): Promise<TConfig["Entity"][]>;
+  async findAll<K extends keyof TConfig["Entity"]>(
+    filters?: Partial<NonNullable<TConfig["Filters"]>>,
+    options?: {
+      limit?: number;
+      offset?: number;
+      orderBy?: keyof TConfig["Entity"];
+      orderDirection?: "ASC" | "DESC";
+      select?: K[];
+    },
+  ): Promise<Pick<TConfig["Entity"], K>[]>;
+  async findAll(
+    filters?: Partial<NonNullable<TConfig["Filters"]>>,
+    options?: {
+      limit?: number;
+      offset?: number;
+      orderBy?: keyof TConfig["Entity"];
+      orderDirection?: "ASC" | "DESC";
+      select?: Array<keyof TConfig["Entity"]>;
+    },
+  ): Promise<any[]> {
     const { whereClause, params } = filters
       ? this.buildFilterClause(filters)
       : { whereClause: "1=1", params: [] };
 
-    let query = `SELECT * FROM ${this.table} WHERE ${whereClause}`;
+    // Build column selection
+    const columns = options?.select
+      ? options.select
+          .map((field) => this.getColumnName(field as string))
+          .join(", ")
+      : "*";
+
+    let query = `SELECT ${columns} FROM ${this.table} WHERE ${whereClause}`;
 
     if (options?.orderBy) {
       const orderColumn = this.getColumnName(options.orderBy as string);
@@ -815,15 +1220,38 @@ export abstract class BaseQueries<
    * Retrieves all entities from the table with optional pagination and sorting
    * Alias for findAll() with no filters
    *
-   * @param options - Optional pagination and sorting options
+   * @param options - Optional pagination, sorting, and field selection options
    * @returns Promise resolving to an array of all entities
+   *
+   * @example
+   * // Get all players
+   * await Q.player.getAll()
+   *
+   * @example
+   * // With field projection
+   * await Q.player.getAll({ select: ["id", "minecraftUsername"] })
    */
   async getAll(options?: {
     limit?: number;
     offset?: number;
     orderBy?: keyof TConfig["Entity"];
     orderDirection?: "ASC" | "DESC";
-  }): Promise<TConfig["Entity"][]> {
+    select?: Array<keyof TConfig["Entity"]>;
+  }): Promise<TConfig["Entity"][]>;
+  async getAll<K extends keyof TConfig["Entity"]>(options?: {
+    limit?: number;
+    offset?: number;
+    orderBy?: keyof TConfig["Entity"];
+    orderDirection?: "ASC" | "DESC";
+    select?: K[];
+  }): Promise<Pick<TConfig["Entity"], K>[]>;
+  async getAll(options?: {
+    limit?: number;
+    offset?: number;
+    orderBy?: keyof TConfig["Entity"];
+    orderDirection?: "ASC" | "DESC";
+    select?: Array<keyof TConfig["Entity"]>;
+  }): Promise<any[]> {
     return this.findAll(undefined, options);
   }
 

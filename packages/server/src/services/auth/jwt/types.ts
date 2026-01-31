@@ -1,4 +1,4 @@
-import { AuthRole } from "@/services/discord/oauth/oauth.service";
+import type { AuthRole } from "@/services/discord/oauth/oauth.service";
 
 /**
  * JWT payload structure

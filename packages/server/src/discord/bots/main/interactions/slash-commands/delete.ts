@@ -1,6 +1,6 @@
 import { EmbedPresets } from "@/discord/embeds";
 import {
-  ChatInputCommandInteraction,
+  type ChatInputCommandInteraction,
   MessageFlags,
   PermissionFlagsBits,
   SlashCommandBuilder,
@@ -20,7 +20,7 @@ export const data = new SlashCommandBuilder()
       .setDescription("Number of messages to delete (1-100)")
       .setRequired(true)
       .setMinValue(1)
-      .setMaxValue(100)
+      .setMaxValue(100),
   );
 
 /**
@@ -36,14 +36,14 @@ export const prodOnly = false;
  * @returns Promise resolving when the command execution is completed
  */
 export async function execute(
-  interaction: ChatInputCommandInteraction
+  interaction: ChatInputCommandInteraction,
 ): Promise<void> {
   const count = interaction.options.getInteger("count", true);
 
   if (!interaction.channel || !("bulkDelete" in interaction.channel)) {
     const embed = EmbedPresets.error(
       "Invalid channel",
-      "This command can only be used in text channels."
+      "This command can only be used in text channels.",
     );
 
     await interaction.reply({
@@ -62,7 +62,7 @@ export async function execute(
       "Message deleted",
       `Successfully deleted **${deletedMessages.size}** message${
         deletedMessages.size === 1 ? "" : "s"
-      }.`
+      }.`,
     );
 
     await interaction.editReply({
@@ -70,14 +70,14 @@ export async function execute(
     });
 
     logger.info(
-      `${interaction.user.tag} deleted ${deletedMessages.size} messages in ${interaction.channel.name}`
+      `${interaction.user.tag} deleted ${deletedMessages.size} messages in ${interaction.channel.name}`,
     );
   } catch (error) {
     logger.error("/delete failed:", error);
 
     const embed = EmbedPresets.error(
       "Deletion Failed",
-      "Failed to delete messages. Make sure they are not older than 14 days."
+      "Failed to delete messages. Make sure they are not older than 14 days.",
     );
 
     await interaction.editReply({

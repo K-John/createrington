@@ -2,13 +2,13 @@ import "@/logger.global";
 import config from "@/config";
 import {
   REST,
-  RESTPostAPIApplicationCommandsJSONBody,
+  type RESTPostAPIApplicationCommandsJSONBody,
   Routes,
 } from "discord.js";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { CommandModule } from "../bots/common/loaders/command-loader";
+import type { CommandModule } from "../bots/common/loaders/command-loader";
 
 const BOT_TOKEN = config.discord.bots.main.token;
 const BOT_ID = config.discord.bots.main.id;
@@ -88,7 +88,7 @@ async function loadCommandData(): Promise<
  *
  * @returns Promise resolving when registration is completed
  */
-async function registerCommands(): Promise<void> {
+export async function registerCommands(): Promise<void> {
   try {
     logger.info("Loading command definitions...");
     const commands = await loadCommandData();

@@ -1,4 +1,4 @@
-import {
+import type {
   ActionRowBuilder,
   EmbedBuilder,
   Message,
@@ -16,7 +16,7 @@ import { EmbedPresets } from "../embeds";
  */
 export async function sendEmbed(
   channel: TextChannel,
-  embed: EmbedBuilder
+  embed: EmbedBuilder,
 ): Promise<Message | null> {
   try {
     return await channel.send({ embeds: [embed] });
@@ -35,7 +35,7 @@ export async function sendEmbed(
  */
 export async function replyWithEmbed(
   message: Message,
-  embed: EmbedBuilder
+  embed: EmbedBuilder,
 ): Promise<Message | null> {
   try {
     return await message.reply({ embeds: [embed] });
@@ -54,7 +54,7 @@ export async function replyWithEmbed(
  */
 export async function editEmbed(
   message: Message,
-  embed: EmbedBuilder
+  embed: EmbedBuilder,
 ): Promise<Message | null> {
   try {
     return await message.edit({ embeds: [embed] });
@@ -85,11 +85,11 @@ export async function withLoadingEmbed<T>(
     loadingMessage?: string;
     onSuccess?: (result: T) => EmbedBuilder;
     onError?: (error: Error) => EmbedBuilder;
-  }
+  },
 ): Promise<T> {
   const loadingMsg = await sendEmbed(
     channel,
-    EmbedPresets.loading(options.loadingMessage).build()
+    EmbedPresets.loading(options.loadingMessage).build(),
   );
 
   try {
@@ -114,7 +114,7 @@ export async function withLoadingEmbed<T>(
 export async function sendEmbedWithComponents(
   channel: TextChannel,
   embed: EmbedBuilder,
-  components: ActionRowBuilder<MessageActionRowComponentBuilder>[]
+  components: ActionRowBuilder<MessageActionRowComponentBuilder>[],
 ): Promise<Message | null> {
   try {
     return await channel.send({
@@ -133,7 +133,7 @@ export async function sendEmbedWithComponents(
 export async function editEmbedWithComponents(
   message: Message,
   embed: EmbedBuilder,
-  components: ActionRowBuilder<MessageActionRowComponentBuilder>[]
+  components: ActionRowBuilder<MessageActionRowComponentBuilder>[],
 ): Promise<Message | null> {
   try {
     return await message.edit({

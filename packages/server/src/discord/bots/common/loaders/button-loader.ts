@@ -1,6 +1,6 @@
 import config from "@/config";
 import fs from "node:fs";
-import { ButtonInteraction, Collection } from "discord.js";
+import { type ButtonInteraction, Collection } from "discord.js";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 

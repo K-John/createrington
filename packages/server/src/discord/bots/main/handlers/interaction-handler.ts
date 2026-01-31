@@ -1,18 +1,18 @@
-import {
+import type {
   ButtonInteraction,
   ChatInputCommandInteraction,
   Client,
   Collection,
   Interaction,
-  MessageFlags,
 } from "discord.js";
+import { MessageFlags } from "discord.js";
 import { cooldownManager } from "@/discord/utils/cooldown";
 import { EmbedPresets } from "@/discord/embeds";
 
 import { requireAdmin } from "@/discord/utils/admin-guard";
-import { CommandModule } from "../../common/loaders/command-loader";
+import type { CommandModule } from "../../common/loaders/command-loader";
 import {
-  ButtonModule,
+  type ButtonModule,
   findButtonHandler,
 } from "../../common/loaders/button-loader";
 

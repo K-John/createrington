@@ -1,8 +1,7 @@
 import { admin } from "@/db";
 import {
-  ButtonInteraction,
-  ChatInputCommandInteraction,
-  GuildMember,
+  type ChatInputCommandInteraction,
+  type GuildMember,
   MessageFlags,
 } from "discord.js";
 import { EmbedPresets } from "../embeds";

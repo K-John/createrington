@@ -1,13 +1,12 @@
 import config from "@/config";
-import {
-  ChannelType,
+import type {
   Client,
   GuildMember,
   OverwriteResolvable,
-  PermissionFlagsBits,
   TextChannel,
 } from "discord.js";
-import { EventModule } from "@/discord/bots/common/loaders/event-loader";
+import { PermissionFlagsBits, ChannelType } from "discord.js";
+import type { EventModule } from "@/discord/bots/common/loaders/event-loader";
 import { discord } from "@/db";
 import { RoleManager } from "@/discord/utils/roles/role-manager";
 import { Discord } from "@/discord/constants";

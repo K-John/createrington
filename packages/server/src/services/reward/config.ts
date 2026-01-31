@@ -1,4 +1,4 @@
-import { RewardConfig, RewardType } from "./types";
+import { type RewardConfig, RewardType } from "./types";
 
 /**
  * Reward system configuration registry

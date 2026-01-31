@@ -1,5 +1,5 @@
 import { Q } from "@/db";
-import { PlaytimeRoleRule, RoleEligibilityResult } from "../types";
+import type { PlaytimeRoleRule, RoleEligibilityResult } from "../types";
 import { BaseRoleCondition } from "./base-condition";
 
 /**
@@ -55,7 +55,7 @@ export class PlaytimeCondition extends BaseRoleCondition<PlaytimeRoleRule> {
 
       return summaries.reduce(
         (total, summary) => total + Number(summary.totalSeconds),
-        0
+        0,
       );
     } catch (error) {
       logger.error(`Failed to get playtime for ${discordId}`, error);

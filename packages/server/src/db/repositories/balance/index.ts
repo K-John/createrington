@@ -422,6 +422,12 @@ export class BalanceRepository {
         );
       }
 
+      console.log(
+        "senderBalance.balance type:",
+        typeof senderBalance.balance,
+        senderBalance.balance,
+      );
+      console.log("amountBigInt type:", typeof amountBigInt, amountBigInt);
       const newSenderBalance = BalanceUtils.subtract(
         senderBalance.balance,
         amountBigInt,

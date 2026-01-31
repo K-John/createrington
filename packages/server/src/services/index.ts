@@ -1,4 +1,5 @@
-import { container, Services, ServiceKey } from "./container";
+import { container } from "./container";
+import { Services, type ServiceKey } from "./container";
 
 /**
  * Type-safe service accessors

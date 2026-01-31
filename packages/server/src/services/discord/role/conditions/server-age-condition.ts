@@ -1,5 +1,5 @@
 import { player } from "@/db";
-import { RoleEligibilityResult, ServerAgeRoleRule } from "../types";
+import type { RoleEligibilityResult, ServerAgeRoleRule } from "../types";
 import { BaseRoleCondition } from "./base-condition";
 
 /**

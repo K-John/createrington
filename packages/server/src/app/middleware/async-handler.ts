@@ -1,4 +1,4 @@
-import { NextFunction, Request, RequestHandler, Response } from "express";
+import type { NextFunction, Request, RequestHandler, Response } from "express";
 
 /**
  * Wraps async route handlers to automatically catch errors and pass them to
@@ -10,7 +10,7 @@ import { NextFunction, Request, RequestHandler, Response } from "express";
 export const asyncHandler = (
   fn:
     | RequestHandler
-    | ((req: Request, res: Response, next: NextFunction) => Promise<any>)
+    | ((req: Request, res: Response, next: NextFunction) => Promise<any>),
 ): RequestHandler => {
   return (req: Request, res: Response, next: NextFunction) => {
     Promise.resolve(fn(req, res, next)).catch(next);

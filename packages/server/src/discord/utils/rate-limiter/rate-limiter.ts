@@ -1,13 +1,12 @@
 import EventEmitter from "node:events";
 import { BucketManager } from "./bucket-manager";
 import { QueueManager } from "./queue-manager";
-import {
+import type {
   QueuedRequest,
   RateLimitedRequestOptions,
   RateLimiterStats,
-  RequestPriority,
-  RequestTimeoutError,
 } from "./types";
+import { RequestTimeoutError, RequestPriority } from "./types";
 import { RateLimitError } from "discord.js";
 
 /**

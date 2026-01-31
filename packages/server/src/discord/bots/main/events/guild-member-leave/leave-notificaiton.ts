@@ -1,13 +1,13 @@
 import { Q } from "@/db";
-import { EventModule } from "@/discord/bots/common/loaders/event-loader";
+import type { EventModule } from "@/discord/bots/common/loaders/event-loader";
 import { Discord } from "@/discord/constants";
 import { EmbedPresets } from "@/discord/embeds";
 import { ButtonPresets } from "@/discord/embeds/presets/buttons";
 import {
   ActionRowBuilder,
   ButtonBuilder,
-  Client,
-  GuildMember,
+  type Client,
+  type GuildMember,
 } from "discord.js";
 
 /**

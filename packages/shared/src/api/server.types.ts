@@ -2,7 +2,6 @@
  * Server status types
  *
  * Shared types for server status endpoints
- * These types should be exported to the shared package for frontend use
  */
 
 /**

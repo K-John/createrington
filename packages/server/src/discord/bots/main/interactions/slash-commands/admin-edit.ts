@@ -6,7 +6,7 @@ import { DatabaseTable, Player } from "@/generated/db";
 import { AdminEdit } from "@/types";
 import { minecraftRcon, ServerId, WhitelistAction } from "@/utils/rcon";
 import {
-  ChatInputCommandInteraction,
+  type ChatInputCommandInteraction,
   MessageFlags,
   PermissionFlagsBits,
   SlashCommandBuilder,

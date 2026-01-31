@@ -1,7 +1,7 @@
 import { playtimeRepo } from "@/db";
 import { MINECRAFT_SERVERS } from "./config";
 import { PlaytimeService } from "./playtime.service";
-import { MessageCacheService } from "../discord/message/cache";
+import type { MessageCacheService } from "../discord/message/cache";
 import { ServerState } from "./types";
 
 /**

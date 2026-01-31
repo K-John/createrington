@@ -1,13 +1,13 @@
-import { MessageCacheService } from "../discord/message/cache";
-import { PlaytimeManagerService } from "../playtime/playtime-manager.service";
+import type { MessageCacheService } from "../discord/message/cache";
+import type { PlaytimeManagerService } from "../playtime/playtime-manager.service";
 import { MINECRAFT_SERVERS } from "../playtime/config";
-import {
+import type {
   InitialDataPayload,
   PlayerData,
   ServerInitialDataPayload,
   ServerStatus,
 } from "./types";
-import { CachedMessage } from "../discord/message/cache";
+import type { CachedMessage } from "../discord/message/cache";
 
 /**
  * Data provider for WebSocket service

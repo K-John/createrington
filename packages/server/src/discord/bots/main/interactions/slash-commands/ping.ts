@@ -1,6 +1,9 @@
 import { EmbedPresets } from "@/discord/embeds";
 import { CooldownType } from "@/discord/utils/cooldown";
-import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
+import {
+  type ChatInputCommandInteraction,
+  SlashCommandBuilder,
+} from "discord.js";
 
 /**
  * Slash command definition for the ping command
@@ -50,7 +53,7 @@ export const prodOnly = false;
  * // WebSocket Latency: 32ms
  */
 export async function execute(
-  interaction: ChatInputCommandInteraction
+  interaction: ChatInputCommandInteraction,
 ): Promise<void> {
   await interaction.reply({
     embeds: [EmbedPresets.loading("Calculating ping...").build()],

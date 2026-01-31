@@ -1,12 +1,11 @@
 import { Discord } from "@/discord/constants";
-import {
+import type {
   AnyRoleRule,
   PlaytimeRoleRule,
-  RoleCheckInterval,
-  RoleConditionType,
   RoleNotificationConfig,
   ServerAgeRoleRule,
 } from "./types";
+import { RoleConditionType, RoleCheckInterval } from "./types";
 
 /**
  * Playtime-based role hierarchy configuration

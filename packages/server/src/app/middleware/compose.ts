@@ -1,4 +1,4 @@
-import { RequestHandler } from "express";
+import type { RequestHandler } from "express";
 import { authenticate, requireAdmin, requireUser } from "./auth.middleware";
 import { asyncHandler } from "./async-handler";
 

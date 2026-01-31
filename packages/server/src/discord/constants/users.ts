@@ -1,5 +1,5 @@
 import { getService, Services } from "@/services";
-import { Client, User } from "discord.js";
+import type { Client, User } from "discord.js";
 
 /**
  * Discord server utility functions for fetching, validating, and working with Discord users

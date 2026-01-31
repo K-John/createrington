@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 import { ForbiddenError, UnauthorizedError } from "./error-handler";
 import { jwtService } from "@/services/auth/jwt";
 import { AuthRole } from "@/services/discord/oauth/oauth.service";
@@ -12,7 +12,7 @@ import { AuthRole } from "@/services/discord/oauth/oauth.service";
 export const authenticate = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
@@ -44,7 +44,7 @@ export const authenticate = async (
 export const optionalAuth = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
@@ -72,7 +72,7 @@ export const optionalAuth = async (
 export const requireAdmin = (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void => {
   if (!req.user) {
     throw new UnauthorizedError("Authentication required");
@@ -80,7 +80,7 @@ export const requireAdmin = (
 
   if (!req.user.isAdmin) {
     logger.warn(
-      `User ${req.user.username} (${req.user.discordId}) attempted to access admin endpoint`
+      `User ${req.user.username} (${req.user.discordId}) attempted to access admin endpoint`,
     );
     throw new ForbiddenError("Admin access required");
   }
@@ -97,7 +97,7 @@ export const requireAdmin = (
 export const requireUser = (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void => {
   if (!req.user) {
     throw new UnauthorizedError("Authentication required");
@@ -105,7 +105,7 @@ export const requireUser = (
 
   if (req.user.role === AuthRole.UNVERIFIED) {
     logger.warn(
-      `Unverified user ${req.user.username} (${req.user.discordId}) attempted to access user endpoint`
+      `Unverified user ${req.user.username} (${req.user.discordId}) attempted to access user endpoint`,
     );
     throw new ForbiddenError("Account verification required");
   }
@@ -128,7 +128,7 @@ export const requireRole = (...allowedRoles: AuthRole[]) => {
       logger.warn(
         `User ${req.user.username} with role ${
           req.user.role
-        } attempted to access endpoint requiring ${allowedRoles.join(" or ")}`
+        } attempted to access endpoint requiring ${allowedRoles.join(" or ")}`,
       );
       throw new ForbiddenError(`Required role: ${allowedRoles.join(" or ")}`);
     }
@@ -152,7 +152,7 @@ export const requireOwnerOrAdmin = (getUserId: (req: Request) => string) => {
 
     if (req.user.discordId !== resourceUserId && !req.user.isAdmin) {
       logger.warn(
-        `User ${req.user.username} attempted to access resource owned by ${resourceUserId}`
+        `User ${req.user.username} attempted to access resource owned by ${resourceUserId}`,
       );
       throw new ForbiddenError("Access denied");
     }

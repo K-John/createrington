@@ -1,6 +1,6 @@
-import { Client } from "discord.js";
+import type { Client } from "discord.js";
 import { RoleAssignmentService } from "../role-assignment.service";
-import { PlaytimeService } from "@/services/playtime";
+import type { PlaytimeService } from "@/services/playtime";
 import { getRealtimeRoleRules } from "../config";
 import { Q } from "@/db";
 
@@ -13,7 +13,10 @@ import { Q } from "@/db";
 export class RealtimeRoleHandler {
   private roleService: RoleAssignmentService;
 
-  constructor(private bot: Client, private playtimeService: PlaytimeService) {
+  constructor(
+    private bot: Client,
+    private playtimeService: PlaytimeService,
+  ) {
     this.roleService = new RoleAssignmentService(bot);
     this.setupListeners();
   }
@@ -26,7 +29,7 @@ export class RealtimeRoleHandler {
   private setupListeners(): void {
     this.playtimeService.on("sessionEnd", async (event) => {
       logger.debug(
-        `Session ended for ${event.username}, checking role eligibility`
+        `Session ended for ${event.username}, checking role eligibility`,
       );
 
       try {
@@ -41,12 +44,12 @@ export class RealtimeRoleHandler {
 
         const result = await this.roleService.processRoleHierarchy(
           player.discordId,
-          rules
+          rules,
         );
       } catch (error) {
         logger.error(
           `Failed to process realtime role check for ${event.username}:`,
-          error
+          error,
         );
       }
     });

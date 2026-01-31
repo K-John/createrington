@@ -1,7 +1,7 @@
 import { player } from "@/db";
 import { EmbedPresets } from "@/discord/embeds";
 import {
-  ChatInputCommandInteraction,
+  type ChatInputCommandInteraction,
   MessageFlags,
   PermissionFlagsBits,
   SlashCommandBuilder,
@@ -19,7 +19,7 @@ export const data = new SlashCommandBuilder()
     opt
       .setName("user")
       .setDescription("User to retrieve username for")
-      .setRequired(true)
+      .setRequired(true),
   );
 
 /**
@@ -37,7 +37,7 @@ export const prodOnly = false;
  * 3. Display the username in an embed
  */
 export async function execute(
-  interaction: ChatInputCommandInteraction
+  interaction: ChatInputCommandInteraction,
 ): Promise<void> {
   const user = interaction.options.getUser("user", true);
 
@@ -59,7 +59,7 @@ export async function execute(
 
     const embed = EmbedPresets.error(
       "Username Error",
-      "Something went wrong while fetching username. Please try again."
+      "Something went wrong while fetching username. Please try again.",
     );
 
     await interaction.reply({

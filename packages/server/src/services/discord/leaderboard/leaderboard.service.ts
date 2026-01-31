@@ -1,12 +1,12 @@
 import { Q } from "@/db";
 import { getLeaderboardConfig } from "./config";
-import { LeaderboardRefreshResult, LeaderboardType } from "./types";
+import { type LeaderboardRefreshResult, LeaderboardType } from "./types";
 import { Discord } from "@/discord/constants";
 import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  Client,
+  type Client,
 } from "discord.js";
 import { EmbedPresets } from "@/discord/embeds";
 

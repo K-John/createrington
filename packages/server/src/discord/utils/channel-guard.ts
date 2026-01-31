@@ -1,4 +1,4 @@
-import {
+import type {
   DMChannel,
   NewsChannel,
   PrivateThreadChannel,
@@ -25,7 +25,7 @@ export type SendableChannel =
  * @returns True if the channel has a send method
  */
 export function isSendableChannel(
-  channel: Channel | null
+  channel: Channel | null,
 ): channel is SendableChannel {
   return (
     channel !== null && "send" in channel && typeof channel.send === "function"
@@ -49,7 +49,7 @@ export function isTextChannel(channel: Channel | null): channel is TextChannel {
  * @returns True if the channel is a VoiceChannel
  */
 export function isVoiceChannel(
-  channel: Channel | null
+  channel: Channel | null,
 ): channel is VoiceChannel {
   return channel !== null && channel.type === 2;
 }
@@ -61,7 +61,7 @@ export function isVoiceChannel(
  * @returns True if the channel is a thread
  */
 export function isThreadChannel(
-  channel: Channel | null
+  channel: Channel | null,
 ): channel is PrivateThreadChannel {
   return channel !== null && channel.isThread();
 }

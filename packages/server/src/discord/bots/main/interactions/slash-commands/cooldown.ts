@@ -1,6 +1,6 @@
 import {
   SlashCommandBuilder,
-  ChatInputCommandInteraction,
+  type ChatInputCommandInteraction,
   PermissionFlagsBits,
   MessageFlags,
 } from "discord.js";
@@ -29,8 +29,8 @@ export const data = new SlashCommandBuilder()
         opt
           .setName("user")
           .setDescription("User to reset cooldowns for")
-          .setRequired(true)
-      )
+          .setRequired(true),
+      ),
   )
   .addSubcommand((sub) =>
     sub
@@ -40,11 +40,11 @@ export const data = new SlashCommandBuilder()
         opt
           .setName("command")
           .setDescription("Command name to reset")
-          .setRequired(true)
-      )
+          .setRequired(true),
+      ),
   )
   .addSubcommand((sub) =>
-    sub.setName("stats").setDescription("View cooldown statistics")
+    sub.setName("stats").setDescription("View cooldown statistics"),
   );
 
 /**
@@ -76,7 +76,7 @@ export const prodOnly = false;
  * // Bot displays embed with cooldown statistics
  */
 export async function execute(
-  interaction: ChatInputCommandInteraction
+  interaction: ChatInputCommandInteraction,
 ): Promise<void> {
   const subcommand = interaction.options.getSubcommand();
 
@@ -87,7 +87,7 @@ export async function execute(
 
       const embed = EmbedPresets.success(
         "Cooldowns Reset",
-        `Reset ${count} cooldown(s) for ${user.tag}`
+        `Reset ${count} cooldown(s) for ${user.tag}`,
       ).build();
 
       await interaction.reply({
@@ -104,11 +104,11 @@ export async function execute(
       const embed = success
         ? EmbedPresets.success(
             "Command Cooldowns Reset",
-            `All cooldowns for \`/${commandName}\` have been reset.`
+            `All cooldowns for \`/${commandName}\` have been reset.`,
           )
         : EmbedPresets.error(
             "No Cooldowns Found",
-            `No active cooldowns found for \`/${commandName}\``
+            `No active cooldowns found for \`/${commandName}\``,
           );
 
       await interaction.reply({

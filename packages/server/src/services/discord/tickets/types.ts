@@ -4,8 +4,6 @@
  * Defines types for the ticket system
  */
 
-import { TextChannel } from "discord.js";
-
 export enum TicketType {
   GENERAL = "general",
   REPORT = "report",
@@ -87,7 +85,7 @@ export function parseTicketButtonId(customId: string): {
   if (customId.startsWith(TicketButtonIds.CREATE_PREFIX)) {
     const type = customId.replace(
       TicketButtonIds.CREATE_PREFIX,
-      ""
+      "",
     ) as TicketType;
     return { action: "create", type };
   }
