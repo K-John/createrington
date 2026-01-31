@@ -5,6 +5,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuBadge,
   useSidebar,
 } from "@/components/ui/sidebar";
 import {
@@ -13,6 +14,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { NavLink } from "react-router-dom";
+import { Badge, IconBadge } from "./ui/badge";
 
 export function NavMain({
   items,
@@ -21,10 +23,7 @@ export function NavMain({
     title: string;
     url: string;
     icon?: LucideIcon;
-    items?: {
-      title: string;
-      url: string;
-    }[];
+    badge?: number;
   }[];
 }) {
   const { state } = useSidebar();
@@ -43,12 +42,26 @@ export function NavMain({
                   {({ isActive }) => (
                     <SidebarMenuButton isActive={isActive} size="lg">
                       {item.icon && (
-                        <item.icon
-                          className={`size-6! transition-all ${state === "collapsed" ? "ml-1" : ""}`}
-                        />
+                        <div className="relative">
+                          <item.icon
+                            className={`size-6! transition-all ${state === "collapsed" ? "ml-1" : ""}`}
+                          />
+                          
+                          {item.badge && state === "collapsed" && (
+                            <IconBadge />
+                          )}
+                        </div>
                       )}
 
-                      <span>{item.title}</span>
+                      {item.title}
+                      
+                      {item.badge && (
+                        <SidebarMenuBadge>
+                          <Badge>
+                            {item.badge}
+                          </Badge>
+                        </SidebarMenuBadge>
+                      )}
                     </SidebarMenuButton>
                   )}
                 </NavLink>
@@ -58,7 +71,10 @@ export function NavMain({
                 side="right"
                 className={state === "collapsed" ? "" : "hidden"}
               >
-                <p>{item.title}</p>
+                <p>
+                  {item.badge && <span>{item.badge} </span>}
+                  {item.title}
+                </p>
               </TooltipContent>
             </Tooltip>
           </SidebarMenuItem>

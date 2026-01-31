@@ -29,6 +29,14 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth";
 import { ServerStatus } from "./server-status";
+import { usePlayerData } from "@/contexts/socket";
+
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { user } = useAuth();
+  const { toggleSidebar, open } = useSidebar();
+  const isMobile = useIsMobile();
+
+const { stats: playerStats } = usePlayerData();
 
 const data = {
   navMain: [
@@ -53,6 +61,7 @@ const data = {
       title: "Players",
       url: "/online-players",
       icon: Users,
+      badge: playerStats.total > 0 ? playerStats.total : undefined,
     },
     {
       title: "Map",
@@ -76,11 +85,6 @@ const data = {
     },
   ],
 };
-
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { user } = useAuth();
-  const { toggleSidebar, open } = useSidebar();
-  const isMobile = useIsMobile();
 
   // Filter nav items based on auth
   const filteredNavMain = data.navMain.filter(
