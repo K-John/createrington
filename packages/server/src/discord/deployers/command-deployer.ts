@@ -88,7 +88,7 @@ async function loadCommandData(): Promise<
  *
  * @returns Promise resolving when registration is completed
  */
-async function registerCommands(): Promise<void> {
+export async function registerCommands(): Promise<void> {
   try {
     logger.info("Loading command definitions...");
     const commands = await loadCommandData();
