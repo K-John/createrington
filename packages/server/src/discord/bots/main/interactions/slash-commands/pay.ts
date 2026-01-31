@@ -2,6 +2,7 @@ import { balanceRepo, player } from "@/db";
 import { BalanceUtils } from "@/db/repositories/balance/utils";
 import { EmbedPresets } from "@/discord/embeds";
 import { CooldownType } from "@/discord/utils/cooldown";
+import { formatBalance } from "@/utils/format";
 import {
   type ChatInputCommandInteraction,
   MessageFlags,
@@ -174,11 +175,11 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     );
 
     const embed = EmbedPresets.success(
-      "💸 Transfer Complete",
-      `You sent **$${BalanceUtils.format(BalanceUtils.toStorage(amount))}** to ${recipient.tag}`,
+      "Transfer Complete",
+      `You sent **${formatBalance(BalanceUtils.format(BalanceUtils.toStorage(amount)))}** to ${recipient.tag}`,
     ).field(
       "Your New Balance",
-      `$${BalanceUtils.format(BalanceUtils.toStorage(result.senderBalance))}`,
+      `${formatBalance(BalanceUtils.format(BalanceUtils.toStorage(result.senderBalance)))}`,
       true,
     );
 

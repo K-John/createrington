@@ -19,6 +19,8 @@ import * as repositories from "./repositories";
  */
 const pool = new pg.Pool(config.database.pool);
 
+pg.types.setTypeParser(20, BigInt);
+
 try {
   await pool.query("SELECT 1");
   logger.info("Connected to PostgreSQL database");
