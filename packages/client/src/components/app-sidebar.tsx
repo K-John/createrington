@@ -28,6 +28,7 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth";
+import { ServerStatus } from "./server-status";
 
 const data = {
   navMain: [
@@ -78,7 +79,7 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user } = useAuth();
-  const { toggleSidebar } = useSidebar();
+  const { toggleSidebar, open } = useSidebar();
   const isMobile = useIsMobile();
 
   // Filter nav items based on auth
@@ -110,6 +111,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
 
       <SidebarContent>
+        <ServerStatus isCollapsed={!open} />
+
         <NavMain items={filteredNavMain} />
       </SidebarContent>
 
