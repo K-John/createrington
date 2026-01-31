@@ -46,4 +46,54 @@ function Badge({
   )
 }
 
-export { Badge, badgeVariants }
+const iconBadgeVariants = cva(
+  "absolute rounded-full ring-2 ring-background transition-[color,box-shadow]",
+  {
+    variants: {
+      variant: {
+        default: "bg-primary",
+        secondary: "bg-secondary",
+        destructive: "bg-destructive",
+        success: "bg-green-500",
+        warning: "bg-yellow-500",
+        info: "bg-blue-500",
+      },
+      size: {
+        sm: "size-2",
+        default: "size-3",
+        lg: "size-4",
+      },
+      position: {
+        "top-right": "-right-1 -top-1",
+        "top-left": "-left-1 -top-1",
+        "bottom-right": "-right-1 -bottom-1",
+        "bottom-left": "-left-1 -bottom-1",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+      position: "top-right",
+    },
+  }
+)
+
+function IconBadge({
+  className,
+  variant = "default",
+  size = "default",
+  position = "top-right",
+  ...props
+}: React.ComponentProps<"span"> &
+  VariantProps<typeof iconBadgeVariants>) {
+  return (
+    <span
+      data-slot="icon-badge"
+      data-variant={variant}
+      className={cn(iconBadgeVariants({ variant, size, position }), className)}
+      {...props}
+    />
+  )
+}
+
+export { Badge, badgeVariants, IconBadge, iconBadgeVariants }
